@@ -38,6 +38,12 @@ Each run is charged at max(wall time, content seconds), so the figures are conse
 | 2026-11-20 | T38 | `run-live.mjs T38-perf 20 1280x720` | 21.5 | 180.9 |
 | 2026-11-20 | T38 | `run-live.mjs T38-perf 20 640x360` (no face found at this size) | 21.2 | 202.1 |
 | 2026-11-20 | T39 | `npm run test:live` (60 s, all 8 checks passed) | 61.8 | 263.9 |
+| 2026-11-20 | T45 | `npm run test:live`, final smoke (all 8 checks passed; 29.3 packets/s, stage 29.1 fps) | 60.9 | **324.8** |
+
+**Total Presage usage: 324.8 s (about 5.4 min) of the 15-minute cap.**
+
+## Demo media
+`docs/media/*` is generated in Demo mode by `xvfb-run -a -s "-screen 0 1600x1000x24" node scripts/capture-media.mjs`. It uses no camera, no API key and no real person. `demo.webm` is the last 30 s of a Playwright recording of the stage window during the scripted meeting, re-encoded with VP9 at 640×360, 20 fps and 350 kbit/s.
 
 ## Performance measurements
 - T38 (2026-11-20): capture resolution against SDK packet rate and stage fps. The table is in `docs/sdk-notes.md` under "Renderer path and capture resolution". The default stays 960×540.

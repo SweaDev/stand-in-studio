@@ -88,7 +88,10 @@ export class StageCompositor {
       raisedHandBadge(ctx, W - r * 1.6, r * 1.6, r, s.style.highContrast);
       handBadgeText(ctx, W - r * 1.6, r * 3.6, H, s.style.highContrast);
     }
-    if (s.badges.backSoon) backSoonBadge(ctx, W, H, s.style.highContrast);
+    // The lantern carries its own "back soon" tag; other characters get the stage badge.
+    if (s.badges.backSoon && !(s.character === 'lantern' && s.characterOpacity > 0.5)) {
+      backSoonBadge(ctx, W, H, s.style.highContrast);
+    }
     ctx.restore();
   }
 }

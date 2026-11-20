@@ -94,6 +94,12 @@ describe('StageCompositor', () => {
     });
     const texts = calls.filter((c) => c.name === 'fillText').map((c) => c.args[0]);
     expect(texts).toEqual(['hand raised', 'back soon']);
+    const lanternAway = render({
+      ...base,
+      badges: { speaking: false, raisedHand: false, backSoon: true },
+      pose: { ...base.pose, presence: 'away' },
+    });
+    expect(lanternAway.filter((c) => c.name === 'fillText').map((c) => c.args[0])).toEqual(['back soon']);
     const ring = render({ ...base, badges: { speaking: true, raisedHand: false, backSoon: false } });
     expect(ring.filter((c) => c.name === 'arc').length).toBeGreaterThan(
       render(base).filter((c) => c.name === 'arc').length,
