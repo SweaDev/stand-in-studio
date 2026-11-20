@@ -381,3 +381,21 @@ select {
   width: 100%;
   margin-bottom: 6px;
 }
+.calibration {
+  width: 100%;
+  border-top: 1px solid var(--line);
+  padding-top: 10px;
+}
+.calibration.active {
+  border: 2px solid var(--accent);
+  border-radius: 10px;
+  padding: 10px;
+}
+.cal-prompt {
+  font-weight: 700;
+  min-height: 2.9em;
+}
+.calibration progress {
+  width: 100%;
+  accent-color: var(--accent);
+}

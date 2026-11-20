@@ -13,6 +13,8 @@ import { HotkeyHelp, OverrideBar } from './components/Overrides';
 import { ObsChecklist } from './components/ObsChecklist';
 import { ApiKeyPanel } from './components/ApiKeyPanel';
 import { StatusBanner } from './components/StatusBanner';
+import { CalibrationWizard } from './components/CalibrationWizard';
+import { DEMO_CALIBRATION_MS } from './demo/DemoController';
 import { CameraPicker } from './components/CameraPicker';
 import { CameraManager } from './camera/CameraManager';
 import { PresageSignalSource } from '../../sensing/presage/PresageSignalSource';
@@ -252,6 +254,10 @@ export class ControlApp {
   /** Lays out the main workspace. */
   protected buildWorkspace(): void {
     const dial = new PresenceDial((v) => this.turnDial(v));
+    const calibration = new CalibrationWizard(() =>
+      this.engine.startCalibration(this.demo ? DEMO_CALIBRATION_MS : undefined),
+    );
+    this.onFrame(() => calibration.update(this.engine.calibrationStatus(), this.presage?.lastHint ?? ''));
     const overrides = new OverrideBar(this.api.info.platform, (c) => this.runCommand(c));
     const help = new HotkeyHelp(this.api.info.platform, this.demo !== null);
     const obs = new ObsChecklist(
@@ -287,7 +293,7 @@ export class ControlApp {
     });
     this.root.insertBefore(this.banner.el, this.main);
     this.main.replaceChildren(
-      h('section', { class: 'controls', 'aria-label': 'Presence' }, dial.el, modes.el),
+      h('section', { class: 'controls', 'aria-label': 'Presence' }, dial.el, modes.el, calibration.el),
       h(
         'section',
         { class: 'preview', 'aria-label': 'What the meeting sees' },

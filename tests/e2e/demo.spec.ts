@@ -21,7 +21,11 @@ test('Demo mode: badge in the control window only, keys drive Auto end to end', 
     );
     expect(stageHtml).not.toContain('DEMO');
 
-    // Calibrate (3 s in Demo), then listen: settles at the 40% listening level.
+    // Calibration runs first (3 s in Demo) with prompts, then reports done.
+    await expect(control.locator('#cal-prompt')).toContainText(/upper chest|normally|nod|smile/);
+    await expect(control.locator('#recalibrate')).toBeVisible({ timeout: 8000 });
+
+    // Then listen: settles at the 40% listening level.
     await expect.poll(async () => (await state(control)).feed, { timeout: 12_000 }).toBeCloseTo(0.4, 1);
 
     // Hold T to talk: the speaker is shown.

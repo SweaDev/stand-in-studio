@@ -88,7 +88,7 @@ Progress tracker for [PLAN.md](PLAN.md). One task = one commit; tick the box in 
   - `useMediaStream`, `decodeMetrics` and `validationStatus` mapping
   - error and retry policy: authentication or credit errors switch to an offer of Demo mode; retryable errors back off
   - `enableTelemetry:false`; reconfigures when the shield is toggled; no `videoOutput` listener
-- [ ] T37 CalibrationWizard (15 s; prompts for framing with the upper chest visible, a nod and a smile; fed into the Calibrator)
+- [x] T37 CalibrationWizard (15 s; prompts for framing with the upper chest visible, a nod and a smile; fed into the Calibrator)
 - [ ] T38 Performance: measure SDK-delivered fps and stage fps with the fake camera at 1280×720, 960×540 and 640×360; pick the default; fall back on `kSustainedLowFrameRate`; record the numbers in docs/sdk-notes.md
 - [ ] T39 `npm run test:live` (Electron, fake MJPEG camera, real SDK, ≤120 s, budget-guarded); tag v0.8.0
 
