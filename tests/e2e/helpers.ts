@@ -17,7 +17,10 @@ export async function launchApp(env: Record<string, string> = {}): Promise<Launc
   const app = await electron.launch({
     args,
     cwd: root,
-    env: { ...process.env, STANDIN_E2E: '1', PRESAGE_API_KEY: '', ...env } as Record<string, string>,
+    env: { ...process.env, STANDIN_E2E: '1', PRESAGE_API_KEY: '', STANDIN_FAKE_CAMERA: '', ...env } as Record<
+      string,
+      string
+    >,
   });
   const control = await app.firstWindow();
   await control.waitForLoadState('domcontentloaded');

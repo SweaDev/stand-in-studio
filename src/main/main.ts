@@ -1,9 +1,11 @@
 import type { BrowserWindow } from 'electron';
 import { app, ipcMain, session, shell } from 'electron';
 import { join } from 'node:path';
-import { IPC, isAllowedExternal, type AppInfo, type ApiKeyStatus } from '../shared/ipc';
+import { IPC, isAllowedExternal, type AppInfo } from '../shared/ipc';
 import type { DeepPartial, Settings } from '../shared/settings';
+import { ApiKeyStore } from './apiKey';
 import { registerHotkeys, unregisterHotkeys } from './hotkeys';
+import { bindSdk } from './sdkBridge';
 import { installPermissionHandlers } from './permissions';
 import { SettingsStore } from './settingsStore';
 import { createControlWindow } from './windows';
@@ -43,15 +45,26 @@ function bootstrap(): void {
     await shell.openExternal(url);
     return true;
   });
-  // Placeholder until the API key module lands (T35): no key is ever available.
-  const noKey: ApiKeyStatus = { available: false, source: null };
-  ipcMain.handle(IPC.apiKeyStatus, () => noKey);
-  ipcMain.handle(IPC.apiKeySet, () => noKey);
-  ipcMain.handle(IPC.apiKeyClear, () => noKey);
+  const keys = new ApiKeyStore();
+  let sdkAvailable = false;
+  // The renderer learns only whether a key exists, never the key itself.
+  ipcMain.handle(IPC.apiKeyStatus, () => ({
+    ...keys.status(),
+    available: sdkAvailable && keys.status().available,
+  }));
+  ipcMain.handle(IPC.apiKeySet, (_e, key: unknown) => ({
+    ...keys.set(key),
+    available: sdkAvailable && keys.status().available,
+  }));
+  ipcMain.handle(IPC.apiKeyClear, () => ({
+    ...keys.clear(),
+    available: sdkAvailable && keys.status().available,
+  }));
 
   app.whenReady().then(() => {
     installPermissionHandlers(session.defaultSession, (wc) => wc === control?.webContents);
     control = createControlWindow();
+    sdkAvailable = bindSdk(control, () => keys.get());
     const taken = registerHotkeys(() => control);
     if (taken.length > 0)
       console.warn(`[stand-in] hotkeys already in use by another app: ${taken.join(', ')}`);

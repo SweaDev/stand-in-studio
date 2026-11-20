@@ -11,6 +11,7 @@ import { MODE_LABELS, ModeSwitch } from './components/ModeSwitch';
 import { ModePanel } from './components/ModePanel';
 import { HotkeyHelp, OverrideBar } from './components/Overrides';
 import { ObsChecklist } from './components/ObsChecklist';
+import { ApiKeyPanel } from './components/ApiKeyPanel';
 import { COMMANDS, type CommandName, type CommandReceiver } from '../../core/stage/commands';
 import { nextMode } from '../../core/stage/ModeController';
 import { PresenceDial } from './components/PresenceDial';
@@ -55,6 +56,10 @@ export class ControlApp {
       (s) => this.frameListeners.forEach((fn) => fn(s)),
     );
     this.main = h('main', { class: 'workspace', hidden: true });
+    // Hotkeys arrive from main; registered once for the app's lifetime.
+    this.api.onCommand((c) => {
+      if (!this.main.hidden) this.runCommand(c);
+    });
   }
 
   get currentSettings(): Settings {
@@ -102,6 +107,19 @@ export class ControlApp {
     (consent.el.querySelector('button:not([disabled])') as HTMLButtonElement | null)?.focus();
   }
 
+  /** Stops everything and returns to the consent screen (e.g. after adding a key). */
+  async restart(): Promise<void> {
+    this.loop.stop();
+    await this.demo?.stop();
+    this.demo = null;
+    this.feed = () => null;
+    this.host.close();
+    this.frameListeners.length = 0;
+    this.main.hidden = true;
+    this.main.replaceChildren();
+    await this.start();
+  }
+
   /** Runs after consent: starts signals, the stage window and the loop. */
   private async begin(choice: ConsentChoice): Promise<void> {
     if (choice === 'demo') {
@@ -146,7 +164,6 @@ export class ControlApp {
     const dial = new PresenceDial((v) => this.turnDial(v));
     const overrides = new OverrideBar(this.api.info.platform, (c) => this.runCommand(c));
     const help = new HotkeyHelp(this.api.info.platform, this.demo !== null);
-    this.api.onCommand((c) => this.runCommand(c));
     const obs = new ObsChecklist(
       this.api.info.platform,
       (u) => void this.api.openExternal(u),
@@ -200,7 +217,12 @@ export class ControlApp {
         help.el,
         obs.el,
       ),
-      h('section', { class: 'settings', 'aria-label': 'Settings' }, this.panel.el),
+      h(
+        'section',
+        { class: 'settings', 'aria-label': 'Settings' },
+        this.panel.el,
+        new ApiKeyPanel(this.api, this.demo === null, () => void this.restart()).el,
+      ),
     );
   }
 }

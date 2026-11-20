@@ -17,7 +17,7 @@ export class DemoController {
   readonly source: DemoSignalSource;
   readonly script: ScriptPlayer;
   private readonly feed: DemoFeed;
-  private keysBound = false;
+  private keys: AbortController | null = null;
 
   constructor(
     private readonly engine: StudioEngine,
@@ -39,6 +39,8 @@ export class DemoController {
   }
 
   async stop(): Promise<void> {
+    this.keys?.abort();
+    this.keys = null;
     this.script.stop();
     await this.source.stop();
   }
@@ -61,18 +63,27 @@ export class DemoController {
 
   /** Keyboard map (REQUIREMENT §8). Ignored while typing in a form field. */
   bindKeys(target: Window): void {
-    if (this.keysBound) return;
-    this.keysBound = true;
+    if (this.keys) return;
+    this.keys = new AbortController();
+    const opts = { signal: this.keys.signal };
     const isTyping = (e: KeyboardEvent) =>
       e.target instanceof HTMLElement && /^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName);
-    target.addEventListener('keydown', (e) => {
-      if (e.repeat || e.ctrlKey || e.metaKey || e.altKey || isTyping(e)) return;
-      const action = DEMO_KEYS[e.key.toLowerCase()];
-      if (action) this.source.press(action);
-    });
-    target.addEventListener('keyup', (e) => {
-      const action = DEMO_KEYS[e.key.toLowerCase()];
-      if (action) this.source.release(action);
-    });
+    target.addEventListener(
+      'keydown',
+      (e) => {
+        if (e.repeat || e.ctrlKey || e.metaKey || e.altKey || isTyping(e)) return;
+        const action = DEMO_KEYS[e.key.toLowerCase()];
+        if (action) this.source.press(action);
+      },
+      opts,
+    );
+    target.addEventListener(
+      'keyup',
+      (e) => {
+        const action = DEMO_KEYS[e.key.toLowerCase()];
+        if (action) this.source.release(action);
+      },
+      opts,
+    );
   }
 }

@@ -80,7 +80,7 @@ Progress tracker for [PLAN.md](PLAN.md). One task = one commit; tick the box in 
 - [x] T34 OBS 3-step checklist (Window Capture "Stand-In Stage", then Start Virtual Camera, then pick OBS Virtual Camera in the meeting app; Linux v4l2loopback note) with a test-pattern button and screen-share fallback; tag v0.7.0
 
 **Phase 7 — Presage live integration → v0.8.0**
-- [ ] T35 API key:
+- [x] T35 API key:
   - main reads `PRESAGE_API_KEY`, or a key pasted in the UI that is kept only in main's memory
   - `sdkKeyInjection` Decorator is applied before `bindSmartSpectraIpc`
   - a test asserts that the renderer can't read the key and that the SDK internals still match 3.5.0
