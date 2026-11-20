@@ -4,6 +4,7 @@ import { launchApp, passConsent } from './helpers';
 const state = (page: Page) =>
   page.evaluate(() => {
     const s = (window as any).__standin.engine.state;
+    if (!s) return { feed: -1, speaking: false, presence: 'none', mode: 'none' };
     return { feed: s.feedOpacity, speaking: s.badges.speaking, presence: s.pose.presence, mode: s.mode };
   });
 

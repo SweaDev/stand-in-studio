@@ -161,3 +161,7 @@ kbd {
   background: #26232b;
   color: var(--text);
 }
+
+[hidden] {
+  display: none !important;
+}
