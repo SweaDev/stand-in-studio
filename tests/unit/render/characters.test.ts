@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import '../../../src/render/characters/Lantern';
 import '../../../src/render/characters/Houseplant';
+import '../../../src/render/characters/Cat';
 import { characterOrDefault, getCharacter, listCharacters } from '../../../src/render/characters/registry';
 import { inkFor } from '../../../src/render/characters/Character';
 import { NEUTRAL_POSE, type CharacterPose, type StageStyle } from '../../../src/shared/types';
@@ -49,7 +50,7 @@ describe('characters', () => {
     expect(listCharacters().length).toBeGreaterThanOrEqual(1);
   });
 
-  for (const c of ['lantern', 'houseplant']) {
+  for (const c of ['lantern', 'houseplant', 'cat']) {
     it(`${c} draws every pose in every style with balanced save/restore`, () => {
       for (const s of styles) {
         for (const p of poses) {

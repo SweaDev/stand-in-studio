@@ -93,7 +93,7 @@ Progress tracker for [PLAN.md](PLAN.md). One task = one commit; tick the box in 
 - [x] T39 `npm run test:live` (Electron, fake MJPEG camera, real SDK, ≤120 s, budget-guarded); tag v0.8.0
 
 **Phase 8 — Nice-to-haves → v0.9.0** (cut first if time runs short)
-- [ ] T40 Cat character
+- [x] T40 Cat character
 - [ ] T41 Cloud character
 - [ ] T42 Laugh sparkle burst and the corner character badge in Camera mode
 - [ ] T43 Per-meeting presets (save, apply, delete); tag v0.9.0
