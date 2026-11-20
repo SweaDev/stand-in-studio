@@ -28,7 +28,7 @@ Progress tracker for [PLAN.md](PLAN.md). One task = one commit; tick the box in 
   - logs field shapes, landmark count, validation codes and metric rates
   - writes the findings to `docs/sdk-notes.md`
 - [x] T07 shared/types and settings (defaults and validation), plus `sensing/requestedMetrics` with tests
-- [ ] T08 `features/LandmarkLayout` (with layout detection) and `sensing/metricsMapper`, tested against fixtures encoded with `Metrics.encode`; tag v0.2.0
+- [x] T08 `features/LandmarkLayout` (with layout detection) and `sensing/metricsMapper`, tested against fixtures encoded with `Metrics.encode`; tag v0.2.0
 
 **Phase 2 — Signal trackers → v0.3.0**
 - [ ] T09 Calibrator and Baseline (neutral pose, closed-mouth gap, resting happy level, eye openness, blink rate)
