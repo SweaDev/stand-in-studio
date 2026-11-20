@@ -1,0 +1,58 @@
+/** Timing and threshold constants from REQUIREMENT.md §2–§5 (ms unless noted). */
+export const C = Object.freeze({
+  // Calibration (§4)
+  CALIBRATION_MS: 15_000,
+  CALIBRATION_MAX_MS: 30_000,
+  CALIBRATION_MIN_SAMPLES: 30,
+
+  // Breathing (§4)
+  BREATH_WINDOW_MS: 15_000,
+  BREATH_STALE_MS: 2_000,
+  BREATH_IDLE_PER_MIN: 12,
+  BREATH_SCALE: 0.035,
+
+  // Blinking (§4)
+  BLINK_MS: 140,
+  BLINK_REFRACTORY_MS: 250,
+  BLINK_BACKUP_RATIO: 0.6,
+
+  // Gestures (§4)
+  GESTURE_THRESHOLD_ED: 0.05,
+  GESTURE_RETURN_MS: 700,
+  GESTURE_ENTHUSIASTIC_MS: 1_500,
+
+  // Expressions (§4)
+  SMILE_ON_DELTA: 0.25,
+  SMILE_OFF_DELTA: 0.15,
+  SMILE_ON_HOLD_MS: 400,
+
+  // Presence (§4)
+  AWAY_AFTER_MS: 3_000,
+  BACK_AFTER_MS: 1_000,
+  WAKE_STRETCH_MS: 1_200,
+
+  // Auto (§5)
+  TALK_SUSTAIN_MS: 1_000,
+  LOOK_AWAY_MS: 2_000,
+  LOOK_AWAY_YAW_ED: 0.25,
+  LOOK_AWAY_PITCH_ED: 0.2,
+  EATING_MS: 1_500,
+  EATING_GAP_ED: 0.25,
+  AUTO_HOLD_MS: 2_000,
+  AUTO_RATE_PER_S: 0.4,
+
+  // Comfort shield (§5)
+  SHIELD_PULSE_DELTA: 12,
+  SHIELD_BREATHING_DELTA: 5,
+  SHIELD_CAP: 0.15,
+  SHIELD_RECOVERY_MS: 20_000,
+  SHIELD_BASELINE_MS: 30_000,
+
+  // Transitions (§2)
+  CROSSFADE_MS: 450,
+  BLUR_BELOW: 0.3,
+
+  // Amplification (§3)
+  AMPLIFY: 3,
+  REDUCED_MOTION_FACTOR: 0.5,
+});
