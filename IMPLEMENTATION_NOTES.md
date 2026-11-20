@@ -65,7 +65,9 @@ git push origin --tags
 | v0.5.0 | bca7306 | Open the frameless Stand-In Stage window and drive it with a 30 fps stage loop |
 | v0.6.0 | 2055d11 | Add Demo mode with scripted meeting loop, procedural sample feed and demo badge |
 | v0.7.0 | c035df7 | Add OBS setup checklist with test pattern and screen-share fallback |
-| v0.8.0 | (the T39 commit) | Add budget-guarded live test of the real SDK on a fake camera |
+| v0.8.0 | e8ed84a | Add budget-guarded live test of the real SDK on a fake camera |
+| v0.9.0 | 14dde18 | Add per-meeting presets |
+| v1.0.0 | (the T48 commit) | Release 1.0.0 |
 
 ## Deviations from PLAN.md
 - **T05, fake camera format:** the plan called for a `.y4m` file, but 60 s of 960×540 y4m is about 1 GB. Chromium's `--use-file-for-fake-video-capture` also accepts **`.mjpeg`** (51 MB here), so the fake camera uses `test-assets/face.mjpeg`. The SDK file probe uses `face.mp4`.

@@ -106,4 +106,4 @@ Progress tracker for [PLAN.md](PLAN.md). One task = one commit; tick the box in 
   - Template parts: front matter with `tags: devchallenge, presagechallenge`, the italic challenge line, What I Built, Demo, Code, How It Responds to Human Signals, Prize Categories (both), Consent and Data Handling, Agent Session
   - Verify the Bailenson 2021 and Fauville et al. 2021 citations by web search
   - Leave placeholders for the user's demo video and agent-session link
-- [ ] T48 Set version 1.0.0, add CHANGELOG.md, tag v1.0.0 and push
+- [x] T48 Set version 1.0.0, add CHANGELOG.md, tag v1.0.0 and push
