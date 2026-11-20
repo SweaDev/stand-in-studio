@@ -19,7 +19,7 @@ import { CameraPicker } from './components/CameraPicker';
 import { CameraManager } from './camera/CameraManager';
 import { PresageSignalSource } from '../../sensing/presage/PresageSignalSource';
 import { realSdkFactory } from './presage/sdkFactory';
-import type { CaptureProfile } from '../../shared/settings';
+import { type CaptureProfile, lowerProfile } from '../../shared/settings';
 import { COMMANDS, type CommandName, type CommandReceiver } from '../../core/stage/commands';
 import { nextMode } from '../../core/stage/ModeController';
 import { PresenceDial } from './components/PresenceDial';
@@ -224,12 +224,19 @@ export class ControlApp {
     );
     src.events.on('frame', (f) => this.engine.ingest(f));
     src.events.on('status', (st) => st === 'running' && this.banner.hide());
-    src.events.on('error', (e) =>
+    src.events.on('error', (e) => {
+      // Too few frames for the SDK: capture at the next lower resolution (REQUIREMENT §10).
+      const lower = lowerProfile(this.settings.camera.profile);
+      if (e.reason === 'lowFrameRate' && lower && this.camera) {
+        this.banner.show(`${e.message} Switching the camera to ${lower.replace('x', '×')}.`);
+        void this.switchCamera(this.camera.deviceId ?? '', lower);
+        return;
+      }
       this.banner.show(
         e.message,
         e.retrying ? undefined : { label: 'Continue in Demo mode', run: () => void this.restart() },
-      ),
-    );
+      );
+    });
     return src;
   }
 

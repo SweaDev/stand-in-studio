@@ -28,5 +28,9 @@ fi
 ffmpeg -loglevel error -y -ss "$START" -t "$DURATION" -i "$src" -an -vf "$FILTER" -q:v 4 test-assets/face.mjpeg
 ffmpeg -loglevel error -y -ss "$START" -t "$DURATION" -i "$src" -an -vf "$FILTER" \
   -c:v libx264 -pix_fmt yuv420p -preset veryfast -crf 20 test-assets/face.mp4
+# Extra fake-camera resolutions for the performance check (T38).
+ffmpeg -loglevel error -y -ss "$START" -t "$DURATION" -i "$src" -an -vf "crop=1040:585:120:0,scale=1280:720,fps=30" -q:v 4 test-assets/face-1280x720.mjpeg
+ffmpeg -loglevel error -y -ss "$START" -t "$DURATION" -i "$src" -an -vf "crop=1040:585:120:0,scale=640:360,fps=30" -q:v 4 test-assets/face-640x360.mjpeg
+cp test-assets/face.mjpeg test-assets/face-960x540.mjpeg
 sha256sum test-assets/face.mjpeg test-assets/face.mp4
 echo "Test clip ready in test-assets/"

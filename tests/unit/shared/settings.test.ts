@@ -78,3 +78,12 @@ describe('parseCaptureProfile', () => {
     expect(parseCaptureProfile('960x540')).toEqual({ width: 960, height: 540 });
   });
 });
+
+describe('lowerProfile', () => {
+  it('steps down one resolution at a time', async () => {
+    const { lowerProfile } = await import('../../../src/shared/settings');
+    expect(lowerProfile('1280x720')).toBe('960x540');
+    expect(lowerProfile('960x540')).toBe('640x360');
+    expect(lowerProfile('640x360')).toBeNull();
+  });
+});

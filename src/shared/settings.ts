@@ -136,3 +136,9 @@ export function parseCaptureProfile(p: CaptureProfile): { width: number; height:
   const [w, h] = p.split('x').map(Number);
   return { width: w as number, height: h as number };
 }
+
+/** Next lower capture profile (used when the SDK reports a sustained low frame rate). */
+export function lowerProfile(p: CaptureProfile): CaptureProfile | null {
+  const i = CAPTURE_PROFILES.indexOf(p);
+  return i >= 0 && i < CAPTURE_PROFILES.length - 1 ? (CAPTURE_PROFILES[i + 1] as CaptureProfile) : null;
+}

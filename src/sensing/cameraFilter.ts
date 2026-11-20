@@ -17,7 +17,6 @@ const VIRTUAL = [
   /xsplit/i,
   /e2esoft/i,
   /splitcam/i,
-  /stand-?in/i,
   /nvidia broadcast/i,
   /camo/i,
 ];

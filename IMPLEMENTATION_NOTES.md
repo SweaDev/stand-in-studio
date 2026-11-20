@@ -33,9 +33,14 @@ Each run is charged at max(wall time, content seconds), so the figures are conse
 |---|---|---|---|---|
 | 2026-11-20 | T06 | `live-probe.mjs 40` (failed after 3.4 s: no Vulkan) | 40 | 40 |
 | 2026-11-20 | T06 | `live-probe.mjs 40` (after installing lavapipe) | 42.9 | 82.9 |
+| 2026-11-20 | T38 | `run-live.mjs T38-perf 30 960x540`: camera filter bug, **SDK never started** (charged conservatively) | 45 | 127.9 |
+| 2026-11-20 | T38 | `run-live.mjs T38-perf 30 960x540` | 31.5 | 159.4 |
+| 2026-11-20 | T38 | `run-live.mjs T38-perf 20 1280x720` | 21.5 | 180.9 |
+| 2026-11-20 | T38 | `run-live.mjs T38-perf 20 640x360` (no face found at this size) | 21.2 | 202.1 |
 
 ## Performance measurements
-_None yet._
+- T38 (2026-11-20): capture resolution against SDK packet rate and stage fps. The table is in `docs/sdk-notes.md` under "Renderer path and capture resolution". The default stays 960×540.
+- Extra fake-camera clips for this check (`face-1280x720.mjpeg`, `face-640x360.mjpeg`) are produced by `scripts/fetch-test-video.sh` with the same segment and crop, scaled to each size.
 
 ## Git tags
 In this cloud session the git proxy refuses tag pushes (HTTP 403), while branch pushes to `main` work. Tags are created locally as annotated tags, and the table below records them. To publish them from a machine with normal GitHub access, recreate any that are missing and push:
@@ -51,3 +56,5 @@ git push origin --tags
 ## Deviations from PLAN.md
 - **T05, fake camera format:** the plan called for a `.y4m` file, but 60 s of 960×540 y4m is about 1 GB. Chromium's `--use-file-for-fake-video-capture` also accepts **`.mjpeg`** (51 MB here), so the fake camera uses `test-assets/face.mjpeg`. The SDK file probe uses `face.mp4`.
 - **Tags:** pushes are blocked here, as described under "Git tags" above.
+- **T38, camera filter:** the first live run found that Chromium names a file-backed fake camera after its file path. Ours contained `stand-in-studio`, which matched an over-broad `/stand-?in/` virtual-camera pattern. The pattern was removed.
+- **T38, live budget accounting:** `run-live.mjs` bills only the time the SDK actually ran, from the camera click to stop.

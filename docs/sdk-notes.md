@@ -66,7 +66,16 @@ protobufjs omits fields that hold default values: `false`, `0` and empty arrays.
 - `waitUntilComplete()` **blocks the event loop**, which also stops metrics callbacks from running. Wait on `processingStatus` instead.
 - When processing fails, the session moves to `kError` and emits `error(code, message, retryable)`.
 
-## Not yet measured
-These are measured in T38 and T39 with the Electron renderer (`useMediaStream`) and the fake camera:
-- frame-rate headroom at each capture resolution;
-- renderer-side behaviour.
+## Renderer path and capture resolution (T38, measured 2026-11-20)
+Setup: Electron 45 renderer SDK on the app's own `getUserMedia` stream (`useMediaStream`), Chromium fake camera fed from the MJPEG clip at 30 fps, Auto mode, a 30 fps stage loop drawing 1280×720, and a CPU-only container (Xvfb, Mesa llvmpipe, 4 cores). Run with `node scripts/run-live.mjs T38-perf <s> <profile>`.
+
+| Capture | SDK packets/s | Stage fps (avg incl. start-up) | First packet | Landmarks / validation |
+|---|---|---|---|---|
+| 1280×720 | 29.3 | 26.1 | ~7 s | yes, kOk ~60% |
+| **960×540** (default) | 29.8 | 28.2 | ~7 s | yes, kOk ~66% |
+| 640×360 | 29.7 | 27.3 | ~10 s | **no face found**: the speaker's face is too small at this size |
+
+- No `kSustainedLowFrameRate` at any size: the SDK kept pace with 30 fps input even on CPU.
+- **Default capture: 960×540.** At 640×360, faces that are not close to the camera are lost. The app therefore steps down a resolution only when the SDK actually reports `kSustainedLowFrameRate`, one step at a time.
+- The stage loop holds about 28 fps (target 30) while the SDK runs. Its compositing leaves the SDK's input untouched, because the SDK reads the camera track directly.
+- The first packet arrives about 7 s after "Start with my camera". This covers camera start, the SDK pipeline and remote model delivery.

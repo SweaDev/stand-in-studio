@@ -67,6 +67,17 @@ export class PresageSignalSource implements SignalSource {
   private comfortShield: boolean;
   /** Latest validation hint from the SDK (shown during calibration only). */
   lastHint = '';
+  /** Diagnostic counters: how many packets carried each signal. Counts only, never values. */
+  readonly stats = {
+    packets: 0,
+    landmarks: 0,
+    breathing: 0,
+    talking: 0,
+    blinks: 0,
+    expressions: 0,
+    ok: 0,
+    notOk: 0,
+  };
 
   constructor(
     private readonly stream: MediaStream,
@@ -92,7 +103,15 @@ export class PresageSignalSource implements SignalSource {
     this.sdk = sdk;
     sdk.on('metrics', (buf) => {
       try {
-        this.events.emit('frame', mapMetrics(this.factory.decode(buf), this.clock.now()));
+        const frame = mapMetrics(this.factory.decode(buf), this.clock.now());
+        const st = this.stats;
+        st.packets++;
+        if (frame.landmarks) st.landmarks++;
+        if (frame.breathingTrace?.length) st.breathing++;
+        if (frame.talking) st.talking++;
+        if (frame.blink) st.blinks++;
+        if (frame.happy !== undefined) st.expressions++;
+        this.events.emit('frame', frame);
         this.retries = 0;
       } catch {
         // A malformed packet is dropped; the next one will do.
@@ -100,6 +119,8 @@ export class PresageSignalSource implements SignalSource {
     });
     sdk.on('validationStatus', (code, _ts, hint) => {
       this.lastHint = hint ?? '';
+      if (code === 0) this.stats.ok++;
+      else this.stats.notOk++;
       this.events.emit('frame', { t: this.clock.now(), validation: mapValidation(code) });
     });
     sdk.on('error', (code, message, retryable) => this.onError(code, message, retryable));
