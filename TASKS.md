@@ -70,7 +70,7 @@ Progress tracker for [PLAN.md](PLAN.md). One task = one commit; tick the box in 
   - contextBridge preload, which also requires the SDK preload
   - CSP and a media permission handler limited to `file://`
 - [x] T29 Consent screen (all §6 statements, a Telemetry and Privacy link, residual-risk text); the camera stays off until consent
-- [ ] T30 Camera manager: enumerate devices, filter out virtual cameras with a tested `cameraFilter`, camera picker, capture profile
+- [x] T30 Camera manager: enumerate devices, filter out virtual cameras with a tested `cameraFilter`, camera picker, capture profile
 - [ ] T31 PresenceDial (drag or keyboard; the needle follows Auto; lantern and face icons brighten), ModeSwitch and live thumbnail
 - [ ] T32 ModePanel:
   - Blend slider with 25/50/75 presets and Over/Beside

@@ -2,6 +2,7 @@ import type { CharacterId, Mode } from '../../shared/types';
 import { updateSettings } from '../../shared/settings';
 import { bridge } from './bridge';
 import { ControlApp } from './ControlApp';
+import { CameraManager } from './camera/CameraManager';
 
 /** Control-window entry point. */
 async function main(): Promise<void> {
@@ -31,6 +32,7 @@ async function main(): Promise<void> {
         setCharacter: (id: CharacterId) =>
           app.engine.applySettings(updateSettings(app.engine.currentSettings, { character: id })),
         setMode: (m: Mode) => app.engine.setMode(m),
+        CameraManager,
         /** Renders the current stage into a tile (default 320×180) and returns a PNG data URL. */
         tile: (w = 320, h = 180) => {
           const src = app.host.surface;

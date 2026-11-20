@@ -7,8 +7,21 @@ import { installPermissionHandlers } from './permissions';
 import { SettingsStore } from './settingsStore';
 import { createControlWindow } from './windows';
 
+/**
+ * Test-only fake camera (STANDIN_FAKE_CAMERA=1, or a path to an .mjpeg/.y4m clip). Never
+ * set in normal use.
+ */
+function configureFakeCamera(): void {
+  const fake = process.env.STANDIN_FAKE_CAMERA;
+  if (!fake) return;
+  app.commandLine.appendSwitch('use-fake-device-for-media-stream');
+  app.commandLine.appendSwitch('use-fake-ui-for-media-stream');
+  if (fake !== '1') app.commandLine.appendSwitch('use-file-for-fake-video-capture', fake);
+}
+
 /** Application entry point: owns windows, settings and IPC. */
 function bootstrap(): void {
+  configureFakeCamera();
   const info: AppInfo = {
     platform: process.platform,
     version: app.getVersion(),
