@@ -61,7 +61,7 @@ Progress tracker for [PLAN.md](PLAN.md). One task = one commit; tick the box in 
   - tag v0.5.0
 
 **Phase 5 — Demo mode → v0.6.0**
-- [ ] T26 DemoSignalSource with keyboard input (N S T B H E L A P; T is hold-to-talk)
+- [x] T26 DemoSignalSource with keyboard input (N S T B H E L A P; T is hold-to-talk)
 - [ ] T27 60 s scripted meeting loop and procedural `sampleFeed` (`canvas.captureStream`); "DEMO – simulated signals" badge in the control window only; demo e2e; tag v0.6.0
 
 **Phase 6 — App shell & UI → v0.7.0**
