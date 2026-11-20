@@ -33,7 +33,8 @@ describe('BlinkDetector', () => {
   it('uses landmark eye openness as a backup below 60% of calibration', () => {
     const b = new BlinkDetector();
     expect(b.update({ eyeOpenness: 0.3 }, 0.3, 0)).toBe(false);
-    expect(b.update({ eyeOpenness: 0.19 }, 0.3, 50)).toBe(true);
+    expect(b.update({ eyeOpenness: 0.19 }, 0.3, 40)).toBe(false); // 0.19 ≥ 0.6 × 0.3
+    expect(b.update({ eyeOpenness: 0.17 }, 0.3, 50)).toBe(true);
     expect(b.update({ eyeOpenness: 0.1 }, 0.3, 500)).toBe(false); // still closed: no new edge
     b.update({ eyeOpenness: 0.3 }, 0.3, 600);
     expect(b.update({ eyeOpenness: 0.1 }, 0.3, 700)).toBe(true);
