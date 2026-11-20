@@ -12,6 +12,12 @@ import { ModePanel } from './components/ModePanel';
 import { HotkeyHelp, OverrideBar } from './components/Overrides';
 import { ObsChecklist } from './components/ObsChecklist';
 import { ApiKeyPanel } from './components/ApiKeyPanel';
+import { StatusBanner } from './components/StatusBanner';
+import { CameraPicker } from './components/CameraPicker';
+import { CameraManager } from './camera/CameraManager';
+import { PresageSignalSource } from '../../sensing/presage/PresageSignalSource';
+import { realSdkFactory } from './presage/sdkFactory';
+import type { CaptureProfile } from '../../shared/settings';
 import { COMMANDS, type CommandName, type CommandReceiver } from '../../core/stage/commands';
 import { nextMode } from '../../core/stage/ModeController';
 import { PresenceDial } from './components/PresenceDial';
@@ -30,6 +36,9 @@ export class ControlApp {
   readonly host = new StageHost();
   readonly loop: StageLoop;
   demo: DemoController | null = null;
+  camera: CameraManager | null = null;
+  presage: PresageSignalSource | null = null;
+  readonly banner = new StatusBanner();
   private feed: () => FeedSource | null = () => null;
   private readonly frameListeners: ((s: StageState) => void)[] = [];
   readonly thumb: HTMLCanvasElement;
@@ -78,6 +87,8 @@ export class ControlApp {
     this.settings = updateSettings(this.settings, patch);
     this.engine.applySettings(this.settings);
     this.panel?.sync(this.settings);
+    if (patch.auto?.comfortShield !== undefined)
+      void this.presage?.setComfortShield(this.settings.auto.comfortShield);
     this.settings = await this.api.setSettings(patch);
   }
 
@@ -112,10 +123,16 @@ export class ControlApp {
     this.loop.stop();
     await this.demo?.stop();
     this.demo = null;
+    await this.presage?.stop();
+    this.presage = null;
+    this.camera?.close();
+    this.camera = null;
+    this.banner.hide();
     this.feed = () => null;
     this.host.close();
     this.frameListeners.length = 0;
     this.main.hidden = true;
+    this.root.insertBefore(this.banner.el, this.main);
     this.main.replaceChildren();
     await this.start();
   }
@@ -128,6 +145,8 @@ export class ControlApp {
       await this.demo.start();
       this.demo.bindKeys(window);
       (document.getElementById('demo-badge') as HTMLElement).hidden = false;
+    } else if (!(await this.startCamera())) {
+      return;
     }
     this.buildWorkspace();
     this.main.hidden = false;
@@ -157,6 +176,77 @@ export class ControlApp {
   turnDial(v: number): void {
     this.engine.setDial(v);
     void this.updateSettings({ mode: 'blend', blend: { opacity: v } });
+  }
+
+  /**
+   * Opens the physical camera once and gives the same stream to the SDK and the stage
+   * (REQUIREMENT §7). Returns false (staying on the consent screen) if it fails.
+   */
+  private async startCamera(): Promise<boolean> {
+    const cam = new CameraManager();
+    let stream: MediaStream;
+    try {
+      stream = await cam.open(this.settings.camera.deviceId, this.settings.camera.profile);
+    } catch (err) {
+      this.root.insertBefore(this.banner.el, this.main);
+      this.banner.show(`Could not open the camera: ${(err as Error).message}`, {
+        label: 'Try Demo mode',
+        run: () => {
+          this.banner.hide();
+          document.querySelector('.consent')?.remove();
+          void this.begin('demo');
+        },
+      });
+      return false;
+    }
+    this.camera = cam;
+    if (cam.deviceId && cam.deviceId !== this.settings.camera.deviceId) {
+      void this.updateSettings({ camera: { deviceId: cam.deviceId } });
+    }
+    this.feed = () => {
+      const v = cam.element;
+      return v && v.videoWidth > 0 ? { image: v, width: v.videoWidth, height: v.videoHeight } : null;
+    };
+    this.presage = this.createPresage(stream);
+    await this.presage.start();
+    this.engine.startCalibration();
+    return true;
+  }
+
+  private createPresage(stream: MediaStream): PresageSignalSource {
+    const src = new PresageSignalSource(
+      stream,
+      { comfortShield: this.settings.auto.comfortShield },
+      realSdkFactory,
+      this.clock,
+    );
+    src.events.on('frame', (f) => this.engine.ingest(f));
+    src.events.on('status', (st) => st === 'running' && this.banner.hide());
+    src.events.on('error', (e) =>
+      this.banner.show(
+        e.message,
+        e.retrying ? undefined : { label: 'Continue in Demo mode', run: () => void this.restart() },
+      ),
+    );
+    return src;
+  }
+
+  /** Switches camera or resolution: reopens the stream and restarts sensing on it. */
+  async switchCamera(deviceId: string, profile: CaptureProfile): Promise<void> {
+    if (!this.camera) return;
+    await this.presage?.stop();
+    const stream = await this.camera.open(deviceId, profile);
+    await this.updateSettings({ camera: { deviceId: this.camera.deviceId, profile } });
+    this.presage = this.createPresage(stream);
+    await this.presage.start();
+  }
+
+  private cameraGroup(): HTMLElement {
+    const picker = new CameraPicker((id, profile) => void this.switchCamera(id, profile));
+    void this.camera
+      ?.list()
+      .then((d) => picker.setDevices(d, this.camera?.deviceId ?? null, this.settings.camera.profile));
+    return h('div', { class: 'group', id: 'group-camera-device' }, h('h3', {}, 'Camera'), picker.el);
   }
 
   /** Lays out the main workspace. */
@@ -195,6 +285,7 @@ export class ControlApp {
       const text = this.demo?.script.caption ?? '';
       if (caption.textContent !== text) caption.textContent = text;
     });
+    this.root.insertBefore(this.banner.el, this.main);
     this.main.replaceChildren(
       h('section', { class: 'controls', 'aria-label': 'Presence' }, dial.el, modes.el),
       h(
@@ -211,6 +302,13 @@ export class ControlApp {
           ),
           this.demo ? scriptBtn : null,
           h('button', { type: 'button', id: 'show-help', onclick: () => help.open() }, 'Shortcuts'),
+          this.camera
+            ? h(
+                'button',
+                { type: 'button', id: 'stop-camera', onclick: () => void this.restart() },
+                'Stop camera',
+              )
+            : null,
         ),
         caption,
         overrides.el,
@@ -221,6 +319,7 @@ export class ControlApp {
         'section',
         { class: 'settings', 'aria-label': 'Settings' },
         this.panel.el,
+        this.camera ? this.cameraGroup() : null,
         new ApiKeyPanel(this.api, this.demo === null, () => void this.restart()).el,
       ),
     );

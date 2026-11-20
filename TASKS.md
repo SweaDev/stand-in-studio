@@ -84,7 +84,7 @@ Progress tracker for [PLAN.md](PLAN.md). One task = one commit; tick the box in 
   - main reads `PRESAGE_API_KEY`, or a key pasted in the UI that is kept only in main's memory
   - `sdkKeyInjection` Decorator is applied before `bindSmartSpectraIpc`
   - a test asserts that the renderer can't read the key and that the SDK internals still match 3.5.0
-- [ ] T36 PresageSignalSource:
+- [x] T36 PresageSignalSource:
   - `useMediaStream`, `decodeMetrics` and `validationStatus` mapping
   - error and retry policy: authentication or credit errors switch to an offer of Demo mode; retryable errors back off
   - `enableTelemetry:false`; reconfigures when the shield is toggled; no `videoOutput` listener

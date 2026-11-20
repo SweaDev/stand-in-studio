@@ -362,3 +362,22 @@ dialog td {
 .settings .group + .group {
   margin-top: 14px;
 }
+.banner {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  justify-content: space-between;
+  background: #5c2b29;
+  border: 1px solid #c0392b;
+  border-radius: 10px;
+  padding: 10px 14px;
+  margin-bottom: 14px;
+}
+select {
+  padding: 6px 8px;
+  border-radius: 8px;
+  border: 1px solid var(--line);
+  background: #26232b;
+  width: 100%;
+  margin-bottom: 6px;
+}
