@@ -10,6 +10,7 @@ import { ConsentScreen, type ConsentChoice } from './components/ConsentScreen';
 import { MODE_LABELS, ModeSwitch } from './components/ModeSwitch';
 import { ModePanel } from './components/ModePanel';
 import { HotkeyHelp, OverrideBar } from './components/Overrides';
+import { ObsChecklist } from './components/ObsChecklist';
 import { COMMANDS, type CommandName, type CommandReceiver } from '../../core/stage/commands';
 import { nextMode } from '../../core/stage/ModeController';
 import { PresenceDial } from './components/PresenceDial';
@@ -146,6 +147,11 @@ export class ControlApp {
     const overrides = new OverrideBar(this.api.info.platform, (c) => this.runCommand(c));
     const help = new HotkeyHelp(this.api.info.platform, this.demo !== null);
     this.api.onCommand((c) => this.runCommand(c));
+    const obs = new ObsChecklist(
+      this.api.info.platform,
+      (u) => void this.api.openExternal(u),
+      (on) => this.engine.setTestPattern(on),
+    );
     this.panel = new ModePanel(this.settings, {
       update: (p) => void this.updateSettings(p),
       setBlend: (v) => this.turnDial(v),
@@ -192,6 +198,7 @@ export class ControlApp {
         caption,
         overrides.el,
         help.el,
+        obs.el,
       ),
       h('section', { class: 'settings', 'aria-label': 'Settings' }, this.panel.el),
     );

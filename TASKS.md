@@ -77,7 +77,7 @@ Progress tracker for [PLAN.md](PLAN.md). One task = one commit; tick the box in 
   - Auto max and listening levels, Comfort-shield toggle
   - Camera-badge toggle, character and background, reduced-motion and high-contrast options
 - [x] T33 Global hotkeys (Command): Hide me, Pin, Raise hand, Back soon, Cycle mode, plus a help overlay
-- [ ] T34 OBS 3-step checklist (Window Capture "Stand-In Stage", then Start Virtual Camera, then pick OBS Virtual Camera in the meeting app; Linux v4l2loopback note) with a test-pattern button and screen-share fallback; tag v0.7.0
+- [x] T34 OBS 3-step checklist (Window Capture "Stand-In Stage", then Start Virtual Camera, then pick OBS Virtual Camera in the meeting app; Linux v4l2loopback note) with a test-pattern button and screen-share fallback; tag v0.7.0
 
 **Phase 7 — Presage live integration → v0.8.0**
 - [ ] T35 API key:
