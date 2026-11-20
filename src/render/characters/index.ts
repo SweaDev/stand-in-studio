@@ -2,5 +2,6 @@
 import './Lantern';
 import './Houseplant';
 import './Cat';
+import './Cloud';
 
 export { characterOrDefault, getCharacter, listCharacters } from './registry';
