@@ -9,6 +9,7 @@ A log of actions and measurements needed to reproduce how Stand-In Studio was bu
 - ffmpeg version 6.1.1-3ubuntu5
 - No physical webcam: live tests use Chromium's fake capture device fed from a `.y4m` clip
 - `PRESAGE_API_KEY` provided as an environment variable (never committed)
+- **Vulkan:** the SDK's expression models need it. The container had none, so the first probe failed. Installed Mesa's CPU Vulkan driver with `apt-get install -y mesa-vulkan-drivers libvulkan1 vulkan-tools` (Mesa 25.2.8, llvmpipe). Check it with `vulkaninfo --summary`.
 
 ## Test media
 Clips live in the git-ignored `test-assets/` folder and are never committed. Recreate them with `./scripts/fetch-test-video.sh`.
@@ -26,8 +27,12 @@ Clips live in the git-ignored `test-assets/` folder and are never committed. Rec
 - Wikimedia's API needs a User-Agent and rate-limits bursts (HTTP 429). The script sends a generic UA.
 
 ## Presage live-run budget (cap 900 s)
+Each run is charged at max(wall time, content seconds), so the figures are conservative.
+
 | Date | Task | Script | Seconds | Running total |
 |---|---|---|---|---|
+| 2026-11-20 | T06 | `live-probe.mjs 40` (failed after 3.4 s: no Vulkan) | 40 | 40 |
+| 2026-11-20 | T06 | `live-probe.mjs 40` (after installing lavapipe) | 42.9 | 82.9 |
 
 ## Performance measurements
 _None yet._

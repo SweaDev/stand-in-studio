@@ -23,7 +23,7 @@ Progress tracker for [PLAN.md](PLAN.md). One task = one commit; tick the box in 
 
 **Phase 1 — SDK spike & signal model → v0.2.0**
 - [x] T05 `scripts/presage-budget.mjs` (900 s ledger, unit-tested) and `scripts/fetch-test-video.sh`. The script pins the clip URL and sha256; record the clip's provenance in IMPLEMENTATION_NOTES.md
-- [ ] T06 `scripts/live-probe.mjs`:
+- [x] T06 `scripts/live-probe.mjs`:
   - uses the main-process SDK `useFile` on the test clip for ≤60 s, budget-guarded, with telemetry off
   - logs field shapes, landmark count, validation codes and metric rates
   - writes the findings to `docs/sdk-notes.md`

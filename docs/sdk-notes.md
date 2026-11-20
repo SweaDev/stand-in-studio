@@ -1,0 +1,72 @@
+# SmartSpectra SDK notes (measured)
+
+These are facts measured with `@smartspectra/node-sdk@3.5.0` by `scripts/live-probe.mjs` on 2026-11-20. The probe used the main-process SDK, file input `test-assets/face.mp4` (960×540 at 30 fps), all face, breathing and cardio metrics, `enableTelemetry: false`, and `interframeDelayMs: 33` (about real time). The full summary is in `test-assets/probe-summary.json`, which is git-ignored.
+
+Where these notes and PLAN.md disagree, these notes win.
+
+## Runtime requirements
+- **Vulkan is required.** Without a Vulkan driver, the expressions and phasic-BP models fail with "Vulkan is not available: vkCreateInstance failed with ErrorIncompatibleDriver". About 3 s later the session ends with `error kProcessingFailed (retryable)`.
+  - On a headless Linux box or a VM, install Mesa's CPU implementation: `sudo apt install mesa-vulkan-drivers` (lavapipe/llvmpipe).
+  - Desktop GPUs ship their own Vulkan drivers.
+- Models are delivered remotely on first use ("Unable to resolve configured model path. Falling back to remote delivery"). The first metrics packet arrived about **2.0 s** after `start()`.
+- The native runtime logs to stderr (absl/glog warnings). This is harmless.
+
+## Packet rates (about real time, 960×540)
+- About 21 `metrics` packets per second. Most packets carry 0–2 samples of each field.
+
+| Field | Samples/s | Keys present |
+|---|---|---|
+| `face.landmarks` | ~20 | `value` (array of `{x,y}`), `stable`, `timestamp` |
+| `breathing.upperTrace` | ~20 | `value`, `timestamp` (`stable` omitted when false) |
+| `face.expression` | ~20 | `scores[] {type, confidence}`, `stable`, `timestamp` |
+| `face.blinking` | ~15 | `detected`, `stable`, `timestamp` |
+| `face.talking` | ~15 | `detected`, `stable`, `timestamp` |
+| `breathing.rate` | ~0.2 | `value`, `timestamp` (`confidence` and `stable` may be omitted) |
+| `cardio.pulseRate` | ~0.3 | `value`, `confidence`, `stable`, `timestamp` |
+| `cardio.arterialPressureTrace` | bursts | not used by Stand-In Studio and **not requested** |
+
+protobufjs omits fields that hold default values: `false`, `0` and empty arrays. Mapping code must therefore treat a missing `stable`, `detected` or `confidence` as `false`/`0`.
+
+## Landmarks
+- **478 points: the MediaPipe Face Mesh layout** (468 points plus 10 iris points).
+- Coordinates are **pixels in the input frame**, not normalised. In a 960×540 frame, x ran from 414 to 788 and y from 110 to 350. Always normalise by the eye distance; never use absolute values.
+- Indices checked against the sample geometry. "Image-left" means the subject's right side.
+
+| Point | Index |
+|---|---|
+| nose tip | 1 (4 is the nose bridge tip) |
+| outer eye corners | 33 (image-left), 263 (image-right) |
+| inner eye corners | 133, 362 |
+| eyelids, image-left eye | upper 159, lower 145 |
+| eyelids, image-right eye | upper 386, lower 374 |
+| inner lips | upper 13, lower 14 |
+| inner mouth corners | 78, 308 |
+| chin | 152 |
+| forehead | 10 |
+
+## Expressions
+- Every expression sample carries scores for all 8 types: ANGRY=1, CONTEMPT=2, DISGUST=3, FEAR=4, **HAPPY=5**, NEUTRAL=6, SAD=7 and SURPRISE=8.
+- `confidence` runs from 0 to 100. Divide by 100 to get a 0–1 value.
+
+## Talking and blinking
+- `talking.detected` was true in 633 of 652 samples while the speaker talked throughout the clip.
+- `blinking.detected` was true in 38 samples. A single blink spans several consecutive true samples, so detect the **rising edge**.
+
+## Validation status
+- `validationStatus` fires about once per frame. Over 40 s of a well-lit, steady interview it reported:
+  - `kOk` "Hold still and record." 811 times
+  - `kTooDark` "Increase light on face." 330 times
+  - `kExcessiveMotion` 56 times
+  - `kChestNotVisible` 4 times
+- **Non-OK codes flicker even on good input.** The "poor framing or lighting" Auto rule therefore needs hysteresis: not-OK must dominate for more than about 2 s, measured as the share of frames in a sliding window.
+- The UI can show hints (the `hint` string) during calibration only.
+
+## Lifecycle
+- File input moves through `kIdle → kStarting → kRunning → kStopping → kIdle`.
+- `waitUntilComplete()` **blocks the event loop**, which also stops metrics callbacks from running. Wait on `processingStatus` instead.
+- When processing fails, the session moves to `kError` and emits `error(code, message, retryable)`.
+
+## Not yet measured
+These are measured in T38 and T39 with the Electron renderer (`useMediaStream`) and the fake camera:
+- frame-rate headroom at each capture resolution;
+- renderer-side behaviour.
