@@ -65,7 +65,7 @@ Progress tracker for [PLAN.md](PLAN.md). One task = one commit; tick the box in 
 - [x] T27 60 s scripted meeting loop and procedural `sampleFeed` (`canvas.captureStream`); "DEMO – simulated signals" badge in the control window only; demo e2e; tag v0.6.0
 
 **Phase 6 — App shell & UI → v0.7.0**
-- [ ] T28 Main process:
+- [x] T28 Main process:
   - settingsStore (saves only character and mode settings), typed IPC
   - contextBridge preload, which also requires the SDK preload
   - CSP and a media permission handler limited to `file://`
