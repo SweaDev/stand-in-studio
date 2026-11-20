@@ -18,10 +18,10 @@ export interface Baseline {
 
 /** Used until calibration finishes, and to fill gaps when signals were missing. */
 export const DEFAULT_BASELINE: Baseline = Object.freeze({
-  pitch: 0.55,
+  pitch: 0.35,
   yaw: 0,
   mouthGap: 0.03,
-  eyeOpenness: 0.3,
+  eyeOpenness: 0.25,
   happyRest: 0.1,
   blinksPerMin: 15,
   approximate: true,
