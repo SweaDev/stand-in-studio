@@ -47,7 +47,7 @@ Progress tracker for [PLAN.md](PLAN.md). One task = one commit; tick the box in 
 - [x] T20 StudioEngine facade, with a FakeClock integration test that drives a scripted signal sequence and checks the opacity timeline; tag v0.4.0
 
 **Phase 4 — Stage rendering → v0.5.0**
-- [ ] T21 Character interface, registry and seeded `sketch.ts` hand-drawn primitives, plus reduced-motion and high-contrast style variants
+- [x] T21 Character interface, registry and seeded `sketch.ts` hand-drawn primitives, plus reduced-motion and high-contrast style variants
 - [ ] T22 Paper lantern: ribs breathe, ink-dot eyes, bob and sway, mouth, candle flare, ember with a "back soon" tag, tassel raised hand
 - [ ] T23 Houseplant: leaves breathe, leaf-eyes, nod and sway, pot-rim mouth, flowers open, droop with a watering can, leaf raised hand
 - [ ] T24 StageCompositor:

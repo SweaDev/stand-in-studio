@@ -6,7 +6,7 @@ export default defineConfig({
     environment: 'node',
     coverage: {
       provider: 'v8',
-      include: ['src/core/**', 'src/sensing/**', 'src/shared/**'],
+      include: ['src/core/**', 'src/sensing/**', 'src/shared/**', 'src/render/**'],
       reporter: ['text-summary'],
     },
   },
