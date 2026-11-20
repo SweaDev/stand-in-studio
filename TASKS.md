@@ -32,7 +32,7 @@ Progress tracker for [PLAN.md](PLAN.md). One task = one commit; tick the box in 
 
 **Phase 2 — Signal trackers → v0.3.0**
 - [x] T09 Calibrator and Baseline (neutral pose, closed-mouth gap, resting happy level, eye openness, blink rate)
-- [ ] T10 headPose (pitch and yaw from the nose against the eye midpoint, divided by eye distance, smoothed), mouthGap and eyeOpenness
+- [x] T10 headPose (pitch and yaw from the nose against the eye midpoint, divided by eye distance, smoothed), mouthGap and eyeOpenness
 - [ ] T11 BreathingNormalizer with idle-breath fallback
 - [ ] T12 BlinkDetector (SDK blinks plus landmark backup, with refractory period)
 - [ ] T13 GestureDetector: nod, shake, enthusiastic
