@@ -1,7 +1,7 @@
 {
   "name": "stand-in-studio",
   "productName": "Stand-In Studio",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "private": true,
   "description": "Decide how much of you each call sees: a presence dial from fully you to a hand-drawn stand-in, driven by Presage SmartSpectra signals.",
   "license": "MIT",
