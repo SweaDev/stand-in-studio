@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import '../../../src/render/characters/Lantern';
+import '../../../src/render/characters/Houseplant';
 import { characterOrDefault, getCharacter, listCharacters } from '../../../src/render/characters/registry';
 import { inkFor } from '../../../src/render/characters/Character';
 import { NEUTRAL_POSE, type CharacterPose, type StageStyle } from '../../../src/shared/types';
@@ -36,12 +37,19 @@ function draw(id: string, pose: Partial<CharacterPose>, style: StageStyle) {
 }
 
 describe('characters', () => {
+  it('shows the lantern "back soon" tag only when away', () => {
+    const text = (calls: { name: string; args: unknown[] }[]) =>
+      calls.filter((x) => x.name === 'fillText').map((x) => x.args[0]);
+    expect(text(draw('lantern', {}, styles[0] as StageStyle))).not.toContain('back soon');
+    expect(text(draw('lantern', { presence: 'away' }, styles[0] as StageStyle))).toContain('back soon');
+  });
+
   it('registers the lantern', () => {
     expect(getCharacter('lantern')?.name).toBe('Paper lantern');
     expect(listCharacters().length).toBeGreaterThanOrEqual(1);
   });
 
-  for (const c of ['lantern']) {
+  for (const c of ['lantern', 'houseplant']) {
     it(`${c} draws every pose in every style with balanced save/restore`, () => {
       for (const s of styles) {
         for (const p of poses) {
@@ -53,11 +61,10 @@ describe('characters', () => {
       }
     });
 
-    it(`${c} shows a "back soon" sign only when away`, () => {
-      const text = (calls: { name: string; args: unknown[] }[]) =>
-        calls.filter((x) => x.name === 'fillText').map((x) => x.args[0]);
-      expect(text(draw(c, {}, styles[0] as StageStyle))).not.toContain('back soon');
-      expect(text(draw(c, { presence: 'away' }, styles[0] as StageStyle))).toContain('back soon');
+    it(`${c} draws a different picture when away`, () => {
+      const a = draw(c, {}, styles[0] as StageStyle);
+      const b = draw(c, { presence: 'away' }, styles[0] as StageStyle);
+      expect(JSON.stringify(a)).not.toBe(JSON.stringify(b));
     });
 
     it(`${c} draws sparkles only when laughing`, () => {

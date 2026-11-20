@@ -194,3 +194,19 @@ export function sparkle(ctx: Ctx2D, x: number, y: number, r: number, color: stri
   ctx.fillStyle = color;
   ctx.fill();
 }
+
+/** A closed polygon with straight, slightly wobbly edges (no curve smoothing). */
+export function sketchPolygon(ctx: Ctx2D, points: readonly [number, number][], s: StrokeStyle = {}): void {
+  if (points.length < 3) return;
+  const rnd = prng(s.seed ?? 1);
+  const j = s.jitter ?? 1;
+  ctx.beginPath();
+  points.forEach(([x, y], i) => {
+    const px = x + (rnd() - 0.5) * 2 * j;
+    const py = y + (rnd() - 0.5) * 2 * j;
+    if (i === 0) ctx.moveTo(px, py);
+    else ctx.lineTo(px, py);
+  });
+  ctx.closePath();
+  paint(ctx, s);
+}
