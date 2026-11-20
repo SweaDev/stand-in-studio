@@ -43,7 +43,7 @@ Progress tracker for [PLAN.md](PLAN.md). One task = one commit; tick the box in 
 - [x] T16 Auto rules and AutoPolicy (minimum wins, 2 s hold, immediate drops for no face and look-away, hysteresis) with fast-check invariant tests
 - [x] T17 ComfortShield (lazy baseline, triggers, 15% cap, 20 s recovery)
 - [x] T18 OpacitySmoother (40%/s Auto rate limit, eased 450 ms cross-fades)
-- [ ] T19 ModeController (State) and Commands (HideMe, Pin, RaiseHand, BackSoon, CycleMode)
+- [x] T19 ModeController (State) and Commands (HideMe, Pin, RaiseHand, BackSoon, CycleMode)
 - [ ] T20 StudioEngine facade, with a FakeClock integration test that drives a scripted signal sequence and checks the opacity timeline; tag v0.4.0
 
 **Phase 4 — Stage rendering → v0.5.0**
