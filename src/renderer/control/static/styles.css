@@ -212,3 +212,88 @@ kbd {
   min-height: 2.9em;
   text-align: center;
 }
+.workspace {
+  grid-template-columns: 280px minmax(480px, 1fr) 320px;
+}
+@media (max-width: 1180px) {
+  .workspace {
+    grid-template-columns: 280px 1fr;
+  }
+  .settings {
+    grid-column: 1 / -1;
+  }
+}
+.mode-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.group {
+  border-top: 1px solid var(--line);
+  padding-top: 10px;
+}
+.group:first-child {
+  border-top: 0;
+  padding-top: 0;
+}
+.field {
+  margin-bottom: 8px;
+}
+.field label {
+  display: block;
+  margin-bottom: 2px;
+}
+.field input[type='range'] {
+  width: 100%;
+  accent-color: var(--accent);
+}
+.field.toggle label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.field input[type='checkbox'],
+.field input[type='radio'] {
+  accent-color: var(--accent);
+  width: 16px;
+  height: 16px;
+}
+fieldset.segmented {
+  border: 0;
+  padding: 0;
+  margin: 0 0 8px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+fieldset.segmented legend {
+  padding: 0;
+  margin-bottom: 4px;
+}
+fieldset.segmented label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+fieldset.segmented label:has(input:checked) {
+  border-color: var(--accent);
+  background: var(--surface-2);
+}
+.swatch {
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  border-radius: 50%;
+  border: 2px solid var(--line);
+}
+.swatch[aria-pressed='true'] {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px var(--accent);
+}
+output {
+  color: var(--accent);
+  font-weight: 700;
+}

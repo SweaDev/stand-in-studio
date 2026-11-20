@@ -8,6 +8,7 @@ import { type DeepPartial, type Settings, updateSettings } from '../../shared/se
 import type { Mode, StageState } from '../../shared/types';
 import { ConsentScreen, type ConsentChoice } from './components/ConsentScreen';
 import { MODE_LABELS, ModeSwitch } from './components/ModeSwitch';
+import { ModePanel } from './components/ModePanel';
 import { PresenceDial } from './components/PresenceDial';
 import { DemoController } from './demo/DemoController';
 import { h } from './dom';
@@ -61,10 +62,13 @@ export class ControlApp {
     this.frameListeners.push(fn);
   }
 
+  private panel: ModePanel | null = null;
+
   /** Applies a settings change locally at once and persists it in main. */
   async updateSettings(patch: DeepPartial<Settings>): Promise<void> {
     this.settings = updateSettings(this.settings, patch);
     this.engine.applySettings(this.settings);
+    this.panel?.sync(this.settings);
     this.settings = await this.api.setSettings(patch);
   }
 
@@ -124,6 +128,10 @@ export class ControlApp {
   /** Lays out the main workspace. */
   protected buildWorkspace(): void {
     const dial = new PresenceDial((v) => this.turnDial(v));
+    this.panel = new ModePanel(this.settings, {
+      update: (p) => void this.updateSettings(p),
+      setBlend: (v) => this.turnDial(v),
+    });
     const modes = new ModeSwitch((m) => this.setMode(m));
     this.onFrame((s) => {
       dial.set(s.feedOpacity, MODE_LABELS[s.mode]);
@@ -163,6 +171,7 @@ export class ControlApp {
         ),
         caption,
       ),
+      h('section', { class: 'settings', 'aria-label': 'Settings' }, this.panel.el),
     );
   }
 }

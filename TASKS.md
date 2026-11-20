@@ -72,7 +72,7 @@ Progress tracker for [PLAN.md](PLAN.md). One task = one commit; tick the box in 
 - [x] T29 Consent screen (all §6 statements, a Telemetry and Privacy link, residual-risk text); the camera stays off until consent
 - [x] T30 Camera manager: enumerate devices, filter out virtual cameras with a tested `cameraFilter`, camera picker, capture profile
 - [x] T31 PresenceDial (drag or keyboard; the needle follows Auto; lantern and face icons brighten), ModeSwitch and live thumbnail
-- [ ] T32 ModePanel:
+- [x] T32 ModePanel:
   - Blend slider with 25/50/75 presets and Over/Beside
   - Auto max and listening levels, Comfort-shield toggle
   - Camera-badge toggle, character and background, reduced-motion and high-contrast options

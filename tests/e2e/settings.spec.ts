@@ -1,0 +1,40 @@
+import { expect, test } from '@playwright/test';
+import { launchApp, passConsent } from './helpers';
+
+test('settings panel changes the stage and persists only settings', async () => {
+  const { app, control } = await launchApp();
+  try {
+    await passConsent(control);
+    await control.getByLabel('Houseplant').check();
+    await control.locator('#preset-75').click();
+    await control.getByLabel('Beside').check();
+    await control.getByLabel('Comfort shield').check();
+    await control.getByLabel('High contrast').check();
+    await control.getByLabel('Background #264653').click();
+
+    await expect
+      .poll(() =>
+        control.evaluate(() => {
+          const s = (window as any).__standin.engine.state;
+          return s && [s.character, s.mode, s.layout, s.style.highContrast, s.background].join(',');
+        }),
+      )
+      .toBe('houseplant,blend,beside,true,#264653');
+    await expect.poll(() => control.locator('#presence-dial').getAttribute('aria-valuenow')).toBe('75');
+
+    const saved = await control.evaluate(() => (window as any).studio.getSettings());
+    expect(saved).toMatchObject({
+      character: 'houseplant',
+      background: '#264653',
+      mode: 'blend',
+      blend: { opacity: 0.75, layout: 'beside' },
+      auto: { comfortShield: true },
+      accessibility: { highContrast: true },
+    });
+    expect(Object.keys(saved).sort()).toEqual(
+      ['accessibility', 'auto', 'background', 'blend', 'camera', 'character', 'mode', 'presets'].sort(),
+    );
+  } finally {
+    await app.close();
+  }
+});
