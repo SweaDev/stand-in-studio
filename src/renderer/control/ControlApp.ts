@@ -14,6 +14,7 @@ import { ObsChecklist } from './components/ObsChecklist';
 import { ApiKeyPanel } from './components/ApiKeyPanel';
 import { StatusBanner } from './components/StatusBanner';
 import { CalibrationWizard } from './components/CalibrationWizard';
+import { PresetPanel } from './components/PresetPanel';
 import { DEMO_CALIBRATION_MS } from './demo/DemoController';
 import { CameraPicker } from './components/CameraPicker';
 import { CameraManager } from './camera/CameraManager';
@@ -83,12 +84,14 @@ export class ControlApp {
   }
 
   private panel: ModePanel | null = null;
+  private presets: PresetPanel | null = null;
 
   /** Applies a settings change locally at once and persists it in main. */
   async updateSettings(patch: DeepPartial<Settings>): Promise<void> {
     this.settings = updateSettings(this.settings, patch);
     this.engine.applySettings(this.settings);
     this.panel?.sync(this.settings);
+    this.presets?.sync(this.settings);
     if (patch.auto?.comfortShield !== undefined)
       void this.presage?.setComfortShield(this.settings.auto.comfortShield);
     this.settings = await this.api.setSettings(patch);
@@ -261,6 +264,10 @@ export class ControlApp {
   /** Lays out the main workspace. */
   protected buildWorkspace(): void {
     const dial = new PresenceDial((v) => this.turnDial(v));
+    this.presets = new PresetPanel(
+      () => this.settings,
+      (p) => void this.updateSettings(p),
+    );
     const calibration = new CalibrationWizard(() =>
       this.engine.startCalibration(this.demo ? DEMO_CALIBRATION_MS : undefined),
     );
@@ -332,6 +339,7 @@ export class ControlApp {
         'section',
         { class: 'settings', 'aria-label': 'Settings' },
         this.panel.el,
+        this.presets.el,
         this.camera ? this.cameraGroup() : null,
         new ApiKeyPanel(this.api, this.demo === null, () => void this.restart()).el,
       ),

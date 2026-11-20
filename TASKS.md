@@ -96,7 +96,7 @@ Progress tracker for [PLAN.md](PLAN.md). One task = one commit; tick the box in 
 - [x] T40 Cat character
 - [x] T41 Cloud character
 - [x] T42 Laugh sparkle burst and the corner character badge in Camera mode
-- [ ] T43 Per-meeting presets (save, apply, delete); tag v0.9.0
+- [x] T43 Per-meeting presets (save, apply, delete); tag v0.9.0
 
 **Phase 9 — Hardening & release → v1.0.0**
 - [ ] T44 Error and empty states (no camera, invalid key, credits exhausted, OBS missing), accessibility pass (keyboard, ARIA labels, contrast), full e2e regression
