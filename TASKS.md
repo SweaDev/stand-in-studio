@@ -14,7 +14,7 @@ Progress tracker for [PLAN.md](PLAN.md). One task = one commit; tick the box in 
 
 **Phase 0 — Plan & scaffold → v0.1.0**
 - [x] T01 Add PLAN.md, TASKS.md, IMPLEMENTATION_NOTES.md (with the environment baseline: OS, Node, npm and xvfb versions), and a short CLAUDE.md that points new sessions to TASKS.md and the ground rules
-- [ ] T02 Scaffold:
+- [x] T02 Scaffold:
   - package.json with Electron pinned (latest stable) and `@smartspectra/node-sdk@3.5.0` exact
   - tsconfig, `scripts/build.mjs` (esbuild), and a `.gitignore` covering `dist`, `test-assets`, `.presage-usage.json` and `node_modules`
   - main opens a placeholder control window; `npm start` works
