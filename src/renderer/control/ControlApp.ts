@@ -5,8 +5,10 @@ import type { FeedSource } from '../../render/StageCompositor';
 import { APP_NAME } from '../../shared/app';
 import type { StudioApi } from '../../shared/ipc';
 import { type DeepPartial, type Settings, updateSettings } from '../../shared/settings';
-import type { StageState } from '../../shared/types';
+import type { Mode, StageState } from '../../shared/types';
 import { ConsentScreen, type ConsentChoice } from './components/ConsentScreen';
+import { MODE_LABELS, ModeSwitch } from './components/ModeSwitch';
+import { PresenceDial } from './components/PresenceDial';
 import { DemoController } from './demo/DemoController';
 import { h } from './dom';
 import { StageHost } from './stage/StageHost';
@@ -107,8 +109,26 @@ export class ControlApp {
     this.loop.start();
   }
 
-  /** Lays out the main workspace (components are added by later tasks). */
+  /** Mode switch: persists the choice. */
+  setMode(mode: Mode): void {
+    this.engine.setMode(mode);
+    void this.updateSettings({ mode });
+  }
+
+  /** Turning the dial switches to Blend at that opacity (REQUIREMENT §2). */
+  turnDial(v: number): void {
+    this.engine.setDial(v);
+    void this.updateSettings({ mode: 'blend', blend: { opacity: v } });
+  }
+
+  /** Lays out the main workspace. */
   protected buildWorkspace(): void {
+    const dial = new PresenceDial((v) => this.turnDial(v));
+    const modes = new ModeSwitch((m) => this.setMode(m));
+    this.onFrame((s) => {
+      dial.set(s.feedOpacity, MODE_LABELS[s.mode]);
+      modes.set(s.mode);
+    });
     const scriptBtn = h(
       'button',
       { type: 'button', id: 'script', 'aria-pressed': 'false' },
@@ -126,9 +146,10 @@ export class ControlApp {
       if (caption.textContent !== text) caption.textContent = text;
     });
     this.main.replaceChildren(
+      h('section', { class: 'controls', 'aria-label': 'Presence' }, dial.el, modes.el),
       h(
         'section',
-        { class: 'preview' },
+        { class: 'preview', 'aria-label': 'What the meeting sees' },
         this.thumb,
         h(
           'div',
