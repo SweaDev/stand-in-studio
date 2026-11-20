@@ -27,7 +27,7 @@ Progress tracker for [PLAN.md](PLAN.md). One task = one commit; tick the box in 
   - uses the main-process SDK `useFile` on the test clip for ≤60 s, budget-guarded, with telemetry off
   - logs field shapes, landmark count, validation codes and metric rates
   - writes the findings to `docs/sdk-notes.md`
-- [ ] T07 shared/types and settings (defaults and validation), plus `sensing/requestedMetrics` with tests
+- [x] T07 shared/types and settings (defaults and validation), plus `sensing/requestedMetrics` with tests
 - [ ] T08 `features/LandmarkLayout` (with layout detection) and `sensing/metricsMapper`, tested against fixtures encoded with `Metrics.encode`; tag v0.2.0
 
 **Phase 2 — Signal trackers → v0.3.0**
