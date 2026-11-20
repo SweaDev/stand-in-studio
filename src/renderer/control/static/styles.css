@@ -6,9 +6,32 @@
   --accent: #f2a65a;
   color-scheme: dark;
 }
-* { box-sizing: border-box; }
-html, body { margin: 0; height: 100%; background: var(--bg); color: var(--text); }
-body { font: 15px/1.45 system-ui, -apple-system, 'Segoe UI', Ubuntu, sans-serif; }
-#app { padding: 24px; }
-h1 { margin: 0 0 4px; font-size: 22px; }
-p { margin: 0; color: var(--muted); }
+* {
+  box-sizing: border-box;
+}
+html,
+body {
+  margin: 0;
+  height: 100%;
+  background: var(--bg);
+  color: var(--text);
+}
+body {
+  font:
+    15px/1.45 system-ui,
+    -apple-system,
+    'Segoe UI',
+    Ubuntu,
+    sans-serif;
+}
+#app {
+  padding: 24px;
+}
+h1 {
+  margin: 0 0 4px;
+  font-size: 22px;
+}
+p {
+  margin: 0;
+  color: var(--muted);
+}
