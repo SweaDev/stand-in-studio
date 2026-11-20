@@ -22,7 +22,7 @@ Progress tracker for [PLAN.md](PLAN.md). One task = one commit; tick the box in 
 - [x] T04 Playwright Electron smoke e2e (`npm run test:e2e` through xvfb-run) and a GitHub Actions CI workflow; tag v0.1.0
 
 **Phase 1 — SDK spike & signal model → v0.2.0**
-- [ ] T05 `scripts/presage-budget.mjs` (900 s ledger, unit-tested) and `scripts/fetch-test-video.sh`. The script pins the clip URL and sha256; record the clip's provenance in IMPLEMENTATION_NOTES.md
+- [x] T05 `scripts/presage-budget.mjs` (900 s ledger, unit-tested) and `scripts/fetch-test-video.sh`. The script pins the clip URL and sha256; record the clip's provenance in IMPLEMENTATION_NOTES.md
 - [ ] T06 `scripts/live-probe.mjs`:
   - uses the main-process SDK `useFile` on the test clip for ≤60 s, budget-guarded, with telemetry off
   - logs field shapes, landmark count, validation codes and metric rates
@@ -90,7 +90,7 @@ Progress tracker for [PLAN.md](PLAN.md). One task = one commit; tick the box in 
   - `enableTelemetry:false`; reconfigures when the shield is toggled; no `videoOutput` listener
 - [ ] T37 CalibrationWizard (15 s; prompts for framing with the upper chest visible, a nod and a smile; fed into the Calibrator)
 - [ ] T38 Performance: measure SDK-delivered fps and stage fps with the fake camera at 1280×720, 960×540 and 640×360; pick the default; fall back on `kSustainedLowFrameRate`; record the numbers in docs/sdk-notes.md
-- [ ] T39 `npm run test:live` (Electron, fake y4m camera, real SDK, ≤120 s, budget-guarded); tag v0.8.0
+- [ ] T39 `npm run test:live` (Electron, fake MJPEG camera, real SDK, ≤120 s, budget-guarded); tag v0.8.0
 
 **Phase 8 — Nice-to-haves → v0.9.0** (cut first if time runs short)
 - [ ] T40 Cat character

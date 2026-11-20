@@ -42,7 +42,7 @@ The goal of this plan is that a fresh Claude session in auto mode can execute it
    - Author: `git -c user.name="Fayaz Ahmed" -c user.email="me@fayaz.dev" commit -m "<one line>"`.
    - Single-line message only, with **no** Co-Authored-By or other trailers.
    - One task per commit. Every commit must build (`npm run build`) and pass `npm test` (lint, typecheck and unit tests).
-2. **Push:** run `git push origin main` after each task. This is the user's explicit instruction, and it overrides the session branch. Push tags with `git push origin <tag>`.
+2. **Push:** run `git push origin main` after each task. This is the user's explicit instruction, and it overrides the session branch. Push tags with `git push origin <tag>`. If the proxy refuses tag pushes (HTTP 403, as in cloud sessions), keep the annotated tag local and record it in the "Git tags" table in IMPLEMENTATION_NOTES.md.
 3. **Tags:** create an annotated tag at the end of each phase, `v0.1.0` … `v0.9.0`, then `v1.0.0`. Bump `package.json` version in the same commit as the tag.
 4. **TASKS.md:** tick the task's box in the *same* commit as the work.
 5. **Presage budget:** at most **15 min (900 s)** of SDK session time in total.
@@ -131,9 +131,9 @@ docs/ sdk-notes.md, media/ (screenshots)
 ## Verification strategy
 - `npm test` runs lint, typecheck and Vitest. The pure core aims for ≥90% line coverage.
 - `npm run test:e2e` runs `xvfb-run -a playwright test` on the Electron app in **Demo mode** with a fake camera. It checks consent gating, mode switching, the dial, hotkey commands (through the IPC test hook), and that the stage window title is "Stand-In Stage". It also takes a 320×180 snapshot of each character.
-- `npm run test:live` runs Electron with `--use-fake-device-for-media-stream --use-file-for-fake-video-capture=test-assets/face.y4m` and the real SDK, with `PRESAGE_API_KEY` set. It is budget-guarded and capped at 120 s. It asserts that metrics events arrive, along with upperTrace samples, landmarks and validation `kOk`, and that the engine produces a pose.
+- `npm run test:live` runs Electron with `--use-fake-device-for-media-stream --use-file-for-fake-video-capture=test-assets/face.mjpeg` and the real SDK, with `PRESAGE_API_KEY` set. It is budget-guarded and capped at 120 s. It asserts that metrics events arrive, along with upperTrace samples, landmarks and validation `kOk`, and that the engine produces a pose.
   - The fake camera is enabled only when the env var `STANDIN_FAKE_CAMERA` is set.
-  - The test video comes from `scripts/fetch-test-video.sh`. It downloads a CC-licensed talking-head clip from Wikimedia Commons, converts it with ffmpeg to 960×540, 30 fps, 60 s `.y4m`, and keeps it git-ignored.
+  - The test video comes from `scripts/fetch-test-video.sh`. It downloads a CC-licensed talking-head clip from Wikimedia Commons, converts it with ffmpeg to 960×540, 30 fps, 60 s `.mjpeg` (for the fake camera) and `.mp4` (for the SDK file probe), and keeps it git-ignored.
   - Fallback: if no clip can be found, use any `STANDIN_FAKE_VIDEO` the user provides. If neither is available, verify only authentication and the `kNoFaceFound` validation on a synthetic clip, and document that.
 - CI: a GitHub Actions workflow on ubuntu-24.04 runs `npm ci`, `npm test` and the e2e tests under xvfb. It never runs live tests.
 
