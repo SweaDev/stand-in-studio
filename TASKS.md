@@ -102,7 +102,7 @@ Progress tracker for [PLAN.md](PLAN.md). One task = one commit; tick the box in 
 - [x] T44 Error and empty states (no camera, invalid key, credits exhausted, OBS missing), accessibility pass (keyboard, ARIA labels, contrast), full e2e regression
 - [x] T45 Final live smoke (≤120 s); Playwright screenshots and a short webm of Demo mode in docs/media; report the total budget used
 - [x] T46 README.md: features, requirements, install and run on Linux/Windows/macOS (tested on Ubuntu 24.04), API key, OBS setup including Linux v4l2loopback, Demo mode, hotkeys, privacy, testing, architecture
-- [ ] T47 POST.md following the DEV template:
+- [x] T47 POST.md following the DEV template:
   - Template parts: front matter with `tags: devchallenge, presagechallenge`, the italic challenge line, What I Built, Demo, Code, How It Responds to Human Signals, Prize Categories (both), Consent and Data Handling, Agent Session
   - Verify the Bailenson 2021 and Fauville et al. 2021 citations by web search
   - Leave placeholders for the user's demo video and agent-session link
