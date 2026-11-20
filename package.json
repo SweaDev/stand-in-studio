@@ -1,7 +1,7 @@
 {
   "name": "stand-in-studio",
   "productName": "Stand-In Studio",
-  "version": "0.7.0",
+  "version": "0.8.0",
   "private": true,
   "description": "Decide how much of you each call sees: a presence dial from fully you to a hand-drawn stand-in, driven by Presage SmartSpectra signals.",
   "license": "MIT",
@@ -21,7 +21,9 @@
     "test:unit": "vitest run",
     "test:coverage": "vitest run --coverage",
     "test": "npm run lint && npm run format:check && npm run typecheck && npm run test:unit",
-    "test:e2e": "npm run build && xvfb-run -a playwright test --trace off"
+    "test:e2e": "npm run build && xvfb-run -a playwright test --trace off",
+    "test:live": "npm run build && xvfb-run -a node scripts/run-live.mjs live 60 960x540",
+    "presage:budget": "node scripts/presage-budget.mjs"
   },
   "dependencies": {
     "@smartspectra/node-sdk": "3.5.0"

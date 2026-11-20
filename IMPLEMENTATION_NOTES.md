@@ -37,6 +37,7 @@ Each run is charged at max(wall time, content seconds), so the figures are conse
 | 2026-11-20 | T38 | `run-live.mjs T38-perf 30 960x540` | 31.5 | 159.4 |
 | 2026-11-20 | T38 | `run-live.mjs T38-perf 20 1280x720` | 21.5 | 180.9 |
 | 2026-11-20 | T38 | `run-live.mjs T38-perf 20 640x360` (no face found at this size) | 21.2 | 202.1 |
+| 2026-11-20 | T39 | `npm run test:live` (60 s, all 8 checks passed) | 61.8 | 263.9 |
 
 ## Performance measurements
 - T38 (2026-11-20): capture resolution against SDK packet rate and stage fps. The table is in `docs/sdk-notes.md` under "Renderer path and capture resolution". The default stays 960×540.
@@ -52,6 +53,13 @@ git push origin --tags
 | Tag | Commit | Subject |
 |---|---|---|
 | v0.1.0 | b0cabcb | Add Playwright Electron e2e smoke test and CI workflow |
+| v0.2.0 | e70d591 | Add landmark layout strategies and SDK metrics-to-signal mapper |
+| v0.3.0 | 3702a90 | Add pose mapper with cue amplification and reduced-motion support |
+| v0.4.0 | 50e4e65 | Add StudioEngine facade wiring sensing, Auto, modes and smoothing |
+| v0.5.0 | bca7306 | Open the frameless Stand-In Stage window and drive it with a 30 fps stage loop |
+| v0.6.0 | 2055d11 | Add Demo mode with scripted meeting loop, procedural sample feed and demo badge |
+| v0.7.0 | c035df7 | Add OBS setup checklist with test pattern and screen-share fallback |
+| v0.8.0 | (the T39 commit) | Add budget-guarded live test of the real SDK on a fake camera |
 
 ## Deviations from PLAN.md
 - **T05, fake camera format:** the plan called for a `.y4m` file, but 60 s of 960×540 y4m is about 1 GB. Chromium's `--use-file-for-fake-video-capture` also accepts **`.mjpeg`** (51 MB here), so the fake camera uses `test-assets/face.mjpeg`. The SDK file probe uses `face.mp4`.

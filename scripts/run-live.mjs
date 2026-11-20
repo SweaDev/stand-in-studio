@@ -102,13 +102,27 @@ const summary = {
   maxFeed: Math.max(...result.map((s) => s.feed ?? 0)),
 };
 console.log(JSON.stringify(summary, null, 2));
-const ok =
-  summary.counts.packets > 0 &&
-  summary.counts.landmarks > 0 &&
-  summary.counts.breathing > 0 &&
-  summary.counts.ok > 0 &&
-  summary.status === 'running';
-if (!ok) {
-  console.error('LIVE CHECK FAILED: expected landmarks, breathing samples and kOk validation from the SDK');
+const checks = {
+  'SDK running': summary.status === 'running',
+  'metrics packets arrive': summary.counts.packets > 0,
+  'face landmarks arrive': summary.counts.landmarks > 0,
+  'chest breathing samples arrive': summary.counts.breathing > 0,
+  'validation reports kOk': summary.counts.ok > 0,
+};
+// The full app check (T39) also needs calibration and Auto to react to the talking speaker.
+if (label.startsWith('live')) {
+  Object.assign(checks, {
+    'calibration completes': summary.calibration === 'done',
+    'talking is detected': summary.speakingSeen,
+    'Auto shows the speaker (feed ≥ 90%)': summary.maxFeed >= 0.9,
+  });
+}
+let failed = 0;
+for (const [name, pass] of Object.entries(checks)) {
+  console.log(`${pass ? '✓' : '✗'} ${name}`);
+  if (!pass) failed++;
+}
+if (failed > 0) {
+  console.error(`LIVE CHECK FAILED (${failed})`);
   process.exit(1);
 }
