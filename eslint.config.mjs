@@ -15,6 +15,11 @@ export default tseslint.config(
     },
   },
   {
+    // e2e tests reach into the page through untyped test hooks.
+    files: ['tests/e2e/**/*.ts'],
+    rules: { '@typescript-eslint/no-explicit-any': 'off' },
+  },
+  {
     // The pure core must not depend on Electron, the SDK or the DOM.
     files: ['src/core/**/*.ts'],
     rules: {

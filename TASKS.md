@@ -54,7 +54,7 @@ Progress tracker for [PLAN.md](PLAN.md). One task = one commit; tick the box in 
   - layer order, feed opacity, blur below 30%, Over and Beside layouts
   - badges: speaking ring, raised hand, back soon
   - test pattern
-- [ ] T25 Stage window:
+- [x] T25 Stage window:
   - opened by `window.open` with `setWindowOpenHandler` (frameless 1280×720 "Stand-In Stage")
   - 30 fps loop and control-window thumbnail
   - e2e snapshots of both characters at tile size

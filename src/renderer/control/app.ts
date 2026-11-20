@@ -1,15 +1,55 @@
+import '../../render/characters';
+import { StudioEngine } from '../../core/StudioEngine';
+import { SystemClock } from '../../core/util/Clock';
 import { APP_NAME } from '../../shared/app';
+import { DEFAULT_SETTINGS, updateSettings } from '../../shared/settings';
+import type { CharacterId, Mode } from '../../shared/types';
+import { bridge } from './bridge';
+import { StageHost } from './stage/StageHost';
+import { StageLoop } from './stage/StageLoop';
 
 /** Control-window entry point. */
 function main(): void {
   const root = document.getElementById('app');
   if (!root) throw new Error('missing #app root');
-  root.innerHTML = '';
-  const h1 = document.createElement('h1');
-  h1.textContent = APP_NAME;
-  const p = document.createElement('p');
-  p.textContent = 'Decide how much of you each call sees.';
-  root.append(h1, p);
+  root.innerHTML = `
+    <header><h1>${APP_NAME}</h1><p>Decide how much of you each call sees.</p></header>
+    <section class="preview">
+      <canvas id="thumb" width="480" height="270" aria-label="Live preview of what the meeting sees"></canvas>
+      <button id="open-stage" type="button">Open stage window</button>
+    </section>`;
+
+  const engine = new StudioEngine(updateSettings(DEFAULT_SETTINGS, { mode: 'character' }), new SystemClock());
+  const host = new StageHost();
+  const thumb = document.getElementById('thumb') as HTMLCanvasElement;
+  const loop = new StageLoop(engine, host, () => null, thumb);
+  host.open();
+  loop.start();
+  document.getElementById('open-stage')?.addEventListener('click', () => host.open());
+
+  if (bridge().info.e2e) {
+    // Test hooks for Playwright (only under STANDIN_E2E=1).
+    Object.assign(window, {
+      __standin: {
+        engine,
+        loop,
+        host,
+        setCharacter: (id: CharacterId) =>
+          engine.applySettings(updateSettings(engine.currentSettings, { character: id })),
+        setMode: (m: Mode) => engine.setMode(m),
+        /** Renders the current stage into a tile (default 320×180) and returns a PNG data URL. */
+        tile: (w = 320, h = 180) => {
+          const src = host.surface;
+          if (!src) return null;
+          const c = document.createElement('canvas');
+          c.width = w;
+          c.height = h;
+          c.getContext('2d')?.drawImage(src, 0, 0, w, h);
+          return c.toDataURL('image/png');
+        },
+      },
+    });
+  }
 }
 
 main();

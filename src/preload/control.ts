@@ -1,8 +1,11 @@
-import { contextBridge } from 'electron';
+import { contextBridge, ipcRenderer } from 'electron';
+import { IPC, type AppInfo } from '../shared/ipc';
 
-/** Minimal bridge exposed to the control renderer; grows with the typed IPC API in T28. */
+const info = ipcRenderer.sendSync(IPC.appInfo) as AppInfo;
+
+/** The bridge exposed to the control renderer as `window.studio`. */
 const studio = {
-  platform: process.platform,
+  info,
 };
 
 export type StudioBridge = typeof studio;
