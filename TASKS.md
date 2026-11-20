@@ -95,7 +95,7 @@ Progress tracker for [PLAN.md](PLAN.md). One task = one commit; tick the box in 
 **Phase 8 — Nice-to-haves → v0.9.0** (cut first if time runs short)
 - [x] T40 Cat character
 - [x] T41 Cloud character
-- [ ] T42 Laugh sparkle burst and the corner character badge in Camera mode
+- [x] T42 Laugh sparkle burst and the corner character badge in Camera mode
 - [ ] T43 Per-meeting presets (save, apply, delete); tag v0.9.0
 
 **Phase 9 — Hardening & release → v1.0.0**
