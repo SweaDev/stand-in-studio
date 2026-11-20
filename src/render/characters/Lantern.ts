@@ -36,9 +36,9 @@ export const Lantern: Character = {
     const droop = away ? 0.06 : 0;
 
     const anchorY = cy - H * 0.5;
-    const stringLen = H * 0.12 + bob + droop * H;
-    const rx = H * 0.3 * (1 + 0.035 * 1.4 * pose.breath);
-    const ry = H * 0.33 * (1 + stretch);
+    const stringLen = H * 0.08 + bob + droop * H;
+    const rx = H * 0.25 * (1 + 0.035 * 1.4 * pose.breath);
+    const ry = H * 0.27 * (1 + stretch);
     const bodyY = stringLen + H * 0.06 + ry; // body centre, relative to the anchor
 
     ctx.save();
@@ -189,7 +189,7 @@ export const Lantern: Character = {
     if (away) {
       const tagW = H * 0.3;
       const tagH = H * 0.1;
-      const tagY = tasselTop + H * 0.17;
+      const tagY = tasselTop + H * 0.02;
       sketchPath(
         ctx,
         [
