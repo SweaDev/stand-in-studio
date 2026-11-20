@@ -25,7 +25,7 @@ export interface Rect {
  */
 export function characterBox(s: StageState, W: number, H: number): Box {
   const centre: Box = { cx: W / 2, cy: H * 0.52, size: H * 0.78 };
-  const corner: Box = { cx: W - H * 0.17, cy: H - H * 0.17, size: H * 0.28 };
+  const corner: Box = { cx: W - H * 0.2, cy: H - H * 0.19, size: H * 0.28 };
   if (s.mode === 'camera') return corner;
   if (s.mode === 'blend' && s.layout === 'beside') return { cx: W / 2, cy: H * (5 / 6), size: H / 3 };
   if (s.mode === 'auto') {

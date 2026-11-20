@@ -5,6 +5,7 @@ import { APP_NAME } from '../../shared/app';
 import { DEFAULT_SETTINGS, updateSettings } from '../../shared/settings';
 import type { CharacterId, Mode } from '../../shared/types';
 import { bridge } from './bridge';
+import { DemoController } from './demo/DemoController';
 import { StageHost } from './stage/StageHost';
 import { StageLoop } from './stage/StageLoop';
 
@@ -13,19 +14,49 @@ function main(): void {
   const root = document.getElementById('app');
   if (!root) throw new Error('missing #app root');
   root.innerHTML = `
-    <header><h1>${APP_NAME}</h1><p>Decide how much of you each call sees.</p></header>
+    <header>
+      <h1>${APP_NAME}</h1>
+      <span class="demo-badge" id="demo-badge" role="status">DEMO – simulated signals</span>
+      <p>Decide how much of you each call sees.</p>
+    </header>
     <section class="preview">
       <canvas id="thumb" width="480" height="270" aria-label="Live preview of what the meeting sees"></canvas>
-      <button id="open-stage" type="button">Open stage window</button>
+      <div class="row">
+        <button id="open-stage" type="button">Open stage window</button>
+        <button id="script" type="button" aria-pressed="false">Play scripted meeting</button>
+      </div>
+      <p class="caption" id="caption" aria-live="polite"></p>
+      <p class="keys">Demo keys: <kbd>N</kbd> nod · <kbd>S</kbd> shake · <kbd>T</kbd> hold to talk · <kbd>B</kbd> blink ·
+        <kbd>H</kbd> smile · <kbd>E</kbd> eat · <kbd>L</kbd> look away · <kbd>A</kbd> step away · <kbd>P</kbd> Comfort-shield trigger</p>
     </section>`;
 
-  const engine = new StudioEngine(updateSettings(DEFAULT_SETTINGS, { mode: 'character' }), new SystemClock());
+  const clock = new SystemClock();
+  const engine = new StudioEngine(updateSettings(DEFAULT_SETTINGS, { mode: 'auto' }), clock);
+  const demo = new DemoController(engine, clock);
   const host = new StageHost();
   const thumb = document.getElementById('thumb') as HTMLCanvasElement;
-  const loop = new StageLoop(engine, host, () => null, thumb);
+  const caption = document.getElementById('caption') as HTMLElement;
+  const scriptBtn = document.getElementById('script') as HTMLButtonElement;
+  const loop = new StageLoop(
+    engine,
+    host,
+    () => demo.frame(),
+    thumb,
+    () => {
+      const text = demo.script.caption;
+      if (caption.textContent !== text) caption.textContent = text;
+    },
+  );
   host.open();
+  void demo.start();
+  demo.bindKeys(window);
   loop.start();
   document.getElementById('open-stage')?.addEventListener('click', () => host.open());
+  scriptBtn.addEventListener('click', () => {
+    demo.toggleScript();
+    scriptBtn.setAttribute('aria-pressed', String(demo.script.isRunning));
+    scriptBtn.textContent = demo.script.isRunning ? 'Stop scripted meeting' : 'Play scripted meeting';
+  });
 
   if (bridge().info.e2e) {
     // Test hooks for Playwright (only under STANDIN_E2E=1).
@@ -34,6 +65,7 @@ function main(): void {
         engine,
         loop,
         host,
+        demo,
         setCharacter: (id: CharacterId) =>
           engine.applySettings(updateSettings(engine.currentSettings, { character: id })),
         setMode: (m: Mode) => engine.setMode(m),
