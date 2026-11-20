@@ -1,12 +1,12 @@
-import type { StudioBridge } from '../../preload/control';
+import type { StudioApi } from '../../shared/ipc';
 
 declare global {
   interface Window {
-    studio: StudioBridge;
+    studio: StudioApi;
   }
 }
 
 /** Typed access to the preload bridge. */
-export function bridge(): StudioBridge {
+export function bridge(): StudioApi {
   return window.studio;
 }

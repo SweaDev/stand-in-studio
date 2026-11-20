@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
-import { launchApp } from './helpers';
+import { launchApp, passConsent } from './helpers';
 
 const state = (page: Page) =>
   page.evaluate(() => {
@@ -10,6 +10,8 @@ const state = (page: Page) =>
 test('Demo mode: badge in the control window only, keys drive Auto end to end', async () => {
   const { app, control } = await launchApp();
   try {
+    await expect(control.locator('#demo-badge')).toBeHidden();
+    await passConsent(control);
     await expect(control.locator('#demo-badge')).toHaveText('DEMO – simulated signals');
     // The badge must never reach the stage: the stage window holds only the canvas.
     await expect.poll(() => app.windows().length).toBe(2);

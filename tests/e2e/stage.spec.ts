@@ -1,13 +1,14 @@
 import { expect, test } from '@playwright/test';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { launchApp } from './helpers';
+import { launchApp, passConsent } from './helpers';
 
 const outDir = join(__dirname, '..', '..', 'test-results', 'tiles');
 
 test('opens a frameless "Stand-In Stage" window and draws both priority characters', async () => {
   const { app, control } = await launchApp();
   try {
+    await passConsent(control);
     await expect.poll(() => app.windows().length).toBe(2);
     const titles = await app.evaluate(({ BrowserWindow }) =>
       BrowserWindow.getAllWindows().map((w) => ({ title: w.getTitle(), size: w.getContentSize() })),
