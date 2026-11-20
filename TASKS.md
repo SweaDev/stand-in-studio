@@ -19,7 +19,7 @@ Progress tracker for [PLAN.md](PLAN.md). One task = one commit; tick the box in 
   - tsconfig, `scripts/build.mjs` (esbuild), and a `.gitignore` covering `dist`, `test-assets`, `.presage-usage.json` and `node_modules`
   - main opens a placeholder control window; `npm start` works
 - [x] T03 Set up Vitest, ESLint, Prettier and the `npm test` script, plus core/util (Clock/FakeClock, RingBuffer, percentile, Hysteresis, easing) with tests
-- [ ] T04 Playwright Electron smoke e2e (`npm run test:e2e` through xvfb-run) and a GitHub Actions CI workflow; tag v0.1.0
+- [x] T04 Playwright Electron smoke e2e (`npm run test:e2e` through xvfb-run) and a GitHub Actions CI workflow; tag v0.1.0
 
 **Phase 1 — SDK spike & signal model → v0.2.0**
 - [ ] T05 `scripts/presage-budget.mjs` (900 s ledger, unit-tested) and `scripts/fetch-test-video.sh`. The script pins the clip URL and sha256; record the clip's provenance in IMPLEMENTATION_NOTES.md
