@@ -297,3 +297,34 @@ output {
   color: var(--accent);
   font-weight: 700;
 }
+.overrides button {
+  display: inline-flex;
+  gap: 8px;
+  align-items: center;
+}
+.overrides kbd {
+  font-size: 11px;
+}
+.overrides .hide-me[aria-pressed='true'] {
+  background: #c0392b;
+  border-color: #c0392b;
+  color: #fff;
+}
+dialog {
+  background: var(--surface);
+  color: var(--text);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 20px 24px;
+  min-width: 360px;
+}
+dialog::backdrop {
+  background: rgba(0, 0, 0, 0.55);
+}
+dialog table {
+  border-collapse: collapse;
+  margin-bottom: 12px;
+}
+dialog td {
+  padding: 4px 12px 4px 0;
+}

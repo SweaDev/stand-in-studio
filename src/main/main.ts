@@ -3,6 +3,7 @@ import { app, ipcMain, session, shell } from 'electron';
 import { join } from 'node:path';
 import { IPC, isAllowedExternal, type AppInfo, type ApiKeyStatus } from '../shared/ipc';
 import type { DeepPartial, Settings } from '../shared/settings';
+import { registerHotkeys, unregisterHotkeys } from './hotkeys';
 import { installPermissionHandlers } from './permissions';
 import { SettingsStore } from './settingsStore';
 import { createControlWindow } from './windows';
@@ -51,12 +52,16 @@ function bootstrap(): void {
   app.whenReady().then(() => {
     installPermissionHandlers(session.defaultSession, (wc) => wc === control?.webContents);
     control = createControlWindow();
+    const taken = registerHotkeys(() => control);
+    if (taken.length > 0)
+      console.warn(`[stand-in] hotkeys already in use by another app: ${taken.join(', ')}`);
     control.on('closed', () => {
       control = null;
       app.quit();
     });
   });
 
+  app.on('will-quit', () => unregisterHotkeys());
   app.on('window-all-closed', () => app.quit());
 }
 

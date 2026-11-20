@@ -9,6 +9,9 @@ import type { Mode, StageState } from '../../shared/types';
 import { ConsentScreen, type ConsentChoice } from './components/ConsentScreen';
 import { MODE_LABELS, ModeSwitch } from './components/ModeSwitch';
 import { ModePanel } from './components/ModePanel';
+import { HotkeyHelp, OverrideBar } from './components/Overrides';
+import { COMMANDS, type CommandName, type CommandReceiver } from '../../core/stage/commands';
+import { nextMode } from '../../core/stage/ModeController';
 import { PresenceDial } from './components/PresenceDial';
 import { DemoController } from './demo/DemoController';
 import { h } from './dom';
@@ -113,6 +116,18 @@ export class ControlApp {
     this.loop.start();
   }
 
+  /** Runs a command from a hotkey or a button (Command pattern). */
+  runCommand(name: CommandName): void {
+    const receiver: CommandReceiver = {
+      toggleHide: () => this.engine.toggleHide(),
+      togglePin: () => this.engine.togglePin(),
+      toggleRaiseHand: () => this.engine.toggleRaiseHand(),
+      toggleBackSoon: () => this.engine.toggleBackSoon(),
+      cycleMode: () => this.setMode(nextMode(this.engine.currentMode)),
+    };
+    COMMANDS[name].execute(receiver);
+  }
+
   /** Mode switch: persists the choice. */
   setMode(mode: Mode): void {
     this.engine.setMode(mode);
@@ -128,6 +143,9 @@ export class ControlApp {
   /** Lays out the main workspace. */
   protected buildWorkspace(): void {
     const dial = new PresenceDial((v) => this.turnDial(v));
+    const overrides = new OverrideBar(this.api.info.platform, (c) => this.runCommand(c));
+    const help = new HotkeyHelp(this.api.info.platform, this.demo !== null);
+    this.api.onCommand((c) => this.runCommand(c));
     this.panel = new ModePanel(this.settings, {
       update: (p) => void this.updateSettings(p),
       setBlend: (v) => this.turnDial(v),
@@ -135,6 +153,7 @@ export class ControlApp {
     const modes = new ModeSwitch((m) => this.setMode(m));
     this.onFrame((s) => {
       dial.set(s.feedOpacity, MODE_LABELS[s.mode]);
+      overrides.set(this.engine.overrideState);
       modes.set(s.mode);
     });
     const scriptBtn = h(
@@ -168,8 +187,11 @@ export class ControlApp {
             'Open stage window',
           ),
           this.demo ? scriptBtn : null,
+          h('button', { type: 'button', id: 'show-help', onclick: () => help.open() }, 'Shortcuts'),
         ),
         caption,
+        overrides.el,
+        help.el,
       ),
       h('section', { class: 'settings', 'aria-label': 'Settings' }, this.panel.el),
     );
