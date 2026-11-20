@@ -50,7 +50,7 @@ Progress tracker for [PLAN.md](PLAN.md). One task = one commit; tick the box in 
 - [x] T21 Character interface, registry and seeded `sketch.ts` hand-drawn primitives, plus reduced-motion and high-contrast style variants
 - [x] T22 Paper lantern: ribs breathe, ink-dot eyes, bob and sway, mouth, candle flare, ember with a "back soon" tag, tassel raised hand
 - [x] T23 Houseplant: leaves breathe, leaf-eyes, nod and sway, pot-rim mouth, flowers open, droop with a watering can, leaf raised hand
-- [ ] T24 StageCompositor:
+- [x] T24 StageCompositor:
   - layer order, feed opacity, blur below 30%, Over and Beside layouts
   - badges: speaking ring, raised hand, back soon
   - test pattern
