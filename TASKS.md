@@ -36,7 +36,7 @@ Progress tracker for [PLAN.md](PLAN.md). One task = one commit; tick the box in 
 - [x] T11 BreathingNormalizer with idle-breath fallback
 - [x] T12 BlinkDetector (SDK blinks plus landmark backup, with refractory period)
 - [x] T13 GestureDetector: nod, shake, enthusiastic
-- [ ] T14 SmileDetector, TalkTracker and PresenceTracker (validation and face → present/away/waking)
+- [x] T14 SmileDetector, TalkTracker and PresenceTracker (validation and face → present/away/waking)
 - [ ] T15 PoseMapper (amplification, reduced motion, mouth shown only while talking, laugh flag); tag v0.3.0
 
 **Phase 3 — Auto & modes → v0.4.0**
