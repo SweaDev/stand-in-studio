@@ -99,7 +99,7 @@ Progress tracker for [PLAN.md](PLAN.md). One task = one commit; tick the box in 
 - [x] T43 Per-meeting presets (save, apply, delete); tag v0.9.0
 
 **Phase 9 — Hardening & release → v1.0.0**
-- [ ] T44 Error and empty states (no camera, invalid key, credits exhausted, OBS missing), accessibility pass (keyboard, ARIA labels, contrast), full e2e regression
+- [x] T44 Error and empty states (no camera, invalid key, credits exhausted, OBS missing), accessibility pass (keyboard, ARIA labels, contrast), full e2e regression
 - [ ] T45 Final live smoke (≤120 s); Playwright screenshots and a short webm of Demo mode in docs/media; report the total budget used
 - [ ] T46 README.md: features, requirements, install and run on Linux/Windows/macOS (tested on Ubuntu 24.04), API key, OBS setup including Linux v4l2loopback, Demo mode, hotkeys, privacy, testing, architecture
 - [ ] T47 POST.md following the DEV template:
