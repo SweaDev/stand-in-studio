@@ -41,6 +41,7 @@ import { StageLoop } from './stage/StageLoop';
 import { RecordedFeed } from './recorded/RecordedFeed';
 import { TransportBar } from './recorded/TransportBar';
 import { SaveDemoDialog } from './recorded/SaveDemoDialog';
+import { ClipRecorder, MAX_RECORDING_MS } from './recorded/ClipRecorder';
 import { ReplaySignalSource } from '../../sensing/recorded/ReplaySignalSource';
 import { TelemetryRecorder } from '../../sensing/recorded/TelemetryRecorder';
 import { sanitizeTelemetry } from '../../shared/telemetry';
@@ -308,6 +309,9 @@ export class ControlApp {
     this.demo = null;
     await this.presage?.stop();
     this.presage = null;
+    this.telemetry?.abort('The camera was stopped.');
+    this.recording?.stop();
+    this.recording = null;
     this.camera?.close();
     this.camera = null;
     this.telemetry = null;
@@ -517,6 +521,134 @@ export class ControlApp {
       this.transport?.lock(false);
       void src.setComfortShield(needsCardio(this.settings));
     }
+  }
+
+  /** The in-app camera recording in progress. */
+  private recording: { clip: ClipRecorder; startedAt: number; stop: () => void } | null = null;
+
+  /**
+   * Records a demo with the camera: asks first (privacy notice, name, body opt-in), then
+   * records the camera to WebM while Presage analyses it live, stamping the telemetry with
+   * the recording's elapsed time, and saves both to the demo library on Stop.
+   */
+  async recordDemo(): Promise<void> {
+    const cam = this.camera;
+    const src = this.presage;
+    const stream = cam?.current;
+    if (this.recording) {
+      this.recording.stop();
+      return;
+    }
+    if (!cam || !src || !stream || this.telemetry) return;
+    const listing = await this.api.demos.list().catch(() => null);
+    const choice = await this.saveDialog.ask({
+      title: 'Record a demo with your camera',
+      action: 'Start recording',
+      name: `Camera demo ${new Date().toLocaleString()}`,
+      folder: listing?.dir ?? 'your demo library',
+      includeBody: this.settings.recorded.saveBody,
+    });
+    if (!choice || this.camera !== cam) return;
+    void this.updateSettings({ recorded: { saveBody: choice.includeBody } });
+    if (this.engine.currentMode === 'camera') this.setMode('auto');
+    if (choice.includeBody) await src.setComfortShield(true);
+    let clip: ClipRecorder;
+    try {
+      clip = new ClipRecorder(stream);
+    } catch (err) {
+      this.setRecordStatus(`Recording is not available: ${(err as Error).message}`, 'error');
+      return;
+    }
+    const startedAt = this.clock.now();
+    const rec = new TelemetryRecorder({
+      mediaTime: () => this.clock.now() - startedAt,
+      includeBody: choice.includeBody,
+    });
+    let stopRequested: () => void = () => undefined;
+    const stopped = new Promise<void>((resolve) => (stopRequested = resolve));
+    this.recording = { clip, startedAt, stop: () => stopRequested() };
+    this.telemetry = rec;
+    clip.start();
+    const limit = setTimeout(() => stopRequested(), MAX_RECORDING_MS);
+    try {
+      await stopped;
+      clearTimeout(limit);
+      const blob = await clip.stop();
+      const durationMs = Math.round(this.clock.now() - startedAt);
+      const s = cam.settings();
+      const file = rec.finish({
+        app: this.api.info.version,
+        sdk: SDK_VERSION,
+        video: { file: 'camera.webm', durationMs, width: s?.width ?? 0, height: s?.height ?? 0 },
+      });
+      const saved = await this.api.demos.save({
+        name: choice.name,
+        telemetry: file,
+        video: new Uint8Array(await blob.arrayBuffer()),
+        ext: 'webm',
+      });
+      this.setRecordStatus(
+        `Saved “${saved.name}” (${formatDuration(saved.durationMs)}, ${saved.frames} frames) to your demo library.`,
+        'ok',
+      );
+      void this.updateSettings({ recorded: { lastDemo: saved.id } });
+      this.demoLibraryChanged();
+    } catch (err) {
+      void clip.stop().catch(() => undefined);
+      this.setRecordStatus(`Demo not saved: ${(err as Error).message}`, 'error');
+    } finally {
+      clearTimeout(limit);
+      if (this.telemetry === rec) this.telemetry = null;
+      this.recording = null;
+      void src.setComfortShield(needsCardio(this.settings));
+    }
+  }
+
+  private recordStatus: HTMLElement | null = null;
+
+  private setRecordStatus(text: string, tone: 'ok' | 'error' | '' = ''): void {
+    if (!this.recordStatus) return;
+    this.recordStatus.textContent = text;
+    this.recordStatus.className = `telemetry-status${tone ? ` is-${tone}` : ''}`;
+  }
+
+  /** Camera tab: record a demo clip with its telemetry. */
+  private recordGroup(): HTMLElement {
+    const btn = h('button', { type: 'button', id: 'record-demo', onclick: () => void this.recordDemo() });
+    this.recordStatus = h('p', { class: 'telemetry-status', id: 'record-status', role: 'status' });
+    let wasRecording: boolean | null = null;
+    this.onFrame(() => {
+      const r = this.recording;
+      if (r) {
+        // Camera mode pauses Presage, which would leave a gap in the telemetry.
+        if (this.engine.currentMode === 'camera') {
+          this.telemetry?.abort('Camera mode paused Presage, so the telemetry is incomplete.');
+          r.stop();
+        }
+        this.setRecordStatus(
+          `Recording · ${formatDuration(this.clock.now() - r.startedAt)} · ${this.telemetry?.count ?? 0} frames`,
+        );
+      }
+      if (wasRecording === (r !== null)) return;
+      wasRecording = r !== null;
+      btn.replaceChildren(
+        r ? h('span', { class: 'recording-dot', 'aria-hidden': 'true' }) : icon('record', 16),
+        r ? 'Stop and save' : 'Record a demo…',
+      );
+      btn.classList.toggle('danger', r !== null);
+    });
+    return h(
+      'div',
+      { class: 'group', id: 'group-record-demo' },
+      h('h3', {}, 'Record a demo'),
+      h(
+        'p',
+        { class: 'hint' },
+        'Records your camera together with the signals Presage reads from it. Saved demos replay offline (no API use) from the start screen, so you can test and tune intents on the same footage again and again.',
+      ),
+      btn,
+      this.recordStatus,
+    );
   }
 
   /** Cancels a telemetry save in progress. */
@@ -825,6 +957,7 @@ export class ControlApp {
           label: 'Camera',
           content: [
             this.camera ? this.cameraGroup() : null,
+            this.camera && this.presage ? this.recordGroup() : null,
             new ApiKeyPanel(this.api, this.demo === null && this.replay === null, () => void this.restart())
               .el,
           ],

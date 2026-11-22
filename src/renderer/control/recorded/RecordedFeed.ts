@@ -47,7 +47,31 @@ export class RecordedFeed {
       feed.close();
       throw err;
     });
+    await feed.resolveDuration();
     return feed;
+  }
+
+  /**
+   * WebM files written by MediaRecorder carry no duration (Chromium reports Infinity until
+   * it has read to the end), so seek far ahead once to learn it, then rewind.
+   */
+  private async resolveDuration(): Promise<void> {
+    const v = this.video;
+    if (Number.isFinite(v.duration)) return;
+    await new Promise<void>((resolve) => {
+      const done = () => {
+        if (!Number.isFinite(v.duration)) return;
+        v.removeEventListener('durationchange', done);
+        resolve();
+      };
+      v.addEventListener('durationchange', done);
+      setTimeout(() => {
+        v.removeEventListener('durationchange', done);
+        resolve();
+      }, 3_000);
+      v.currentTime = 1e7;
+    });
+    v.currentTime = 0;
   }
 
   /** Any change to playback (play, pause, seek, end, time). */
