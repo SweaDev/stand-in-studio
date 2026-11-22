@@ -27,6 +27,7 @@ function run(engine: StudioEngine, clock: FakeClock, ms: number, s: Situation = 
         validation: s.validation ?? (s.face === false ? 'noFace' : 'ok'),
         talking: s.talking ?? false,
         happy: s.happy ?? 0.1,
+        expressions: { happy: s.happy ?? 0.1, neutral: 1 - (s.happy ?? 0.1) },
         breathingTrace: [Math.sin(clock.now() / 800)],
       };
       if (s.face !== false) {
@@ -125,6 +126,103 @@ describe('StudioEngine (Auto, end to end)', () => {
     const s = run(engine, clock, 6000, { talking: true });
     expect(last(s).feedOpacity).toBeCloseTo(0.15, 2);
     expect(engine.debug?.shieldActive).toBe(true);
+  });
+});
+
+describe('StudioEngine (intents)', () => {
+  /** Talking to the camera with SDK validation flicker and natural head motion. */
+  function talkWithFlicker(engine: StudioEngine, clock: FakeClock, ms: number, yaw = 0): StageState[] {
+    const states: StageState[] = [];
+    const end = clock.now() + ms;
+    let n = 0;
+    while (clock.now() < end) {
+      if (n++ % 2 === 0) {
+        const t = clock.now();
+        engine.ingest({
+          t,
+          // Half the reports are not OK (motion, light), as measured on good input.
+          validation: n % 4 === 0 ? 'poor' : 'ok',
+          talking: n % 7 !== 0,
+          happy: 0.1,
+          landmarks: syntheticFace({
+            pitch: 0.4 + Math.sin(t / 300) * 0.06,
+            yaw: yaw + Math.sin(t / 400) * 0.08,
+            mouthGap: 0.05 + Math.abs(Math.sin(t / 90)) * 0.3,
+            eyeOpenness: 0.3,
+          }),
+        });
+      }
+      states.push(engine.tick());
+      clock.advance(33);
+    }
+    return states;
+  }
+
+  it('talking to the camera reveals you and stays revealed despite validation flicker (reported bug)', () => {
+    const { clock, engine } = setup('auto');
+    run(engine, clock, 3000);
+    let s = talkWithFlicker(engine, clock, 6000);
+    expect(last(s).feedOpacity).toBe(1);
+    expect(last(s).characterOpacity).toBe(0);
+    s = talkWithFlicker(engine, clock, 8000);
+    expect(Math.min(...s.map((x) => x.feedOpacity))).toBe(1);
+    expect(engine.debug?.intent.id).toBe('talkingInMeeting');
+  });
+
+  it('turning to talk to someone else covers you within a second', () => {
+    const { clock, engine } = setup('auto');
+    talkWithFlicker(engine, clock, 7000);
+    let s = talkWithFlicker(engine, clock, 1000, 0.5);
+    expect(last(s).targetOpacity).toBe(0);
+    s = talkWithFlicker(engine, clock, 500, 0.5);
+    expect(last(s).characterOpacity).toBeGreaterThan(0.9);
+    expect(engine.debug?.intent.id).toBe('talkingToOther');
+    expect(engine.debug?.trace.summary).toContain('Cover me ← Talking to someone else');
+  });
+
+  it('listening settles at the listening level and no face shows "back soon"', () => {
+    const { clock, engine } = setup('auto');
+    let s = run(engine, clock, 4000);
+    expect(last(s).feedOpacity).toBeCloseTo(0.4, 2);
+    expect(engine.debug?.intent.id).toBe('listening');
+    s = run(engine, clock, 5000, { face: false });
+    expect(engine.debug?.intent.id).toBe('away');
+    expect(last(s).badges.backSoon).toBe(true);
+  });
+
+  it('uses custom intents in list order and learns thresholds from a recording', () => {
+    const { clock, engine } = setup('auto');
+    engine.setIntents([
+      {
+        id: 'custom-smile',
+        name: 'Smiling',
+        builtIn: false,
+        enabled: true,
+        action: 'reveal',
+        conditions: [{ signal: 'expression', states: ['happy'] }],
+        holdMs: 300,
+      },
+      ...engine.intentList,
+    ]);
+    run(engine, clock, 2000, { happy: 0.8 });
+    expect(engine.debug?.intent.id).toBe('custom-smile');
+    const events: string[] = [];
+    engine.events.on('tuning', (t) => events.push(t.phase));
+    engine.startTuning('custom-smile', 1000);
+    run(engine, clock, 1200, { happy: 0.5 });
+    expect(events).toEqual(['recording', 'done']);
+    expect(engine.intentTuning['custom-smile']?.thresholds.expression).toBeCloseTo(0.6 * 0.4, 1);
+    engine.setIntents(engine.intentList.filter((i) => i.id !== 'custom-smile'));
+    expect(engine.intentTuning['custom-smile']).toBeUndefined();
+  });
+
+  it('the trace explains every intent and signal', () => {
+    const { clock, engine } = setup('auto');
+    run(engine, clock, 1000, { yaw: 0.5, talking: true });
+    const t = engine.debug?.trace;
+    expect(t?.signals.map((x) => x.id)).toContain('gaze');
+    expect(t?.intents.find((i) => i.id === 'talkingInMeeting')?.limitedBy).toMatch(/head turn/);
+    expect(t?.policy.feedTarget).toBeDefined();
   });
 });
 

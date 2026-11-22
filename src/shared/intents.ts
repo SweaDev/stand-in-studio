@@ -99,6 +99,15 @@ export const BUILT_IN_INTENTS: readonly IntentDef[] = Object.freeze([
     holdMs: 700,
   },
   {
+    id: 'turnedAway',
+    name: 'Turned away',
+    builtIn: true,
+    enabled: true,
+    action: 'cover',
+    conditions: [c('talking', 'no'), c('headTurn', 'left', 'right')],
+    holdMs: 1_500,
+  },
+  {
     id: 'lookingElsewhere',
     name: 'Looking elsewhere',
     builtIn: true,

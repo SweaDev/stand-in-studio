@@ -59,6 +59,7 @@ describe('built-in intents', () => {
     ['talking with the head turned', { talkingShare: 0.9, yaw: 0.4 }, 'talkingToOther'],
     ['listening quietly', {}, 'listening'],
     ['eating', { mouthGap: 0.45 }, 'eating'],
+    ['head turned away, silent', { yaw: -0.5 }, 'turnedAway'],
     ['eyes on another screen', { gaze: 0.3 }, 'lookingElsewhere'],
     ['someone stepping in', { multipleFacesShare: 0.7, talkingShare: 0.9 }, 'someoneElse'],
     [
@@ -85,7 +86,11 @@ describe('built-in intents', () => {
   });
 
   it('reports the condition that limited the score', () => {
-    const e = evaluateIntent(BUILT_IN_INTENTS[5] as IntentDef, { ...face, talkingShare: 0.9, yaw: 0.4 });
+    const e = evaluateIntent(BUILT_IN_INTENTS.find((i) => i.id === 'talkingInMeeting') as IntentDef, {
+      ...face,
+      talkingShare: 0.9,
+      yaw: 0.4,
+    });
     expect(e.limitedBy?.signal).toBe('headTurn');
     expect(e.candidate).toBe(false);
   });
@@ -208,7 +213,7 @@ describe('conflict analysis', () => {
 
 describe('tuning', () => {
   it('lowers an active threshold to the user’s own movement and reports the match share', () => {
-    const intent = BUILT_IN_INTENTS[2] as IntentDef; // talking + head turned
+    const intent = BUILT_IN_INTENTS.find((i) => i.id === 'talkingToOther') as IntentDef;
     const samples = Array.from({ length: 30 }, () => ({ ...face, talkingShare: 0.9, yaw: 0.12 }));
     expect(evaluateIntent(intent, samples[0] as SignalContext).candidate).toBe(false);
     const tuning = computeTuning(intent, samples, defaultIntents(), 1);
@@ -218,7 +223,7 @@ describe('tuning', () => {
   });
 
   it('widens a rest threshold and lists other intents that also matched', () => {
-    const intent = BUILT_IN_INTENTS[5] as IntentDef; // talking in the meeting
+    const intent = BUILT_IN_INTENTS.find((i) => i.id === 'talkingInMeeting') as IntentDef; // talking in the meeting
     const samples = Array.from({ length: 30 }, (_, i) => ({
       ...face,
       talkingShare: 0.9,
@@ -245,7 +250,7 @@ describe('intent settings validation', () => {
     expect(out.map((i) => i.id).slice(0, 2)).toEqual(['listening', 'custom-wave']);
     expect(out[0]).toMatchObject({ action: 'cover', enabled: false, builtIn: true });
     // Built-in conditions are fixed by the app, not by the file.
-    expect(out[0]?.conditions).toEqual(BUILT_IN_INTENTS[6]?.conditions);
+    expect(out[0]?.conditions).toEqual(BUILT_IN_INTENTS.find((i) => i.id === 'listening')?.conditions);
     expect(out).toHaveLength(BUILT_IN_INTENTS.length + 1);
   });
 

@@ -96,6 +96,20 @@ export class ComfortShield {
     return this.triggered ? C.SHIELD_CAP : null;
   }
 
+  /**
+   * Latest confident readings relative to the learned baseline (null until a baseline and a
+   * fresh reading exist). Used by body-signal intents; never shown as absolute values.
+   */
+  deltas(now: number): { pulse: number | null; breathing: number | null } {
+    const fresh = (r: { v: number; t: number } | null) => (r && now - r.t <= STALE_MS ? r.v : null);
+    const p = fresh(this.lastPulse);
+    const b = fresh(this.lastBreathing);
+    return {
+      pulse: p !== null && this.basePulse !== null ? p - this.basePulse : null,
+      breathing: b !== null && this.baseBreathing !== null ? b - this.baseBreathing : null,
+    };
+  }
+
   /** Forces the trigger (Demo mode "P" key); it recovers like a real trigger. */
   simulateTrigger(now: number): void {
     if (!this.enabled) return;

@@ -9,6 +9,9 @@ export interface Baseline {
   /** Closed-mouth inner-lip gap (ed). */
   mouthGap: number;
   eyeOpenness: number;
+  /** Resting eye-in-head gaze (eye-widths); 0 when the SDK sends no iris points. */
+  gazeX: number;
+  gazeY: number;
   /** Resting HAPPY probability 0..1 (some faces read "happy" at rest). */
   happyRest: number;
   blinksPerMin: number;
@@ -22,6 +25,8 @@ export const DEFAULT_BASELINE: Baseline = Object.freeze({
   yaw: 0,
   mouthGap: 0.03,
   eyeOpenness: 0.25,
+  gazeX: 0,
+  gazeY: 0,
   happyRest: 0.1,
   blinksPerMin: 15,
   approximate: true,
@@ -133,6 +138,16 @@ export class Calibrator {
         f.map((x) => x.eyeOpenness),
         median,
         d.eyeOpenness,
+      ),
+      gazeX: pick(
+        f.filter((x) => x.gazeX !== undefined).map((x) => x.gazeX as number),
+        median,
+        d.gazeX,
+      ),
+      gazeY: pick(
+        f.filter((x) => x.gazeY !== undefined).map((x) => x.gazeY as number),
+        median,
+        d.gazeY,
       ),
       happyRest: pick(this.happy, median, d.happyRest),
       blinksPerMin: elapsedMs > 0 ? (this.blinks * 60_000) / elapsedMs : d.blinksPerMin,

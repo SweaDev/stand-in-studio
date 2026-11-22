@@ -1,8 +1,12 @@
 import type { Settings } from '../shared/settings';
 import type { Mode, SignalFrame, StageState, ValidationState } from '../shared/types';
+import { type IntentDef, type IntentTuning, defaultIntents, usesBodySignals } from '../shared/intents';
 import { ComfortShield } from './auto/ComfortShield';
-import { AutoPolicy, type AutoDecision } from './auto/AutoPolicy';
-import type { AutoContext } from './auto/rules';
+import { IntentPolicy, type PolicyDecision } from './auto/IntentPolicy';
+import { type DecisionTrace, buildTrace } from './intent/DecisionTrace';
+import { IntentTracker, NONE_HOLD_MS, type TrackerState, evaluateAll } from './intent/IntentMatcher';
+import type { SignalContext } from './intent/signals';
+import { TUNING_MS, TuningRecorder, computeTuning } from './intent/tuning';
 import { type Baseline, type CalibrationPhase, Calibrator, DEFAULT_BASELINE } from './calibration/Calibrator';
 import { C } from './constants';
 import type { FaceFeatures } from './features/FaceFeatures';
@@ -20,10 +24,16 @@ import { TalkTracker } from './trackers/TalkTracker';
 import { ValidationFilter } from './trackers/ValidationFilter';
 import type { Clock } from './util/Clock';
 import { Emitter } from './util/Emitter';
-import { Hysteresis, SustainTimer } from './util/Hysteresis';
+import { TimeWindow } from './util/RingBuffer';
 
 /** Features older than this are treated as "no face data". */
 const FEATURES_STALE_MS = 1_000;
+/** Window for the talking and multiple-faces shares. */
+const SHARE_WINDOW_MS = 1_500;
+/** Eye openness below this fraction of the calibrated level counts as closed. */
+const EYES_CLOSED_RATIO = 0.5;
+/** Vertical iris movement is smaller than horizontal; weight it up. */
+const GAZE_Y_WEIGHT = 1.5;
 
 export interface CalibrationStatus {
   phase: CalibrationPhase;
@@ -31,15 +41,25 @@ export interface CalibrationStatus {
   approximate: boolean;
 }
 
+export interface TuningStatus {
+  id: string;
+  phase: 'recording' | 'done' | 'cancelled';
+  progress: number;
+  result?: IntentTuning;
+}
+
 export interface EngineEvents {
   state: StageState;
   calibration: CalibrationStatus;
+  tuning: TuningStatus;
 }
 
 /** Diagnostics for the control window (never sent to the stage or anywhere else). */
 export interface EngineDebug {
   validation: ValidationState;
-  auto: AutoDecision;
+  policy: PolicyDecision;
+  intent: { id: string | null; name: string; score: number | null; action: PolicyDecision['action'] };
+  trace: DecisionTrace;
   shieldActive: boolean;
   calibrated: boolean;
 }
@@ -68,19 +88,27 @@ export class StudioEngine implements CommandReceiver {
   private readonly validation = new ValidationFilter();
   private readonly presence = new PresenceTracker();
   private readonly shield = new ComfortShield();
+  /** Baseline for body-signal intents (separate from the shield so it never caps). */
+  private readonly body = new ComfortShield();
   private readonly pose = new PoseMapper();
   private readonly overrides = new Overrides();
-  private readonly lookAway = new Hysteresis({ on: 1, off: 0.6 });
-  private readonly lookAwayTimer = new SustainTimer();
-  private readonly mouthOpen = new Hysteresis({ on: C.EATING_GAP_ED, off: 0.15 });
-  private readonly eatingTimer = new SustainTimer();
-  private readonly poorTimer = new SustainTimer();
-  private readonly noFaceTimer = new SustainTimer();
-  private readonly auto: AutoPolicy;
+  private readonly talkShare = new TimeWindow<number>(SHARE_WINDOW_MS);
+  private readonly facesShare = new TimeWindow<number>(SHARE_WINDOW_MS);
+  private expressions: SignalContext['expressions'] = {};
+  private expressionsAt = Number.NEGATIVE_INFINITY;
+  private eyesClosedSince: number | null = null;
+  private lastNodAt = Number.NEGATIVE_INFINITY;
+  private lastShakeAt = Number.NEGATIVE_INFINITY;
+  private intents: IntentDef[] = defaultIntents();
+  private tuning: Record<string, IntentTuning> = {};
+  private recorder: TuningRecorder | null = null;
+  private readonly tracker = new IntentTracker();
+  private readonly auto: IntentPolicy;
   private readonly feed: OpacitySmoother;
   private readonly character: OpacitySmoother;
   private testPattern = false;
   private lastDebug: EngineDebug | null = null;
+  private lastContext: SignalContext | null = null;
   private lastState: StageState | null = null;
 
   constructor(
@@ -90,7 +118,7 @@ export class StudioEngine implements CommandReceiver {
     this.settings = settings;
     this.mode = settings.mode;
     const now = clock.now();
-    this.auto = new AutoPolicy(settings.auto.listening);
+    this.auto = new IntentPolicy(settings.auto.listening);
     this.feed = new OpacitySmoother(0);
     this.feed.snap(0, now);
     this.character = new OpacitySmoother(1);
@@ -103,7 +131,14 @@ export class StudioEngine implements CommandReceiver {
 
   ingest(frame: SignalFrame): void {
     const now = frame.t;
-    if (frame.validation) this.validation.push(frame.validation, now);
+    if (frame.validation) {
+      this.validation.push(frame.validation, now);
+      this.facesShare.push(now, frame.multipleFaces ? 1 : 0);
+    }
+    if (frame.expressions) {
+      this.expressions = frame.expressions;
+      this.expressionsAt = now;
+    }
 
     if (frame.landmarks) {
       const raw = computeFaceFeatures(frame.landmarks);
@@ -114,9 +149,17 @@ export class StudioEngine implements CommandReceiver {
         this.calibrator.addFeatures(raw);
         const b = this.baseline();
         const n = this.nod.update(f.pitch - b.pitch, now);
-        if (n) this.pose.onGesture(n);
+        if (n) {
+          this.pose.onGesture(n);
+          this.lastNodAt = now;
+        }
         const s = this.shake.update(f.yaw - b.yaw, now);
-        if (s) this.pose.onGesture(s);
+        if (s) {
+          this.pose.onGesture(s);
+          this.lastShakeAt = now;
+        }
+        const closed = raw.eyeOpenness < b.eyeOpenness * EYES_CLOSED_RATIO;
+        this.eyesClosedSince = closed ? (this.eyesClosedSince ?? now) : null;
       }
     }
 
@@ -137,7 +180,9 @@ export class StudioEngine implements CommandReceiver {
     }
     if (frame.breathingTrace) this.breathing.push(frame.breathingTrace, now);
     if (frame.pulseRate || frame.breathingRate) {
-      this.shield.update({ pulseRate: frame.pulseRate, breathingRate: frame.breathingRate }, now);
+      const rates = { pulseRate: frame.pulseRate, breathingRate: frame.breathingRate };
+      this.shield.update(rates, now);
+      this.body.update(rates, now);
     }
   }
 
@@ -171,6 +216,64 @@ export class StudioEngine implements CommandReceiver {
     this.settings = next;
     this.shield.setEnabled(next.auto.comfortShield, now);
     if (modeChanged) this.setMode(next.mode);
+  }
+
+  // ---------------------------------------------------------------- intents
+
+  /** Replaces the intent list (priority order). Tuning for removed intents is dropped. */
+  setIntents(intents: readonly IntentDef[]): void {
+    this.intents = intents.map((i) => ({ ...i, conditions: i.conditions.map((c) => ({ ...c })) }));
+    const ids = new Set(this.intents.map((i) => i.id));
+    for (const id of Object.keys(this.tuning)) if (!ids.has(id)) delete this.tuning[id];
+    if (this.recorder && !ids.has(this.recorder.intentId)) this.cancelTuning();
+    this.body.setEnabled(
+      this.intents.some((i) => i.enabled && usesBodySignals(i)),
+      this.clock.now(),
+    );
+  }
+
+  get intentList(): readonly IntentDef[] {
+    return this.intents;
+  }
+
+  /** Learned thresholds per intent (in memory; saved only if the user opts in). */
+  get intentTuning(): Readonly<Record<string, IntentTuning>> {
+    return this.tuning;
+  }
+
+  loadTuning(tuning: Readonly<Record<string, IntentTuning>>): void {
+    const ids = new Set(this.intents.map((i) => i.id));
+    this.tuning = Object.fromEntries(Object.entries(tuning).filter(([id]) => ids.has(id)));
+  }
+
+  clearTuning(id?: string): void {
+    if (id === undefined) this.tuning = {};
+    else delete this.tuning[id];
+  }
+
+  /** Records the user acting an intent out, then learns its thresholds. */
+  startTuning(id: string, durationMs: number = TUNING_MS): void {
+    if (!this.intents.some((i) => i.id === id)) return;
+    this.recorder = new TuningRecorder(id, durationMs);
+    this.recorder.start(this.clock.now());
+    this.events.emit('tuning', { id, phase: 'recording', progress: 0 });
+  }
+
+  cancelTuning(): void {
+    const r = this.recorder;
+    if (!r) return;
+    this.recorder = null;
+    this.events.emit('tuning', { id: r.intentId, phase: 'cancelled', progress: 0 });
+  }
+
+  get tuningActive(): { id: string; progress: number } | null {
+    const r = this.recorder;
+    return r ? { id: r.intentId, progress: r.progress(this.clock.now()) } : null;
+  }
+
+  /** Current signal context (for the builder's live match meter). */
+  get signalContext(): SignalContext | null {
+    return this.lastContext;
   }
 
   setMode(mode: Mode): void {
@@ -249,43 +352,27 @@ export class StudioEngine implements CommandReceiver {
     if (this.overrides.backSoon) presence = 'away';
     const talking = this.talk.isTalking(now);
 
-    // Looking away: head well past the calibrated pose (only meaningful once calibrated).
-    let awayness = 0;
-    if (features && calibrated) {
-      awayness = Math.max(
-        Math.abs(features.yaw - b.yaw) / C.LOOK_AWAY_YAW_ED,
-        Math.abs(features.pitch - b.pitch) / C.LOOK_AWAY_PITCH_ED,
-      );
-    }
-    const lookingAway = this.lookAway.update(awayness, now);
-    const lookingAwayMs = this.lookAwayTimer.update(lookingAway, now);
-    const facingScreen = features !== null && !lookingAway;
-
-    // Eating or yawning: mouth open without talking.
-    const gap = features ? features.mouthGap - b.mouthGap : 0;
-    const open = this.mouthOpen.update(gap, now);
-    const eatingMs = this.eatingTimer.update(open && !talking && features !== null, now);
+    const ctx = this.signalContext_(now, features, validation, talking, b);
+    this.lastContext = ctx;
+    const evals = evaluateAll(this.intents, ctx, this.tuning);
+    const holdOf = (id: string | null) =>
+      id === null ? NONE_HOLD_MS : (this.intents.find((i) => i.id === id)?.holdMs ?? NONE_HOLD_MS);
+    const tracked: TrackerState = this.tracker.update(evals, holdOf, now);
+    const active = this.intents.find((i) => i.id === tracked.current);
+    this.recordTuning(ctx, now);
 
     const shieldCap = this.shield.update({}, now);
-    const ctx: AutoContext = {
+    const decision = this.auto.update({
       now,
-      faceOk: validation === 'ok',
-      facingScreen,
-      talkingSustained: this.talk.isSustained(now),
-      talking,
-      lookingAwayMs,
-      eatingMs,
-      poorFramingMs: this.poorTimer.update(validation === 'poor', now),
-      noFaceMs: this.noFaceTimer.update(validation === 'noFace', now),
-      shieldCap,
+      action: active?.action ?? 'blend',
       max: this.settings.auto.max,
       listening: this.settings.auto.listening,
-    };
-    const decision = this.auto.update(ctx);
+      shieldCap,
+    });
 
     const resolved = resolveStage(
       this.mode,
-      { settings: this.settings, autoTarget: decision.target },
+      { settings: this.settings, autoTarget: decision.target, autoCharacter: decision.character },
       this.overrides,
     );
     this.feed.setTarget(resolved.feedTarget, resolved.transition, now);
@@ -320,17 +407,112 @@ export class StudioEngine implements CommandReceiver {
       badges: {
         speaking: talking && presence !== 'away',
         raisedHand: this.overrides.raisedHand,
-        backSoon: presence === 'away',
+        backSoon:
+          this.mode === 'auto' && !this.overrides.pinned
+            ? decision.action === 'backSoon' || this.overrides.backSoon
+            : presence === 'away',
       },
       hidden: this.overrides.hidden,
       pinned: this.overrides.pinned,
       style: { ...this.settings.accessibility },
       testPattern: this.testPattern,
     };
-    this.lastDebug = { validation, auto: decision, shieldActive: shieldCap !== null, calibrated };
+    const override = this.overrides.hidden
+      ? 'hidden'
+      : this.overrides.backSoon
+        ? 'backSoon'
+        : this.overrides.pinned
+          ? 'pinned'
+          : null;
+    const trace = buildTrace({
+      now,
+      mode: this.mode,
+      ctx,
+      evals,
+      tracker: tracked,
+      names: new Map(this.intents.map((i) => [i.id, i.name])),
+      policy: decision,
+      policyHoldMs: C.AUTO_HOLD_MS,
+      shieldCap,
+      override,
+      feedTarget: resolved.feedTarget,
+      tuning: this.tuningActive,
+    });
+    const currentEval = evals.find((e) => e.id === tracked.current);
+    this.lastDebug = {
+      validation,
+      policy: decision,
+      intent: {
+        id: tracked.current,
+        name: active?.name ?? 'No intent matches',
+        score: currentEval?.score ?? null,
+        action: active?.action ?? 'blend',
+      },
+      trace,
+      shieldActive: shieldCap !== null,
+      calibrated,
+    };
     this.lastState = state;
     this.events.emit('state', state);
     return state;
+  }
+
+  private signalContext_(
+    now: number,
+    features: FaceFeatures | null,
+    validation: ValidationState,
+    talking: boolean,
+    b: Baseline,
+  ): SignalContext {
+    this.talkShare.push(now, talking ? 1 : 0);
+    this.talkShare.prune(now);
+    this.facesShare.prune(now);
+    const share = (w: TimeWindow<number>) => {
+      const v = w.values();
+      return v.length > 0 ? v.reduce((a, x) => a + x, 0) / v.length : 0;
+    };
+    let gaze: number | null = null;
+    if (features && features.gazeX !== undefined && features.gazeY !== undefined) {
+      gaze = Math.hypot(features.gazeX - b.gazeX, (features.gazeY - b.gazeY) * GAZE_Y_WEIGHT);
+    }
+    const expressions: SignalContext['expressions'] = {};
+    if (features && now - this.expressionsAt <= FEATURES_STALE_MS) {
+      for (const [k, v] of Object.entries(this.expressions)) {
+        expressions[k as keyof typeof expressions] =
+          k === 'happy' ? Math.max(0, (v ?? 0) - b.happyRest) : (v ?? 0);
+      }
+    }
+    if (!features) this.eyesClosedSince = null;
+    const body = this.body.deltas(now);
+    return {
+      faceSeen: features !== null,
+      validation,
+      talkingShare: share(this.talkShare),
+      yaw: features ? features.yaw - b.yaw : null,
+      pitch: features ? features.pitch - b.pitch : null,
+      gaze,
+      mouthGap: features ? features.mouthGap - b.mouthGap : null,
+      expressions,
+      eyesClosedMs: this.eyesClosedSince !== null ? now - this.eyesClosedSince : 0,
+      sinceNodMs: now - this.lastNodAt,
+      sinceShakeMs: now - this.lastShakeAt,
+      multipleFacesShare: share(this.facesShare),
+      pulseDelta: body.pulse,
+      breathingDelta: body.breathing,
+    };
+  }
+
+  private recordTuning(ctx: SignalContext, now: number): void {
+    const r = this.recorder;
+    if (!r) return;
+    r.push(ctx);
+    if (!r.done(now)) return;
+    this.recorder = null;
+    const intent = this.intents.find((i) => i.id === r.intentId);
+    if (!intent) return;
+    const result = computeTuning(intent, r.collected, this.intents, now);
+    this.tuning[intent.id] = result;
+    this.events.emit('tuning', { id: intent.id, phase: 'done', progress: 1, result });
   }
 
   private baseline(): Baseline {

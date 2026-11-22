@@ -113,6 +113,7 @@ export class DemoModel {
       blink: blinking,
       talking: this.talking,
       happy: this.smiling(now) ? 0.85 : 0.08,
+      expressions: this.smiling(now) ? { happy: 0.85, neutral: 0.1 } : { happy: 0.08, neutral: 0.8 },
       breathingTrace: [breathing * 3 + 50],
     };
   }

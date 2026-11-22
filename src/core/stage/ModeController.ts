@@ -7,6 +7,8 @@ export interface ModeContext {
   settings: Settings;
   /** Current Auto policy target (used by Auto mode only). */
   autoTarget: number;
+  /** Character opacity Auto wants (0 while an intent reveals you); defaults to 1. */
+  autoCharacter?: number;
 }
 
 /** State pattern: each mode decides what the stage wants to show. */
@@ -45,7 +47,7 @@ const BlendMode: ModeState = {
 const AutoMode: ModeState = {
   mode: 'auto',
   feedTarget: (c) => Math.min(c.autoTarget, c.settings.auto.max),
-  characterTarget: () => 1,
+  characterTarget: (c) => c.autoCharacter ?? 1,
   transition: 'rate',
 };
 
