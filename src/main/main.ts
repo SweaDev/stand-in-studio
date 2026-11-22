@@ -6,6 +6,8 @@ import type { DeepPartial, Settings } from '../shared/settings';
 import { ApiKeyStore } from './apiKey';
 import { registerHotkeys, unregisterHotkeys } from './hotkeys';
 import { bindSdk } from './sdkBridge';
+import { liveSdkSessions } from './sdkKeyInjection';
+import { createQuitHandler } from './sdkShutdown';
 import { installPermissionHandlers } from './permissions';
 import { SettingsStore } from './settingsStore';
 import { createControlWindow } from './windows';
@@ -74,6 +76,18 @@ function bootstrap(): void {
     });
   });
 
+  // Stop and destroy SDK sessions before Electron tears down the isolate (see sdkShutdown).
+  app.on(
+    'before-quit',
+    createQuitHandler({
+      sessions: liveSdkSessions,
+      notifyRenderer: () => {
+        if (control && !control.isDestroyed()) control.webContents.send(IPC.appQuitting);
+      },
+      exit: (code) => app.exit(code),
+      log: (m) => console.info(m),
+    }),
+  );
   app.on('will-quit', () => unregisterHotkeys());
   app.on('window-all-closed', () => app.quit());
 }

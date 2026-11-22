@@ -9,7 +9,7 @@ import { installKeyInjection } from './sdkKeyInjection';
  */
 export function bindSdk(win: BrowserWindow, getKey: () => string | null): boolean {
   try {
-    installKeyInjection(getKey);
+    installKeyInjection(getKey, (m) => console.info(m));
     const { bindSmartSpectraIpc } = require('@smartspectra/node-sdk/main') as typeof SdkMain;
     bindSmartSpectraIpc(win, {
       logger: (level, msg) => {

@@ -23,6 +23,11 @@ const studio: StudioApi = {
   apiKeyStatus: () => ipcRenderer.invoke(IPC.apiKeyStatus),
   setApiKey: (key) => ipcRenderer.invoke(IPC.apiKeySet, key),
   clearApiKey: () => ipcRenderer.invoke(IPC.apiKeyClear),
+  onQuitting: (fn) => {
+    const listener = () => fn();
+    ipcRenderer.on(IPC.appQuitting, listener);
+    return () => ipcRenderer.removeListener(IPC.appQuitting, listener);
+  },
 };
 
 export type StudioBridge = StudioApi;

@@ -107,3 +107,14 @@ Progress tracker for [PLAN.md](PLAN.md). One task = one commit; tick the box in 
   - Verify the Bailenson 2021 and Fauville et al. 2021 citations by web search
   - Leave placeholders for the user's demo video and agent-session link
 - [x] T48 Set version 1.0.0, add CHANGELOG.md, tag v1.0.0 and push
+
+**Phase 10 — Intents & stability → v1.1.0** (requested after v1.0.0; developed on the session branch `claude/upbeat-wozniak-rslrk1`)
+- [x] T49 Graceful SDK shutdown (stop and destroy every live session before exit) and serialised camera/SDK transitions; `scripts/repro-quit.mjs` for the reported `napi_throw` crash
+- [ ] T50 Signal catalogue: iris gaze, people in view, and every Presage-derived signal with states, memberships and doc links; `docs/intents.md`
+- [ ] T51 Intent core: built-in and custom intents, matcher with specificity and privacy-first tie-breaks, tracker, tuning and conflict analysis
+- [ ] T52 IntentPolicy and DecisionTrace in StudioEngine; Auto no longer hides the speaker on validation flicker
+- [ ] T53 Settings: intents, custom intents, opt-in tuning save, developer mode
+- [ ] T54 Design tokens and the tabbed control-window layout with the current-intent card and intent list
+- [ ] T55 Intent builder dialog: signal catalogue with doc links, condition editor, live match, tuning and conflict warnings
+- [ ] T56 Developer mode decision log drawer
+- [ ] T57 Docs, live smoke, version 1.1.0 and tag

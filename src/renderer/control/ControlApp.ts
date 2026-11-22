@@ -72,6 +72,40 @@ export class ControlApp {
     this.api.onCommand((c) => {
       if (!this.main.hidden) this.runCommand(c);
     });
+    // Main is quitting: stop the SDK from this side too, so no frames race the teardown.
+    this.api.onQuitting(() => {
+      this.loop.stop();
+      void this.presage?.stop();
+    });
+  }
+
+  /**
+   * Camera and SDK transitions (restart, camera switch, low-frame-rate step-down) run one
+   * at a time: a new SDK session is configured only after the previous one has fully
+   * stopped and been destroyed. SDK state is process-global, so overlapping sessions are
+   * unsafe.
+   */
+  private transitions: Promise<void> = Promise.resolve();
+
+  private serial(fn: () => Promise<void>): Promise<void> {
+    const run = this.transitions.then(async () => {
+      this.setBusy(true);
+      try {
+        await fn();
+      } finally {
+        this.setBusy(false);
+      }
+    });
+    this.transitions = run.catch(() => undefined);
+    return run;
+  }
+
+  private setBusy(busy: boolean): void {
+    this.root.toggleAttribute('aria-busy', busy);
+    for (const el of this.root.querySelectorAll<HTMLButtonElement | HTMLSelectElement>(
+      '#stop-camera, #group-camera-device select, #group-camera-device button',
+    ))
+      el.disabled = busy;
   }
 
   get currentSettings(): Settings {
@@ -124,7 +158,11 @@ export class ControlApp {
   }
 
   /** Stops everything and returns to the consent screen (e.g. after adding a key). */
-  async restart(): Promise<void> {
+  restart(): Promise<void> {
+    return this.serial(() => this.doRestart());
+  }
+
+  private async doRestart(): Promise<void> {
     this.loop.stop();
     await this.demo?.stop();
     this.demo = null;
@@ -228,6 +266,7 @@ export class ControlApp {
     src.events.on('frame', (f) => this.engine.ingest(f));
     src.events.on('status', (st) => st === 'running' && this.banner.hide());
     src.events.on('error', (e) => {
+      if (this.presage !== src) return; // a retired session's late error
       // Too few frames for the SDK: capture at the next lower resolution (REQUIREMENT §10).
       const lower = lowerProfile(this.settings.camera.profile);
       if (e.reason === 'lowFrameRate' && lower && this.camera) {
@@ -244,9 +283,14 @@ export class ControlApp {
   }
 
   /** Switches camera or resolution: reopens the stream and restarts sensing on it. */
-  async switchCamera(deviceId: string, profile: CaptureProfile): Promise<void> {
+  switchCamera(deviceId: string, profile: CaptureProfile): Promise<void> {
+    return this.serial(() => this.doSwitchCamera(deviceId, profile));
+  }
+
+  private async doSwitchCamera(deviceId: string, profile: CaptureProfile): Promise<void> {
     if (!this.camera) return;
     await this.presage?.stop();
+    this.presage = null;
     const stream = await this.camera.open(deviceId, profile);
     await this.updateSettings({ camera: { deviceId: this.camera.deviceId, profile } });
     this.presage = this.createPresage(stream);

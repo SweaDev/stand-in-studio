@@ -11,6 +11,7 @@ export const IPC = Object.freeze({
   apiKeyStatus: 'studio:api-key-status',
   apiKeySet: 'studio:api-key-set',
   apiKeyClear: 'studio:api-key-clear',
+  appQuitting: 'studio:app-quitting',
 });
 
 /** Static facts about this run, fetched once by the preload. */
@@ -39,6 +40,8 @@ export interface StudioApi {
   apiKeyStatus(): Promise<ApiKeyStatus>;
   setApiKey(key: string): Promise<ApiKeyStatus>;
   clearApiKey(): Promise<ApiKeyStatus>;
+  /** Main is about to quit: stop sensing now. */
+  onQuitting(fn: () => void): () => void;
 }
 
 /** Name of the stage window opened with window.open (main matches it). */
