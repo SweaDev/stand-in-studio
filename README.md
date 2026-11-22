@@ -186,6 +186,7 @@ Use **Show test pattern** to confirm the meeting sees the stage. It shows colour
 A permanent **"DEMO – simulated signals"** badge stays in the control window. It never appears on the stage.
 
 ## Privacy and consent
+- **Camera mode uses no API:** in Camera mode the Presage SDK is paused (after a 1.5 s debounce, so cycling modes doesn't stop and restart it), and nothing is analysed. It resumes when you leave Camera mode.
 - **On-device:** frames are processed on this computer by the SmartSpectra SDK. Stand-In Studio records and stores **nothing**: no video, images, audio, landmarks or signal values.
 - **What is saved:** only character, mode and intent settings (names, conditions, actions, order), in `settings.json` in the app's user-data folder.
   - The settings schema drops anything else, including keys and numbers.

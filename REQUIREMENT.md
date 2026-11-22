@@ -45,7 +45,7 @@ All modes produce one picture, the **stage**, which the meeting receives as your
 | Mode | What the meeting sees | Controls |
 |---|---|---|
 | **Character** | The character only, on a calm background. Your feed is at 0% | Character and background colour |
-| **Camera** | Your original webcam feed at 100%; the character is hidden | Optional small character badge in a corner (on/off) |
+| **Camera** | Your original webcam feed at 100%; the character is hidden. The Presage SDK is **paused**, so nothing is analysed | Optional small character badge in a corner (on/off), shown idle |
 | **Blend** | Your feed at the opacity you choose, with the character overlaid | Opacity slider 0–100% with presets 25 / 50 / 75%. Layout: **Over** (character centred, feed dimmed behind) or **Beside** (character in the lower third, feed above) |
 | **Auto** | Your feed at an opacity chosen live by the Auto rules (§5), with the character always present | Your **max** (default 100%), **listening level** (default 40%), and Comfort shield on/off |
 
@@ -158,6 +158,7 @@ Intents are checked **top to bottom, and the first match wins**. The full refere
   - Calibration values and intent tuning live in memory and are discarded on quit.
   - Only the character choice, mode and intent settings are saved. Learned intent thresholds are saved only if you opt in under Advanced, with a privacy warning.
   - Developer mode's decision log is shown on screen only. It is never written to disk or printed.
+- **No analysis in Camera mode.** About 1.5 s after you switch to Camera mode, the SDK is stopped: no frames are sent to it. It resumes as soon as you leave Camera mode, and Auto holds its level until the first data arrives. If the camera starts while in Camera mode, the SDK is configured but never started.
 - **Minimal requests.** The SDK is asked only for what the current settings need: the face signals and chest breathing, plus pulse and breathing rate only with the Comfort shield or a body-signal intent on.
 - **Telemetry off.** Presage telemetry is off (`enableTelemetry: false`). Link to Presage's Telemetry and Privacy page.
 - **No numbers anywhere.** No physiological number is ever shown on the stage or sent anywhere. The only output is the composed picture, which goes through OBS, and you control OBS.

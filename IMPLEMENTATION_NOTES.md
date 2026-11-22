@@ -41,9 +41,10 @@ Each run is charged at max(wall time, content seconds), so the figures are conse
 | 2026-11-20 | T45 | `npm run test:live`, final smoke (all 8 checks passed; 29.3 packets/s, stage 29.1 fps) | 60.9 | **324.8** |
 
 | 2026-11-22 | T49 | `repro-quit.mjs` on the **v1.0.0** build (synthetic clip): exited cleanly, the abort did not reproduce | 25.2 | 350.0 |
-| 2026-11-22 | T49 | `repro-quit.mjs` on the fixed build: session stopped and destroyed before exit, exit code 0 | 20.2 | **370.2** |
+| 2026-11-22 | T49 | `repro-quit.mjs` on the fixed build: session stopped and destroyed before exit, exit code 0 | 20.2 | 370.2 |
+| 2026-11-22 | T59 | `live-camera-pause.mjs` (synthetic clip): 20 reports in Auto, 0 new reports over 4 s in Camera mode (status `paused`), resumed in Auto | 12.8 | **383.0** |
 
-**Total Presage usage: 370.2 s (about 6.2 min) of the 15-minute cap.**
+**Total Presage usage: 383.0 s (about 6.4 min) of the 15-minute cap.**
 
 ## Demo media
 `docs/media/*` is generated in Demo mode by `xvfb-run -a -s "-screen 0 1600x1000x24" node scripts/capture-media.mjs`. It uses no camera, no API key and no real person. `demo.webm` is the last 30 s of a Playwright recording of the stage window during the scripted meeting, re-encoded with VP9 at 640×360, 20 fps and 350 kbit/s.
@@ -71,7 +72,8 @@ git push origin --tags
 | v0.8.0 | e8ed84a | Add budget-guarded live test of the real SDK on a fake camera |
 | v0.9.0 | 14dde18 | Add per-meeting presets |
 | v1.0.0 | (the T48 commit) | Release 1.0.0 |
-| v1.1.0 | (the T57 commit, branch `claude/upbeat-wozniak-rslrk1`) | Release 1.1.0: intents, builder, decision log, shutdown fix |
+| v1.1.0 | 8e822b2 (branch `claude/upbeat-wozniak-rslrk1`) | Release 1.1.0: intents, builder, decision log, shutdown fix |
+| v1.2.0 | (the T59 commit, same branch) | Release 1.2.0: Camera mode pauses the Presage SDK |
 
 ## Deviations from PLAN.md
 - **T05, fake camera format:** the plan called for a `.y4m` file, but 60 s of 960×540 y4m is about 1 GB. Chromium's `--use-file-for-fake-video-capture` also accepts **`.mjpeg`** (51 MB here), so the fake camera uses `test-assets/face.mjpeg`. The SDK file probe uses `face.mp4`.

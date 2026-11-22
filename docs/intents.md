@@ -70,6 +70,10 @@ The builder checks every pair of enabled intents. Each intent is treated as a re
 
 The analysis works from the conditions you wrote. It can't know that, for example, turning your head also tends to move your gaze. A tuning recording shows how often other intents also matched while you acted the intent out.
 
+## Camera mode
+
+In Camera mode the Presage SDK is paused, so Auto has no signals and every intent is frozen. When you switch back, a short warming phase holds the current level until the SDK reports again (at most 10 s), so a resuming SDK never looks like an empty chair.
+
 ## Developer mode
 
 **Advanced → Developer mode** opens a decision log in the control window. It is never shown on the stage, never written to disk and never printed to the console. Each row shows:

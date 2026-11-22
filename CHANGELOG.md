@@ -2,6 +2,14 @@
 
 All notable changes to Stand-In Studio. Versions follow the phases in [PLAN.md](PLAN.md).
 
+## 1.2.0 — 2026-11-22
+- **Camera mode no longer uses the Presage API.**
+  - The SDK is paused 1.5 s after entering Camera mode and resumed on leaving it. Quick mode cycling doesn't stop and restart it.
+  - Starting the camera while in Camera mode configures the SDK without starting it.
+  - While paused there is no "back soon" badge. After resuming, Auto holds its level until data arrives.
+  - A status chip and the current-intent card show that Presage is paused.
+- Verified live with the real SDK: no validation reports for 4 s in Camera mode, then analysis resumed in Auto.
+
 ## 1.1.0 — 2026-11-22
 - **Fix:** quitting no longer risks a native abort (`napi_throw`, SIGABRT). The app stops and destroys every SmartSpectra session before it exits, and camera restarts, camera switches and the frame-rate step-down are serialised so two SDK sessions never overlap.
 - **Fix:** Auto no longer hides you while you talk to the camera. SDK validation flicker (`kTooDark`, `kExcessiveMotion`) and head motion while speaking used to trip the "poor framing" and "look away" rules.
