@@ -1,5 +1,6 @@
 import { _electron as electron, type ElectronApplication, type Page } from '@playwright/test';
-import { mkdtempSync } from 'node:fs';
+import { execFileSync } from 'node:child_process';
+import { existsSync, mkdirSync, mkdtempSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
@@ -9,10 +10,13 @@ export interface LaunchedApp {
 }
 
 /** Launches the built app. Containers and CI run as root, which needs --no-sandbox. */
-export async function launchApp(env: Record<string, string> = {}): Promise<LaunchedApp> {
+export async function launchApp(
+  env: Record<string, string> = {},
+  userDataDir?: string,
+): Promise<LaunchedApp> {
   const root = join(__dirname, '..', '..');
   // A fresh profile per run, so saved settings never leak between tests.
-  const args = [root, `--user-data-dir=${mkdtempSync(join(tmpdir(), 'standin-e2e-'))}`];
+  const args = [root, `--user-data-dir=${userDataDir ?? mkdtempSync(join(tmpdir(), 'standin-e2e-'))}`];
   if (process.getuid?.() === 0 || process.env.CI) args.push('--no-sandbox');
   const app = await electron.launch({
     args,
@@ -35,4 +39,33 @@ export async function passConsent(control: Page, choice: 'demo' | 'camera' = 'de
 /** Opens a settings tab: 'auto' | 'stage' | 'camera' | 'advanced'. */
 export async function openTab(control: Page, id: 'auto' | 'stage' | 'camera' | 'advanced'): Promise<void> {
   await control.click(`#tab-${id}`);
+}
+
+/**
+ * A short synthetic WebM clip for the recorded-input tests, generated with ffmpeg into the
+ * git-ignored test-assets folder (no video is ever kept in the repo).
+ */
+export function testClip(seconds = 4): string {
+  const dir = join(__dirname, '..', '..', 'test-assets');
+  const file = join(dir, `e2e-clip-${seconds}s.webm`);
+  if (!existsSync(file)) {
+    mkdirSync(dir, { recursive: true });
+    execFileSync('ffmpeg', [
+      '-loglevel',
+      'error',
+      '-y',
+      '-f',
+      'lavfi',
+      '-i',
+      `testsrc2=size=320x240:rate=30:duration=${seconds}`,
+      '-c:v',
+      'libvpx',
+      '-b:v',
+      '300k',
+      '-pix_fmt',
+      'yuv420p',
+      file,
+    ]);
+  }
+  return file;
 }

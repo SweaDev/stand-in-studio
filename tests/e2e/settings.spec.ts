@@ -46,8 +46,11 @@ test('settings panel changes the stage and persists only settings', async () => 
         'intentTuning',
         'mode',
         'presets',
+        'recorded',
       ].sort(),
     );
+    // Recorded clips and their telemetry live in the demo library, never in settings.
+    expect(saved.recorded).toEqual({ libraryDir: null, saveBody: false, lastDemo: null });
     // Learned intent tuning is never saved unless the user opts in.
     expect(saved.intentTuning).toEqual({});
   } finally {

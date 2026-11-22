@@ -38,6 +38,16 @@ import { DemoController } from './demo/DemoController';
 import { h } from './dom';
 import { StageHost } from './stage/StageHost';
 import { StageLoop } from './stage/StageLoop';
+import { RecordedFeed } from './recorded/RecordedFeed';
+import { TransportBar } from './recorded/TransportBar';
+import { SaveDemoDialog } from './recorded/SaveDemoDialog';
+import { ReplaySignalSource } from '../../sensing/recorded/ReplaySignalSource';
+import { TelemetryRecorder } from '../../sensing/recorded/TelemetryRecorder';
+import { sanitizeTelemetry } from '../../shared/telemetry';
+import { formatDuration, videoExt } from '../../shared/demos';
+
+/** Presage SDK version bundled with the app (stamped into saved telemetry). */
+const SDK_VERSION = '3.5.0';
 
 /**
  * Mediator for the control window: owns the engine, the signal source (Demo or Presage),
@@ -51,6 +61,18 @@ export class ControlApp {
   demo: DemoController | null = null;
   camera: CameraManager | null = null;
   presage: PresageSignalSource | null = null;
+  /** A recorded clip in place of the camera (live analysis or saved-demo replay). */
+  clip: RecordedFeed | null = null;
+  /** Offline replay of a saved demo's telemetry (never uses the SDK). */
+  replay: ReplaySignalSource | null = null;
+  /** Name of the saved demo being replayed. */
+  replayName = '';
+  /** Telemetry being saved for the clip (one pass, start to end). */
+  telemetry: TelemetryRecorder | null = null;
+  private transport: TransportBar | null = null;
+  readonly saveDialog = new SaveDemoDialog();
+  private apiAvailable = false;
+  private lastClipMs = 0;
   readonly banner = new StatusBanner();
   private feed: () => FeedSource | null = () => null;
   private readonly frameListeners: ((s: StageState) => void)[] = [];
@@ -76,6 +98,7 @@ export class ControlApp {
       () => this.feed(),
       this.thumb,
       (s) => this.frameListeners.forEach((fn) => fn(s)),
+      () => this.beforeTick(),
     );
     this.main = h('main', { class: 'workspace', hidden: true });
     // Hotkeys arrive from main; registered once for the app's lifetime.
@@ -151,27 +174,62 @@ export class ControlApp {
    * on leaving it. Goes through the transition chain so it never races a restart.
    */
   private syncSensing(): void {
+    // A saved-demo replay has no SDK: it simply stops feeding signals while the clip is paused.
+    if (this.replay) {
+      this.engine.setSensing(this.clip && !this.clip.playing ? 'paused' : 'live');
+      return;
+    }
     const src = this.presage;
-    if (this.pauseTimer) clearTimeout(this.pauseTimer);
-    this.pauseTimer = undefined;
     if (!src) return;
-    if (this.engine.currentMode === 'camera') {
-      if (src.isPaused) return;
+    if (this.wantsPause()) {
+      if (src.isPaused || this.pauseTimer) return;
       this.pauseTimer = setTimeout(() => {
         this.pauseTimer = undefined;
         void this.serial(async () => {
-          if (this.presage !== src || this.engine.currentMode !== 'camera' || src.isPaused) return;
+          if (this.presage !== src || !this.wantsPause() || src.isPaused) return;
           this.engine.setSensing('paused');
           await src.pause();
         });
       }, ControlApp.PAUSE_DEBOUNCE_MS);
-    } else if (src.isPaused) {
+      return;
+    }
+    if (this.pauseTimer) clearTimeout(this.pauseTimer);
+    this.pauseTimer = undefined;
+    if (src.isPaused) {
       void this.serial(async () => {
-        if (this.presage !== src || this.engine.currentMode === 'camera' || !src.isPaused) return;
+        if (this.presage !== src || this.wantsPause() || !src.isPaused) return;
         this.engine.setSensing('live');
         await src.resume();
       });
     }
+  }
+
+  /** The SDK has nothing to do: Camera mode, or a recorded clip that is paused or over. */
+  private wantsPause(): boolean {
+    return this.engine.currentMode === 'camera' || (this.clip !== null && !this.clip.playing);
+  }
+
+  /** Why the SDK is paused, for the status chip. */
+  private pauseReason(): string {
+    if (this.engine.currentMode === 'camera')
+      return this.clip
+        ? 'Presage paused · the clip passes straight through'
+        : 'Presage paused · your video passes straight through';
+    return 'Presage paused · the clip is paused';
+  }
+
+  /** Every stage frame, before the engine ticks: replay frames, and clip jumps. */
+  private beforeTick(): void {
+    const clip = this.clip;
+    if (!clip) return;
+    const ms = clip.mediaMs;
+    if (this.replay) {
+      this.replay.sync(ms);
+    } else if (ms + 250 < this.lastClipMs) {
+      // Looped or seeked back: what the SDK saw before the jump no longer applies.
+      this.engine.resetSignals();
+    }
+    this.lastClipMs = ms;
   }
 
   /** Starts sensing on a new source: paused from the outset when the stage is in Camera mode. */
@@ -198,6 +256,8 @@ export class ControlApp {
 
   async start(): Promise<void> {
     const key = await this.api.apiKeyStatus();
+    this.apiAvailable = key.available && !this.api.info.forceDemo;
+    const library = await this.api.demos.list().catch(() => null);
     const header = h(
       'header',
       { class: 'app-header' },
@@ -220,8 +280,10 @@ export class ControlApp {
     );
     const consent = new ConsentScreen(
       {
-        cameraAvailable: key.available && !this.api.info.forceDemo,
+        cameraAvailable: this.apiAvailable,
         openExternal: (u) => void this.api.openExternal(u),
+        demos: library?.demos ?? [],
+        lastDemo: this.settings.recorded.lastDemo,
       },
       (choice) => {
         consent.el.remove();
@@ -248,6 +310,14 @@ export class ControlApp {
     this.presage = null;
     this.camera?.close();
     this.camera = null;
+    this.telemetry = null;
+    await this.replay?.stop();
+    this.replay = null;
+    this.clip?.close();
+    this.clip = null;
+    this.transport = null;
+    this.lastClipMs = 0;
+    (document.getElementById('demo-badge') as HTMLElement | null)?.setAttribute('hidden', '');
     this.banner.hide();
     this.feed = () => null;
     this.host.close();
@@ -260,7 +330,10 @@ export class ControlApp {
 
   /** Runs after consent: starts signals, the stage window and the loop. */
   private async begin(choice: ConsentChoice): Promise<void> {
-    if (choice === 'demo') {
+    if (typeof choice === 'object') {
+      if (!(await (choice.kind === 'clip' ? this.startClip(choice.file) : this.startReplay(choice.id))))
+        return;
+    } else if (choice === 'demo') {
       this.demo = new DemoController(this.engine, this.clock);
       this.feed = () => this.demo?.frame() ?? null;
       await this.demo.start();
@@ -298,6 +371,171 @@ export class ControlApp {
     this.engine.setDial(v);
     void this.updateSettings({ mode: 'blend', blend: { opacity: v } });
   }
+
+  /** Shows an error on the start screen with a way back to it. */
+  private startFailed(message: string): false {
+    this.root.insertBefore(this.banner.el, this.main);
+    this.banner.show(message, { label: 'Back', run: () => void this.restart() });
+    return false;
+  }
+
+  /**
+   * A video file in place of the camera. With an API key the SDK analyses the clip exactly
+   * as it would the webcam (so its telemetry can be saved); without one it only plays.
+   */
+  private async startClip(file: File): Promise<boolean> {
+    const ext = videoExt(file.name);
+    if (!ext) return this.startFailed('Choose a WebM, MP4, MOV, MKV or OGV video.');
+    let clip: RecordedFeed;
+    try {
+      clip = await RecordedFeed.open(file, file.name, ext);
+    } catch (err) {
+      return this.startFailed((err as Error).message);
+    }
+    this.clip = clip;
+    clip.onPlayState(() => this.syncSensing());
+    this.feed = () => clip.feed();
+    await clip.play().catch(() => undefined);
+    if (this.apiAvailable) {
+      this.presage = this.createPresage(clip.stream());
+      this.engine.startCalibration();
+      await this.startSensing(this.presage);
+    }
+    return true;
+  }
+
+  /** A saved demo: the clip plays and its saved telemetry drives the engine. No SDK, no API. */
+  private async startReplay(id: string): Promise<boolean> {
+    try {
+      const demo = await this.api.demos.load(id);
+      const telemetry = sanitizeTelemetry(demo.telemetry);
+      const ext = demo.summary.videoFile.split('.').pop() ?? 'webm';
+      const clip = await RecordedFeed.open(
+        new Blob([demo.video as BlobPart], { type: demo.mime }),
+        demo.summary.name,
+        ext,
+      );
+      this.clip = clip;
+      this.replayName = demo.summary.name;
+      this.replay = new ReplaySignalSource(telemetry, this.clock, () => this.engine.resetSignals());
+      this.replay.events.on('frame', (f) => this.engine.ingest(f));
+      clip.onPlayState(() => this.syncSensing());
+      this.feed = () => clip.feed();
+      await this.replay.start();
+      this.engine.startCalibration();
+      await clip.play().catch(() => undefined);
+      const badge = document.getElementById('demo-badge') as HTMLElement;
+      badge.textContent = 'DEMO – saved recording, no API';
+      badge.hidden = false;
+      void this.updateSettings({ recorded: { lastDemo: id } });
+      return true;
+    } catch (err) {
+      this.clip?.close();
+      this.clip = null;
+      this.replay = null;
+      return this.startFailed(`Could not open the saved demo: ${(err as Error).message}`);
+    }
+  }
+
+  /**
+   * Saves telemetry for the open clip: asks first (privacy notice, name, body opt-in), then
+   * plays the clip once from the start with the SDK analysing it, and stores the clip and
+   * the signals in the demo library.
+   */
+  async saveClipTelemetry(): Promise<void> {
+    const clip = this.clip;
+    const src = this.presage;
+    if (!clip || !src || this.replay || this.telemetry) return;
+    const listing = await this.api.demos.list().catch(() => null);
+    const choice = await this.saveDialog.ask({
+      title: 'Save telemetry for this clip',
+      action: 'Play and save',
+      name: clip.name.replace(/\.[^.]+$/, ''),
+      folder: listing?.dir ?? 'your demo library',
+      includeBody: this.settings.recorded.saveBody,
+    });
+    if (!choice || this.clip !== clip) return;
+    void this.updateSettings({ recorded: { saveBody: choice.includeBody } });
+    if (this.engine.currentMode === 'camera') this.setMode('auto');
+    if (choice.includeBody) await src.setComfortShield(true);
+    const rec = new TelemetryRecorder({ mediaTime: () => clip.mediaMs, includeBody: choice.includeBody });
+    const wasLooping = clip.loop;
+    clip.pause();
+    clip.loop = false;
+    clip.seek(0);
+    this.lastClipMs = 0;
+    this.engine.resetSignals();
+    this.telemetry = rec;
+    this.transport?.lock(true);
+    this.setTelemetryStatus('Saving telemetry: the clip plays once from the start…', true);
+    try {
+      await clip.play();
+      await new Promise<void>((resolve) => {
+        const check = () => {
+          if (
+            !clip.playing ||
+            rec.aborted ||
+            this.telemetry !== rec ||
+            this.engine.currentMode === 'camera'
+          ) {
+            if (this.engine.currentMode === 'camera')
+              rec.abort('Camera mode paused Presage, so the telemetry is incomplete.');
+            if (!clip.video.ended && !rec.aborted) rec.abort('Saving was cancelled.');
+            resolve();
+          } else setTimeout(check, 100);
+        };
+        check();
+      });
+      const file = rec.finish({
+        app: this.api.info.version,
+        sdk: SDK_VERSION,
+        video: {
+          file: clip.name,
+          durationMs: Math.round(clip.durationMs),
+          width: clip.width,
+          height: clip.height,
+        },
+      });
+      const saved = await this.api.demos.save({
+        name: choice.name,
+        telemetry: file,
+        video: await clip.bytes(),
+        ext: clip.ext,
+      });
+      this.setTelemetryStatus(
+        `Saved “${saved.name}” (${formatDuration(saved.durationMs)}, ${saved.frames} frames) to your demo library. Pick it under Demo mode on the start screen.`,
+        false,
+        'ok',
+      );
+      void this.updateSettings({ recorded: { lastDemo: saved.id } });
+      this.demoLibraryChanged();
+    } catch (err) {
+      this.setTelemetryStatus(`Telemetry not saved: ${(err as Error).message}`, false, 'error');
+    } finally {
+      if (this.telemetry === rec) this.telemetry = null;
+      clip.loop = wasLooping;
+      this.transport?.lock(false);
+      void src.setComfortShield(needsCardio(this.settings));
+    }
+  }
+
+  /** Cancels a telemetry save in progress. */
+  cancelClipTelemetry(): void {
+    this.telemetry?.abort('Saving was cancelled.');
+  }
+
+  private telemetryStatus: HTMLElement | null = null;
+  private telemetryCancel: HTMLButtonElement | null = null;
+
+  private setTelemetryStatus(text: string, busy: boolean, tone: 'ok' | 'error' | '' = ''): void {
+    if (!this.telemetryStatus) return;
+    this.telemetryStatus.textContent = text;
+    this.telemetryStatus.className = `telemetry-status${tone ? ` is-${tone}` : ''}`;
+    if (this.telemetryCancel) this.telemetryCancel.hidden = !busy;
+  }
+
+  /** Hook for the Advanced demo-library panel (refreshes its list). */
+  private demoLibraryChanged: () => void = () => undefined;
 
   /**
    * Opens the physical camera once and gives the same stream to the SDK and the stage
@@ -349,7 +587,10 @@ export class ControlApp {
       this.sdkFactory(),
       this.clock,
     );
-    src.events.on('frame', (f) => this.engine.ingest(f));
+    src.events.on('frame', (f) => {
+      this.engine.ingest(f);
+      this.telemetry?.push(f);
+    });
     src.events.on('status', (st) => st === 'running' && this.banner.hide());
     src.events.on('error', (e) => {
       if (this.presage !== src) return; // a retired session's late error
@@ -391,6 +632,51 @@ export class ControlApp {
     return h('div', { class: 'group', id: 'group-camera-device' }, h('h3', {}, 'Camera'), picker.el);
   }
 
+  /** Transport for a recorded clip, plus Save telemetry when Presage analyses it. */
+  private buildTransport(clip: RecordedFeed): TransportBar {
+    const extra: HTMLElement[] = [];
+    if (this.presage) {
+      const save = h(
+        'button',
+        {
+          type: 'button',
+          class: 'btn-small',
+          id: 'save-telemetry',
+          onclick: () => void this.saveClipTelemetry(),
+        },
+        icon('record', 14),
+        'Save telemetry…',
+      );
+      this.onFrame(() => {
+        const busy = this.telemetry !== null;
+        if (save.disabled !== busy) save.disabled = busy;
+        if (busy && this.telemetry) {
+          const rec = this.telemetry;
+          this.setTelemetryStatus(
+            `Saving telemetry · ${formatDuration(rec.progressMs)} / ${formatDuration(clip.durationMs)} · ${rec.count} frames`,
+            true,
+          );
+        }
+      });
+      this.telemetryCancel = h(
+        'button',
+        {
+          type: 'button',
+          class: 'btn-small',
+          id: 'cancel-telemetry',
+          hidden: true,
+          onclick: () => this.cancelClipTelemetry(),
+        },
+        'Cancel',
+      );
+      extra.push(save, this.telemetryCancel);
+    }
+    const bar = new TransportBar(clip, extra);
+    this.telemetryStatus = h('p', { class: 'telemetry-status', id: 'telemetry-status', role: 'status' });
+    bar.el.append(this.telemetryStatus);
+    return bar;
+  }
+
   /** Lays out the main workspace. */
   protected buildWorkspace(): void {
     const dial = new PresenceDial((v) => this.turnDial(v));
@@ -421,8 +707,17 @@ export class ControlApp {
     );
     this.onFrame(() => {
       const paused = this.presage?.status === 'paused';
-      if (sensingChip.hidden === paused) sensingChip.hidden = !paused;
+      const text = this.replay
+        ? 'Replaying saved telemetry · no API'
+        : paused
+          ? this.pauseReason()
+          : this.clip && !this.presage
+            ? 'No API key · the clip plays without analysis'
+            : '';
+      if (sensingChip.textContent !== text) sensingChip.textContent = text;
+      if (sensingChip.hidden !== (text === '')) sensingChip.hidden = text === '';
     });
+    this.transport = this.clip ? this.buildTransport(this.clip) : null;
     this.onFrame((s) => {
       dial.set(s.feedOpacity, MODE_LABELS[s.mode]);
       overrides.set(this.engine.overrideState);
@@ -530,7 +825,8 @@ export class ControlApp {
           label: 'Camera',
           content: [
             this.camera ? this.cameraGroup() : null,
-            new ApiKeyPanel(this.api, this.demo === null, () => void this.restart()).el,
+            new ApiKeyPanel(this.api, this.demo === null && this.replay === null, () => void this.restart())
+              .el,
           ],
         },
         { id: 'advanced', label: 'Advanced', content: [this.advanced.el] },
@@ -569,7 +865,15 @@ export class ControlApp {
                 'Stop camera',
               )
             : null,
+          this.clip
+            ? h(
+                'button',
+                { type: 'button', id: 'close-clip', onclick: () => void this.restart() },
+                this.replay ? 'Close demo' : 'Close clip',
+              )
+            : null,
         ),
+        this.transport?.el ?? null,
         caption,
         overrides.el,
         help.el,
@@ -578,6 +882,7 @@ export class ControlApp {
       h('section', { class: 'settings card', 'aria-label': 'Settings' }, this.tabs.el),
       this.devlog.el,
       builder.el,
+      this.saveDialog.el,
     );
   }
 }

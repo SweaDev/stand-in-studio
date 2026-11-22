@@ -25,6 +25,8 @@ export class StageLoop {
     private readonly feed: () => FeedSource | null,
     private readonly thumbnail: HTMLCanvasElement | null,
     private readonly onFrame: (s: StageState) => void = () => undefined,
+    /** Runs before each engine tick (a replay feeds the frames due by now). */
+    private readonly beforeTick: () => void = () => undefined,
   ) {}
 
   start(): void {
@@ -38,6 +40,7 @@ export class StageLoop {
   }
 
   private frame(): void {
+    this.beforeTick();
     const state = this.engine.tick();
     const t = performance.now();
     const surface = this.host.surface;
