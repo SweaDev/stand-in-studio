@@ -50,7 +50,7 @@ export function computeFaceFeatures(
   const openA = widthA > 0 ? dist(ua, la) / widthA : 0;
   const openB = widthB > 0 ? dist(ub, lb) / widthB : 0;
 
-  return {
+  const features: FaceFeatures = {
     pitch: n.y / ed,
     yaw: n.x / ed,
     roll,
@@ -58,6 +58,16 @@ export function computeFaceFeatures(
     eyeOpenness: (openA + openB) / 2,
     eyeDistancePx: ed,
   };
+  // Iris points exist only in the 478-point mesh (468 + 10 iris points).
+  const irA = L.irisA !== undefined ? p(L.irisA) : undefined;
+  const irB = L.irisB !== undefined ? p(L.irisB) : undefined;
+  if (irA && irB && points.length >= 478 && widthA > 0 && widthB > 0) {
+    const ga = unroll({ x: irA.x - eyeA.x, y: irA.y - eyeA.y }, roll);
+    const gb = unroll({ x: irB.x - eyeB.x, y: irB.y - eyeB.y }, roll);
+    features.gazeX = (ga.x / widthA + gb.x / widthB) / 2;
+    features.gazeY = (ga.y / widthA + gb.y / widthB) / 2;
+  }
+  return features;
 }
 
 /** Light smoothing of head pose so jittery landmarks don't shake the character. */

@@ -1,6 +1,7 @@
 import { Emitter } from '../../core/util/Emitter';
 import type { Clock } from '../../core/util/Clock';
 import { type DecodedMetrics, mapMetrics, mapValidation } from '../metricsMapper';
+import { ValidationCodes } from '../metricTypes';
 import { requestedMetrics } from '../requestedMetrics';
 import type { SignalSource, SignalSourceEvents, SourceError, SourceStatus } from '../SignalSource';
 
@@ -121,7 +122,11 @@ export class PresageSignalSource implements SignalSource {
       this.lastHint = hint ?? '';
       if (code === 0) this.stats.ok++;
       else this.stats.notOk++;
-      this.events.emit('frame', { t: this.clock.now(), validation: mapValidation(code) });
+      this.events.emit('frame', {
+        t: this.clock.now(),
+        validation: mapValidation(code),
+        multipleFaces: code === ValidationCodes.kMultipleFacesFound,
+      });
     });
     sdk.on('error', (code, message, retryable) => this.onError(code, message, retryable));
     sdk.useMediaStream(this.stream);

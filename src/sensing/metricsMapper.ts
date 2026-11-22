@@ -1,5 +1,6 @@
 import type { Point, RateReading, SignalFrame, ValidationState } from '../shared/types';
-import { EXPRESSION_HAPPY, ValidationCodes } from './metricTypes';
+import type { ExpressionName } from '../shared/types';
+import { EXPRESSION_HAPPY, EXPRESSION_TYPES, ValidationCodes } from './metricTypes';
 
 /**
  * Structural view of a decoded `Metrics` message (from `decodeMetrics`). protobufjs
@@ -73,6 +74,12 @@ export function mapMetrics(m: DecodedMetrics, t: number): SignalFrame {
   if (expr?.scores && expr.scores.length > 0) {
     const happy = expr.scores.find((s) => s.type === EXPRESSION_HAPPY);
     frame.happy = Math.min(1, Math.max(0, (happy?.confidence ?? 0) / 100));
+    const expressions: Partial<Record<ExpressionName, number>> = {};
+    for (const [name, type] of Object.entries(EXPRESSION_TYPES) as [ExpressionName, number][]) {
+      const sc = expr.scores.find((x) => x.type === type);
+      expressions[name] = Math.min(1, Math.max(0, (sc?.confidence ?? 0) / 100));
+    }
+    frame.expressions = expressions;
   }
 
   const pulse = rate(last(m.cardio?.pulseRate), PULSE_CONFIDENT);

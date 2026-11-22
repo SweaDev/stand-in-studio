@@ -44,6 +44,9 @@ describe('mapMetrics', () => {
     expect(f.landmarks).toHaveLength(478);
     expect(f.landmarks?.[10]).toEqual({ x: 10, y: 20 });
     expect(f.happy).toBeCloseTo(0.72);
+    expect(f.expressions?.happy).toBeCloseTo(0.72);
+    expect(f.expressions?.neutral).toBeCloseTo(0.2);
+    expect(f.expressions?.sad).toBe(0);
     expect(f.pulseRate).toBeUndefined();
   });
 

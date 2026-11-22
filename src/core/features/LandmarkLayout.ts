@@ -20,6 +20,9 @@ export interface LandmarkLayout {
   readonly innerLipLower: number;
   readonly mouthCornerA: number;
   readonly mouthCornerB: number;
+  /** Iris centres (MediaPipe 478 only): A with eye A's corners, B with eye B's. */
+  readonly irisA?: number;
+  readonly irisB?: number;
 }
 
 export const MEDIAPIPE_FACE_MESH: LandmarkLayout = Object.freeze({
@@ -37,6 +40,8 @@ export const MEDIAPIPE_FACE_MESH: LandmarkLayout = Object.freeze({
   innerLipLower: 14,
   mouthCornerA: 78,
   mouthCornerB: 308,
+  irisA: 468,
+  irisB: 473,
 });
 
 export const DLIB_68: LandmarkLayout = Object.freeze({

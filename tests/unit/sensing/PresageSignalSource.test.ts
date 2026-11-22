@@ -105,11 +105,13 @@ describe('PresageSignalSource', () => {
     (sdks[0] as FakeSdk).emit('metrics', buf, 1);
     (sdks[0] as FakeSdk).emit('metrics', new Uint8Array([255, 255, 255]), 2); // malformed: dropped
     (sdks[0] as FakeSdk).emit('validationStatus', 1, 3, 'No face');
+    (sdks[0] as FakeSdk).emit('validationStatus', 2, 4, 'Multiple faces');
     expect(frames).toEqual([
       { t: 500, talking: true },
-      { t: 500, validation: 'noFace' },
+      { t: 500, validation: 'noFace', multipleFaces: false },
+      { t: 500, validation: 'poor', multipleFaces: true },
     ]);
-    expect(src.lastHint).toBe('No face');
+    expect(src.lastHint).toBe('Multiple faces');
   });
 
   it('reconfigures with cardio metrics only when the Comfort shield is on', async () => {

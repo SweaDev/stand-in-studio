@@ -14,6 +14,12 @@ export interface FaceFeatures {
   mouthGap: number;
   /** Mean eyelid gap divided by eye width (0 = closed). */
   eyeOpenness: number;
+  /**
+   * Eye-in-head gaze: each iris centre minus its eye-corner midpoint (roll-corrected),
+   * divided by that eye's width, averaged over both eyes. Absent without iris points.
+   */
+  gazeX?: number;
+  gazeY?: number;
   /** Eye-centre distance in pixels (for sanity checks). */
   eyeDistancePx: number;
 }

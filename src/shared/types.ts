@@ -19,6 +19,9 @@ export interface Point {
  */
 export type ValidationState = 'ok' | 'noFace' | 'poor';
 
+/** The expression scores intents can use (SDK ExpressionType names). */
+export type ExpressionName = 'neutral' | 'happy' | 'surprise' | 'sad' | 'angry';
+
 /** A slow cardio/breathing-rate reading; `confident` folds the SDK's stable flag and confidence. */
 export interface RateReading {
   value: number;
@@ -41,8 +44,12 @@ export interface SignalFrame {
   landmarks?: Point[];
   /** Latest HAPPY expression probability, 0..1. */
   happy?: number;
+  /** Latest expression scores 0..1 (raw SDK confidence / 100). */
+  expressions?: Partial<Record<ExpressionName, number>>;
   /** Latest validation state (from the validationStatus event). */
   validation?: ValidationState;
+  /** The validation code was kMultipleFacesFound. */
+  multipleFaces?: boolean;
   /** Only present when the Comfort shield requested cardio metrics. */
   pulseRate?: RateReading;
   /** Only present when the Comfort shield requested breathing rate. */

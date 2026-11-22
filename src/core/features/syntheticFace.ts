@@ -13,6 +13,9 @@ export interface SyntheticFaceParams {
   mouthGap: number;
   /** Eyelid gap / eye width. */
   eyeOpenness: number;
+  /** Eye-in-head gaze offset in eye-widths (iris points; 478 layout only). */
+  gazeX?: number;
+  gazeY?: number;
   /** Eye distance in pixels. */
   scale?: number;
   /** Eye midpoint position in pixels. */
@@ -59,5 +62,9 @@ export function syntheticFace(
   pts[layout.innerLipLower] = at(yaw * 0.8, mouthY + mouthGap / 2);
   pts[layout.mouthCornerA] = at(yaw * 0.8 - 0.4, mouthY);
   pts[layout.mouthCornerB] = at(yaw * 0.8 + 0.4, mouthY);
+  const gx = (params.gazeX ?? 0) * eyeW;
+  const gy = (params.gazeY ?? 0) * eyeW;
+  if (layout.irisA !== undefined) pts[layout.irisA] = at(-0.5 + gx, gy);
+  if (layout.irisB !== undefined) pts[layout.irisB] = at(0.5 + gx, gy);
   return pts;
 }

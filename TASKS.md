@@ -110,7 +110,7 @@ Progress tracker for [PLAN.md](PLAN.md). One task = one commit; tick the box in 
 
 **Phase 10 — Intents & stability → v1.1.0** (requested after v1.0.0; developed on the session branch `claude/upbeat-wozniak-rslrk1`)
 - [x] T49 Graceful SDK shutdown (stop and destroy every live session before exit) and serialised camera/SDK transitions; `scripts/repro-quit.mjs` for the reported `napi_throw` crash
-- [ ] T50 Signal catalogue: iris gaze, people in view, and every Presage-derived signal with states, memberships and doc links; `docs/intents.md`
+- [x] T50 Signal catalogue: iris gaze, people in view, and every Presage-derived signal with states, memberships and doc links; `docs/intents.md`
 - [ ] T51 Intent core: built-in and custom intents, matcher with specificity and privacy-first tie-breaks, tracker, tuning and conflict analysis
 - [ ] T52 IntentPolicy and DecisionTrace in StudioEngine; Auto no longer hides the speaker on validation flicker
 - [ ] T53 Settings: intents, custom intents, opt-in tuning save, developer mode

@@ -1,5 +1,6 @@
 import type { CommandName } from '../core/stage/commands';
 import type { DeepPartial, Settings } from './settings';
+import { INTENTS_GUIDE, PRESAGE_DOCS } from './signalCatalog';
 
 /** IPC channel names shared by main and preload. */
 export const IPC = Object.freeze({
@@ -55,6 +56,13 @@ export const EXTERNAL_LINKS = Object.freeze({
   v4l2loopback: 'https://github.com/umlaeute/v4l2loopback',
 });
 
+/** Every page the app may open: fixed links plus the signal documentation. */
+const ALLOWED_EXTERNAL: ReadonlySet<string> = new Set([
+  ...Object.values(EXTERNAL_LINKS),
+  ...Object.values(PRESAGE_DOCS),
+  INTENTS_GUIDE,
+]);
+
 export function isAllowedExternal(url: string): boolean {
-  return (Object.values(EXTERNAL_LINKS) as string[]).includes(url);
+  return ALLOWED_EXTERNAL.has(url);
 }

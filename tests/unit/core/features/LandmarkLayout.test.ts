@@ -16,8 +16,10 @@ describe('detectLayout', () => {
     ] as const) {
       for (const [k, v] of Object.entries(layout)) {
         if (k === 'name') continue;
+        // Iris points exist only in the full 478-point mesh.
+        const limit = k.startsWith('iris') ? 478 : n;
         expect(v).toBeGreaterThanOrEqual(0);
-        expect(v).toBeLessThan(n);
+        expect(v).toBeLessThan(limit);
       }
     }
   });
