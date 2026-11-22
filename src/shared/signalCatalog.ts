@@ -62,6 +62,8 @@ export interface SignalInfo {
   threshold?: SignalThreshold;
   /** Needs a visible face: such a condition implies "face in view = yes". */
   needsFace: boolean;
+  /** States that can only happen with a face in view (for conflict analysis). */
+  faceStates?: readonly string[];
   /** Body (cardio/breathing-rate) signal: requested only on opt-in and can never raise the feed. */
   body: boolean;
 }
@@ -237,6 +239,7 @@ export const SIGNALS: readonly SignalInfo[] = Object.freeze([
     derived: false,
     docUrl: PRESAGE_DOCS.validation,
     states: [s('justMe', 'Just me'), s('more', 'More than one', true)],
+    faceStates: ['more'],
     threshold: { default: 0.3, min: 0.1, max: 0.9, unit: 'share of frames' },
     needsFace: false,
     body: false,
