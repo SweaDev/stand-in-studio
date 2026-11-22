@@ -9,3 +9,6 @@ test-assets/
 .env
 .env.*
 .DS_Store
+demos/
+*.telemetry.json
+telemetry*.json

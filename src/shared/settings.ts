@@ -6,6 +6,7 @@ import {
   sanitizeTuning,
   usesBodySignals,
 } from './intents';
+import { DEMO_ID } from './demos';
 import { CHARACTER_IDS, MODES } from './types';
 import type { BlendLayout, CharacterId, Mode } from './types';
 
@@ -47,6 +48,12 @@ export interface Settings {
   /** Learned intent thresholds; always empty unless `auto.saveTuning` is on. */
   intentTuning: Record<string, IntentTuning>;
   advanced: { developerMode: boolean };
+  /**
+   * Recorded clips and saved demos. `libraryDir` is set only by main, from a folder the
+   * user picked (null: the app's data folder). `saveBody` opts pulse and breathing into
+   * saved telemetry. `lastDemo` is the saved demo Demo mode opens by default.
+   */
+  recorded: { libraryDir: string | null; saveBody: boolean; lastDemo: string | null };
 }
 
 export const BACKGROUNDS = ['#2b2d42', '#264653', '#3d405b', '#f4f1de', '#e9edc9', '#1d1b22'] as const;
@@ -62,6 +69,7 @@ export const DEFAULT_SETTINGS: Settings = Object.freeze({
   presets: [],
   intentTuning: {},
   advanced: { developerMode: false },
+  recorded: { libraryDir: null, saveBody: false, lastDemo: null },
 }) as Settings;
 
 const HEX = /^#[0-9a-f]{6}$/i;
@@ -105,6 +113,7 @@ export function sanitizeSettings(raw: unknown): Settings {
   const camera = obj(r.camera);
   const a11y = obj(r.accessibility);
   const advanced = obj(r.advanced);
+  const recorded = obj(r.recorded);
   const intents = sanitizeIntents(auto.intents);
   const saveTuning = bool(auto.saveTuning, d.auto.saveTuning);
   const max = num01(auto.max, d.auto.max);
@@ -143,6 +152,17 @@ export function sanitizeSettings(raw: unknown): Settings {
     // Switching the opt-in off deletes saved tuning on the next write.
     intentTuning: saveTuning ? sanitizeTuning(r.intentTuning, intents) : {},
     advanced: { developerMode: bool(advanced.developerMode, d.advanced.developerMode) },
+    recorded: {
+      libraryDir:
+        typeof recorded.libraryDir === 'string' &&
+        recorded.libraryDir.length > 0 &&
+        recorded.libraryDir.length < 1024
+          ? recorded.libraryDir
+          : null,
+      saveBody: bool(recorded.saveBody, d.recorded.saveBody),
+      lastDemo:
+        typeof recorded.lastDemo === 'string' && DEMO_ID.test(recorded.lastDemo) ? recorded.lastDemo : null,
+    },
   };
 }
 

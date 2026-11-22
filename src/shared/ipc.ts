@@ -1,4 +1,5 @@
 import type { CommandName } from '../core/stage/commands';
+import type { DemoLibraryListing, DemoLoaded, DemoSaveRequest, DemoSummary } from './demos';
 import type { DeepPartial, Settings } from './settings';
 import { INTENTS_GUIDE, PRESAGE_DOCS } from './signalCatalog';
 
@@ -13,7 +14,32 @@ export const IPC = Object.freeze({
   apiKeySet: 'studio:api-key-set',
   apiKeyClear: 'studio:api-key-clear',
   appQuitting: 'studio:app-quitting',
+  demosList: 'studio:demos-list',
+  demoLoad: 'studio:demo-load',
+  demoSave: 'studio:demo-save',
+  demoRename: 'studio:demo-rename',
+  demoDelete: 'studio:demo-delete',
+  demoExport: 'studio:demo-export',
+  demoChooseFolder: 'studio:demo-choose-folder',
+  demoResetFolder: 'studio:demo-reset-folder',
+  demoOpenFolder: 'studio:demo-open-folder',
 });
+
+/** The demo library in main (saved clips + telemetry in the user's data folder). */
+export interface DemoLibraryApi {
+  list(): Promise<DemoLibraryListing>;
+  load(id: string): Promise<DemoLoaded>;
+  save(req: DemoSaveRequest): Promise<DemoSummary>;
+  rename(id: string, name: string): Promise<DemoSummary>;
+  delete(id: string): Promise<void>;
+  /** Asks for a folder and copies the video and telemetry there; null if cancelled. */
+  exportTo(id: string): Promise<string[] | null>;
+  /** Asks for a new library folder; null if cancelled. */
+  chooseFolder(): Promise<DemoLibraryListing | null>;
+  /** Back to the default folder in the app's data directory. */
+  resetFolder(): Promise<DemoLibraryListing>;
+  openFolder(): Promise<void>;
+}
 
 /** Static facts about this run, fetched once by the preload. */
 export interface AppInfo {
@@ -45,6 +71,7 @@ export interface StudioApi {
   clearApiKey(): Promise<ApiKeyStatus>;
   /** Main is about to quit: stop sensing now. */
   onQuitting(fn: () => void): () => void;
+  demos: DemoLibraryApi;
 }
 
 /** Name of the stage window opened with window.open (main matches it). */

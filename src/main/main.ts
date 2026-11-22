@@ -4,6 +4,7 @@ import { join } from 'node:path';
 import { IPC, isAllowedExternal, type AppInfo } from '../shared/ipc';
 import type { DeepPartial, Settings } from '../shared/settings';
 import { ApiKeyStore } from './apiKey';
+import { bindDemoLibrary } from './demoIpc';
 import { registerHotkeys, unregisterHotkeys } from './hotkeys';
 import { bindSdk } from './sdkBridge';
 import { liveSdkSessions } from './sdkKeyInjection';
@@ -42,7 +43,22 @@ function bootstrap(): void {
     e.returnValue = info;
   });
   ipcMain.handle(IPC.settingsGet, () => settings().get());
-  ipcMain.handle(IPC.settingsSet, (_e, patch: DeepPartial<Settings>) => settings().update(patch ?? {}));
+  ipcMain.handle(IPC.settingsSet, (_e, patch: DeepPartial<Settings>) => {
+    // The demo library folder is set only from a native folder dialog (demoIpc), never by the page.
+    const { recorded, ...rest } = patch ?? {};
+    const safe: DeepPartial<Settings> = { ...rest };
+    if (recorded && typeof recorded === 'object') {
+      const { libraryDir: _dir, ...r } = recorded;
+      safe.recorded = r;
+    }
+    return settings().update(safe);
+  });
+  bindDemoLibrary({
+    userData: app.getPath('userData'),
+    settings,
+    window: () => control,
+    e2ePickDir: info.e2e ? process.env.STANDIN_E2E_PICK_DIR : undefined,
+  });
   ipcMain.handle(IPC.openExternal, async (_e, url: unknown) => {
     if (typeof url !== 'string' || !isAllowedExternal(url)) return false;
     await shell.openExternal(url);

@@ -125,7 +125,7 @@ Progress tracker for [PLAN.md](PLAN.md). One task = one commit; tick the box in 
 
 **Phase 12 — Recorded input & saved-telemetry demos → v1.3.0** (session branch `claude/upbeat-wozniak-rslrk1`; demos live in the user's data folder, never in the repo)
 - [x] T60 Telemetry format (`standin-telemetry` v1, body signals opt-in), TelemetryRecorder, ReplaySignalSource and `engine.resetSignals()`; replay reproduces the live intent sequence
-- [ ] T61 Main-process demo library (default `userData/demos`, folder chooser), `standin-media://` protocol, IPC and settings
+- [x] T61 Main-process demo library (default `userData/demos`, folder chooser), `standin-media://` protocol, IPC and settings
 - [ ] T62 Recorded file input: consent card, RecordedFeed, SDK on the clip, transport, Save telemetry with privacy notice
 - [ ] T63 In-app clip recorder (MediaRecorder) with save to the demo library
 - [ ] T64 Demo picker with offline replay of saved demos; Advanced → Demo library (rename, delete, export, import)

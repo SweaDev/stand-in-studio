@@ -28,6 +28,17 @@ const studio: StudioApi = {
     ipcRenderer.on(IPC.appQuitting, listener);
     return () => ipcRenderer.removeListener(IPC.appQuitting, listener);
   },
+  demos: {
+    list: () => ipcRenderer.invoke(IPC.demosList),
+    load: (id) => ipcRenderer.invoke(IPC.demoLoad, id),
+    save: (req) => ipcRenderer.invoke(IPC.demoSave, req),
+    rename: (id, name) => ipcRenderer.invoke(IPC.demoRename, id, name),
+    delete: (id) => ipcRenderer.invoke(IPC.demoDelete, id),
+    exportTo: (id) => ipcRenderer.invoke(IPC.demoExport, id),
+    chooseFolder: () => ipcRenderer.invoke(IPC.demoChooseFolder),
+    resetFolder: () => ipcRenderer.invoke(IPC.demoResetFolder),
+    openFolder: () => ipcRenderer.invoke(IPC.demoOpenFolder),
+  },
 };
 
 export type StudioBridge = StudioApi;
