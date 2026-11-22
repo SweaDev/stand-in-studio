@@ -1,11 +1,13 @@
 // Captures README/POST media in Demo mode (no camera, no API key, no real person):
 // screenshots of the control window, a 2×2 character grid, Auto states, the intent
-// builder, the developer decision log and a short recording of the scripted meeting.
+// builder, the developer decision log, the recorded-clip view and a short recording of the
+// scripted meeting. The recorded-clip view plays a clip of Demo mode's simulated sample feed
+// (made here, never kept) with the e2e fake SDK, so no Presage contact and no real person.
 //
 //   xvfb-run -a -s "-screen 0 1600x1000x24" node scripts/capture-media.mjs
 import { _electron as electron } from '@playwright/test';
 import { execFileSync } from 'node:child_process';
-import { mkdirSync, mkdtempSync, writeFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { createRequire } from 'node:module';
@@ -82,7 +84,32 @@ ff(
 // Control window with the scripted meeting running, then record the stage for 30 s.
 await control.waitForTimeout(3000);
 await control.click('#script');
-await control.waitForTimeout(12_000);
+await control.waitForTimeout(6_000);
+// Record 6 s of the simulated sample feed for the recorded-clip screenshot below.
+const clipB64 = await control.evaluate(async () => {
+  const canvas = window.__standin.app.demo.frame().image;
+  const rec = new MediaRecorder(canvas.captureStream(30), { mimeType: 'video/webm;codecs=vp8' });
+  const chunks = [];
+  rec.ondataavailable = (e) => chunks.push(e.data);
+  const done = new Promise((r) => (rec.onstop = r));
+  rec.start();
+  await new Promise((r) => setTimeout(r, 6_000));
+  rec.stop();
+  await done;
+  const buf = new Uint8Array(await new Blob(chunks).arrayBuffer());
+  let bin = '';
+  for (let i = 0; i < buf.length; i += 0x8000) bin += String.fromCharCode(...buf.subarray(i, i + 0x8000));
+  return btoa(bin);
+});
+const clipFile = join(tmp, 'sample-feed.webm');
+writeFileSync(clipFile, Buffer.from(clipB64, 'base64'));
+const toTop = (page) =>
+  page.evaluate(() => {
+    for (const el of [document.scrollingElement, ...document.querySelectorAll('*')])
+      if (el?.scrollTop) el.scrollTop = 0;
+  });
+await toTop(control);
+await control.waitForTimeout(300);
 await control.screenshot({ path: join(out, 'control.png') });
 
 // Intent builder (Advanced → Create custom intent) with a half-built intent.
@@ -137,4 +164,26 @@ if (videoPath) {
     join(out, 'stage-frame.png'),
   );
 }
+// Recorded-clip view: Live input preview, Virtual Stage inset, transport and Save telemetry.
+const app2 = await electron.launch({
+  executablePath: require('electron'),
+  args: [root, '--no-sandbox', `--user-data-dir=${join(tmp, 'profile2')}`],
+  env: { ...process.env, STANDIN_E2E: '1', STANDIN_FAKE_SDK: '1', PRESAGE_API_KEY: 'media-dummy-key' },
+});
+const c2 = await app2.firstWindow();
+await app2.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0].setSize(1440, 960));
+await c2.setInputFiles('#consent-clip-file', clipFile);
+await c2.waitForSelector('#clip-play');
+await c2.locator('.mode-switch').getByRole('radio', { name: 'Blend' }).click();
+await c2.waitForTimeout(2_500);
+await toTop(c2);
+const top = await c2.locator('.preview').boundingBox();
+const bottom = await c2.locator('.transport').boundingBox();
+const pad = 12;
+await c2.screenshot({
+  path: join(out, 'recorded.png'),
+  clip: { x: top.x, y: top.y, width: top.width, height: bottom.y + bottom.height + pad - top.y },
+});
+await app2.close();
+rmSync(tmp, { recursive: true, force: true });
 console.log(`media written to ${out}`);

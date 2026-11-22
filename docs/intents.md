@@ -20,10 +20,11 @@ Body signals (pulse, breathing rate) can only **cover** you. An intent that uses
 | 1 | Away from the camera | face in view = no (for 3 s) | Back soon |
 | 2 | Someone else in view | people in view = more than one | Cover me |
 | 3 | Talking to someone else | talking = yes · head turn = left or right | Cover me |
-| 4 | Looking elsewhere | talking = no · eye gaze = away (for 1.5 s) | Cover me |
-| 5 | Eating or yawning | talking = no · mouth = open (for 1.5 s) | Cover me |
-| 6 | Talking in the meeting | talking = yes · head turn = facing the screen · eye gaze = on screen · people = just me | Reveal me |
-| 7 | Listening to others | talking = no · facing the screen · gaze on screen · mouth closed · just me | Blend |
+| 4 | Turned away | talking = no · head turn = left or right (for 1.5 s) | Cover me |
+| 5 | Looking elsewhere | talking = no · eye gaze = away (for 1.5 s) | Cover me |
+| 6 | Eating or yawning | talking = no · mouth = open (for 1.5 s) | Cover me |
+| 7 | Talking in the meeting | talking = yes · head turn = facing the screen · eye gaze = on screen · people = just me | Reveal me |
+| 8 | Listening to others | talking = no · facing the screen · gaze on screen · mouth closed · just me | Blend |
 
 If no intent matches, Auto falls back to **Blend** at your listening level.
 

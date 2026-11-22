@@ -59,6 +59,8 @@ Each run is charged at max(wall time, content seconds), so the figures are conse
 ## Demo media
 `docs/media/*` is generated in Demo mode by `xvfb-run -a -s "-screen 0 1600x1000x24" node scripts/capture-media.mjs`. It uses no camera, no API key and no real person. `demo.webm` is the last 30 s of a Playwright recording of the stage window during the scripted meeting, re-encoded with VP9 at 640×360, 20 fps and 350 kbit/s.
 
+The media was refreshed for v1.4.0 (the Live input preview, the Virtual Stage inset and the current consent screen). `recorded.png` was added. It shows a recorded clip as the live input: a few seconds of Demo mode's simulated sample feed, recorded by the capture script into a temporary file that is deleted afterwards, and played with the e2e fake SDK. No real person, no Presage contact.
+
 ## Performance measurements
 - T38 (2026-11-20): capture resolution against SDK packet rate and stage fps. The table is in `docs/sdk-notes.md` under "Renderer path and capture resolution". The default stays 960×540.
 - Extra fake-camera clips for this check (`face-1280x720.mjpeg`, `face-640x360.mjpeg`) are produced by `scripts/fetch-test-video.sh` with the same segment and crop, scaled to each size.
