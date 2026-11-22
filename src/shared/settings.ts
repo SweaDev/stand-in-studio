@@ -156,6 +156,11 @@ export function updateSettings(current: Settings, patch: DeepPartial<Settings>):
   const merged: Record<string, unknown> = { ...current };
   for (const [k, v] of Object.entries(patch)) {
     const cur = (current as unknown as Record<string, unknown>)[k];
+    // Learned tuning is always sent whole, so that entries can be removed.
+    if (k === 'intentTuning') {
+      merged[k] = v;
+      continue;
+    }
     merged[k] =
       v && typeof v === 'object' && !Array.isArray(v) && cur && typeof cur === 'object'
         ? { ...(cur as object), ...(v as object) }

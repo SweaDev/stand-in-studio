@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { launchApp } from './helpers';
+import { launchApp, openTab } from './helpers';
 
 const KEY = 'standin-e2e-dummy-key-0123456789';
 
@@ -29,6 +29,7 @@ test('a pasted key goes to main, the field is cleared and the camera is offered'
   const { app, control } = await launchApp();
   try {
     await control.click('#consent-demo');
+    await openTab(control, 'camera');
     await expect(control.locator('#api-key-status')).toHaveText('No key: Demo mode only.');
     await control.fill('#api-key-input', KEY);
     await control.click('#api-key-save');

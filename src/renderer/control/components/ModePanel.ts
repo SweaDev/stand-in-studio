@@ -13,6 +13,8 @@ export interface ModePanelActions {
 /** Settings for each mode, the character, and accessibility (REQUIREMENT §2–§3, §5). */
 export class ModePanel implements Component {
   readonly el: HTMLElement;
+  /** Each settings group, so the tabs can place them. */
+  readonly groups: Record<'character' | 'blend' | 'auto' | 'camera' | 'a11y', HTMLElement>;
   private readonly syncers: ((s: Settings) => void)[] = [];
 
   constructor(s: Settings, a: ModePanelActions) {
@@ -113,15 +115,14 @@ export class ModePanel implements Component {
 
     const group = (title: string, id: string, ...children: HTMLElement[]) =>
       h('div', { class: 'group', id }, h('h3', {}, title), ...children);
-    this.el = h(
-      'div',
-      { class: 'mode-panel' },
-      group('Character', 'group-character', character.el, swatches),
-      group('Blend', 'group-blend', blend.el, presets, layout.el),
-      group('Auto', 'group-auto', max.el, listening.el, shield.el),
-      group('Camera', 'group-camera', badge.el),
-      group('Accessibility', 'group-a11y', reduced.el, contrast.el),
-    );
+    this.groups = {
+      character: group('Character', 'group-character', character.el, swatches),
+      blend: group('Blend', 'group-blend', blend.el, presets, layout.el),
+      auto: group('Auto levels', 'group-auto', max.el, listening.el, shield.el),
+      camera: group('Camera mode', 'group-camera', badge.el),
+      a11y: group('Accessibility', 'group-a11y', reduced.el, contrast.el),
+    };
+    this.el = h('div', { class: 'mode-panel' }, ...Object.values(this.groups));
     this.sync(s);
   }
 

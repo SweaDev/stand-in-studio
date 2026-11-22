@@ -96,7 +96,7 @@ export const SIGNALS: readonly SignalInfo[] = Object.freeze([
     sdkSource: 'face.talking',
     derived: false,
     docUrl: PRESAGE_DOCS.face,
-    states: [s('yes', 'Talking', true), s('no', 'Not talking')],
+    states: [s('yes', 'Yes', true), s('no', 'No')],
     needsFace: true,
     body: false,
   },

@@ -5,7 +5,7 @@ test('hotkey commands from main toggle overrides; Hide me wins at once', async (
   const { app, control } = await launchApp();
   try {
     await passConsent(control);
-    await control.getByRole('radio', { name: 'Camera' }).click();
+    await control.locator('.mode-switch').getByRole('radio', { name: 'Camera' }).click();
     const feed = () => control.evaluate(() => (window as any).__standin.engine.state?.feedOpacity ?? -1);
     await expect.poll(feed).toBe(1);
 
@@ -22,7 +22,10 @@ test('hotkey commands from main toggle overrides; Hide me wins at once', async (
     await send('raiseHand');
     await expect(control.locator('#cmd-raiseHand')).toHaveAttribute('aria-pressed', 'true');
     await send('cycleMode');
-    await expect(control.getByRole('radio', { name: 'Blend' })).toHaveAttribute('aria-checked', 'true');
+    await expect(control.locator('.mode-switch').getByRole('radio', { name: 'Blend' })).toHaveAttribute(
+      'aria-checked',
+      'true',
+    );
     await send('nonsense');
 
     await control.click('#show-help');

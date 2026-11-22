@@ -8,18 +8,24 @@ test('presence dial and mode switch drive the stage and persist', async () => {
     const dial = control.getByRole('slider', { name: /Presence dial/ });
     await expect(dial).toBeVisible();
 
-    await control.getByRole('radio', { name: 'Character' }).click();
-    await expect(control.getByRole('radio', { name: 'Character' })).toHaveAttribute('aria-checked', 'true');
+    await control.locator('.mode-switch').getByRole('radio', { name: 'Character' }).click();
+    await expect(control.locator('.mode-switch').getByRole('radio', { name: 'Character' })).toHaveAttribute(
+      'aria-checked',
+      'true',
+    );
     await expect.poll(() => dial.getAttribute('aria-valuenow')).toBe('0');
 
-    await control.getByRole('radio', { name: 'Camera' }).click();
+    await control.locator('.mode-switch').getByRole('radio', { name: 'Camera' }).click();
     await expect.poll(() => dial.getAttribute('aria-valuenow')).toBe('100');
 
     // Keyboard on the dial switches to Blend.
     await dial.focus();
     await control.keyboard.press('Home');
     await control.keyboard.press('PageUp');
-    await expect(control.getByRole('radio', { name: 'Blend' })).toHaveAttribute('aria-checked', 'true');
+    await expect(control.locator('.mode-switch').getByRole('radio', { name: 'Blend' })).toHaveAttribute(
+      'aria-checked',
+      'true',
+    );
     await expect.poll(() => dial.getAttribute('aria-valuenow')).toBe('25');
 
     // Dragging the dial: the top of the dial is 50%.

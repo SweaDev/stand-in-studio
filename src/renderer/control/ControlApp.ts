@@ -24,6 +24,11 @@ import { type CaptureProfile, lowerProfile } from '../../shared/settings';
 import { COMMANDS, type CommandName, type CommandReceiver } from '../../core/stage/commands';
 import { nextMode } from '../../core/stage/ModeController';
 import { PresenceDial } from './components/PresenceDial';
+import { SettingsTabs } from './components/SettingsTabs';
+import { CurrentIntentCard } from './components/CurrentIntentCard';
+import { IntentList } from './components/IntentList';
+import { AdvancedPanel } from './components/AdvancedPanel';
+import type { IntentDef } from '../../shared/intents';
 import { DemoController } from './demo/DemoController';
 import { h } from './dom';
 import { StageHost } from './stage/StageHost';
@@ -55,8 +60,8 @@ export class ControlApp {
     this.engine = new StudioEngine(settings, this.clock);
     this.thumb = h('canvas', {
       id: 'thumb',
-      width: 480,
-      height: 270,
+      width: 960,
+      height: 540,
       role: 'img',
       'aria-label': 'Live preview of what the meeting sees',
     });
@@ -71,6 +76,13 @@ export class ControlApp {
     // Hotkeys arrive from main; registered once for the app's lifetime.
     this.api.onCommand((c) => {
       if (!this.main.hidden) this.runCommand(c);
+    });
+    // Learned intent tuning: shown in the list, and saved only if the user opted in.
+    this.engine.events.on('tuning', (t) => {
+      if (t.phase !== 'done') return;
+      this.intentList?.sync(this.settings.auto.intents, this.engine.intentTuning);
+      if (this.settings.auto.saveTuning)
+        void this.updateSettings({ intentTuning: { ...this.engine.intentTuning } });
     });
     // Main is quitting: stop the SDK from this side too, so no frames race the teardown.
     this.api.onQuitting(() => {
@@ -119,6 +131,9 @@ export class ControlApp {
 
   private panel: ModePanel | null = null;
   private presets: PresetPanel | null = null;
+  private intentList: IntentList | null = null;
+  private advanced: AdvancedPanel | null = null;
+  tabs: SettingsTabs | null = null;
 
   /** Applies a settings change locally at once and persists it in main. */
   async updateSettings(patch: DeepPartial<Settings>): Promise<void> {
@@ -126,6 +141,8 @@ export class ControlApp {
     this.engine.applySettings(this.settings);
     this.panel?.sync(this.settings);
     this.presets?.sync(this.settings);
+    this.advanced?.sync(this.settings);
+    if (patch.auto?.intents) this.intentList?.sync(this.settings.auto.intents, this.engine.intentTuning);
     // Re-requests metrics only when cardio need changes (Comfort shield or a body-signal intent).
     void this.presage?.setComfortShield(needsCardio(this.settings));
     this.settings = await this.api.setSettings(patch);
@@ -136,7 +153,17 @@ export class ControlApp {
     const header = h(
       'header',
       { class: 'app-header' },
-      h('h1', {}, APP_NAME),
+      h(
+        'div',
+        { class: 'brand' },
+        h('span', { class: 'brand-mark', 'aria-hidden': 'true' }),
+        h(
+          'div',
+          {},
+          h('h1', {}, APP_NAME),
+          h('p', { class: 'tagline' }, 'Decide how much of you each call sees'),
+        ),
+      ),
       h(
         'span',
         { class: 'demo-badge', id: 'demo-badge', role: 'status', hidden: true },
@@ -349,16 +376,74 @@ export class ControlApp {
       const text = this.demo?.script.caption ?? '';
       if (caption.textContent !== text) caption.textContent = text;
     });
+    this.intentList = new IntentList({
+      change: (intents: IntentDef[]) => void this.updateSettings({ auto: { intents } }),
+      tune: (id) => this.engine.startTuning(id),
+    });
+    this.intentList.sync(this.settings.auto.intents, this.engine.intentTuning);
+    this.advanced = new AdvancedPanel(this.settings, {
+      update: (p) => void this.updateSettings(p),
+      forgetTuning: () => {
+        this.engine.clearTuning();
+        this.intentList?.sync(this.settings.auto.intents, this.engine.intentTuning);
+        void this.updateSettings({ intentTuning: {} });
+      },
+      openExternal: (u) => void this.api.openExternal(u),
+    });
+    const current = new CurrentIntentCard();
+    this.onFrame((s) => {
+      current.update(this.engine.debug, s.mode);
+      this.intentList?.live(this.engine.debug?.intent.id ?? null, this.engine.tuningActive);
+    });
+    this.tabs = new SettingsTabs(
+      [
+        {
+          id: 'auto',
+          label: 'Auto',
+          content: [
+            current.el,
+            this.panel.groups.auto,
+            h(
+              'div',
+              { class: 'group', id: 'group-intents' },
+              h('div', { class: 'group-head' }, h('h3', {}, 'Intents')),
+              this.intentList.el,
+            ),
+          ],
+        },
+        {
+          id: 'stage',
+          label: 'Stage',
+          content: [
+            this.panel.groups.character,
+            this.panel.groups.blend,
+            this.panel.groups.camera,
+            this.panel.groups.a11y,
+            this.presets.el,
+          ],
+        },
+        {
+          id: 'camera',
+          label: 'Camera',
+          content: [
+            this.camera ? this.cameraGroup() : null,
+            new ApiKeyPanel(this.api, this.demo === null, () => void this.restart()).el,
+          ],
+        },
+        { id: 'advanced', label: 'Advanced', content: [this.advanced.el] },
+      ],
+      'auto',
+    );
     this.root.insertBefore(this.banner.el, this.main);
     this.main.replaceChildren(
-      h('section', { class: 'controls', 'aria-label': 'Presence' }, dial.el, modes.el, calibration.el),
+      h('section', { class: 'controls card', 'aria-label': 'Presence' }, dial.el, modes.el, calibration.el),
       h(
         'section',
-        { class: 'preview', 'aria-label': 'What the meeting sees' },
-        this.thumb,
+        { class: 'preview card', 'aria-label': 'What the meeting sees' },
+        h('div', { class: 'thumb-frame' }, this.thumb, h('span', { class: 'thumb-label' }, 'Live stage')),
         h(
           'div',
-          { class: 'row' },
+          { class: 'row toolbar' },
           h(
             'button',
             { type: 'button', id: 'open-stage', onclick: () => this.host.open() },
@@ -379,14 +464,7 @@ export class ControlApp {
         help.el,
         obs.el,
       ),
-      h(
-        'section',
-        { class: 'settings', 'aria-label': 'Settings' },
-        this.panel.el,
-        this.presets.el,
-        this.camera ? this.cameraGroup() : null,
-        new ApiKeyPanel(this.api, this.demo === null, () => void this.restart()).el,
-      ),
+      h('section', { class: 'settings card', 'aria-label': 'Settings' }, this.tabs.el),
     );
   }
 }

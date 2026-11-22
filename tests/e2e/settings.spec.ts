@@ -1,15 +1,18 @@
 import { expect, test } from '@playwright/test';
-import { launchApp, passConsent } from './helpers';
+import { launchApp, passConsent, openTab } from './helpers';
 
 test('settings panel changes the stage and persists only settings', async () => {
   const { app, control } = await launchApp();
   try {
     await passConsent(control);
+    await openTab(control, 'stage');
     await control.getByLabel('Houseplant').check();
     await control.locator('#preset-75').click();
     await control.getByLabel('Beside').check();
-    await control.getByLabel('Comfort shield').check();
     await control.getByLabel('High contrast').check();
+    await openTab(control, 'auto');
+    await control.getByLabel('Comfort shield').check();
+    await openTab(control, 'stage');
     await control.getByLabel('Background #264653').click();
 
     await expect

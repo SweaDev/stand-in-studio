@@ -31,3 +31,8 @@ export async function launchApp(env: Record<string, string> = {}): Promise<Launc
 export async function passConsent(control: Page, choice: 'demo' | 'camera' = 'demo'): Promise<void> {
   await control.click(choice === 'demo' ? '#consent-demo' : '#consent-camera');
 }
+
+/** Opens a settings tab: 'auto' | 'stage' | 'camera' | 'advanced'. */
+export async function openTab(control: Page, id: 'auto' | 'stage' | 'camera' | 'advanced'): Promise<void> {
+  await control.click(`#tab-${id}`);
+}

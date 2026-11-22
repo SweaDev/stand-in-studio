@@ -14,9 +14,9 @@ export function distPath(...parts: string[]): string {
  */
 export function createControlWindow(): BrowserWindow {
   const win = new BrowserWindow({
-    width: 1100,
-    height: 760,
-    minWidth: 820,
+    width: 1400,
+    height: 900,
+    minWidth: 900,
     minHeight: 600,
     title: APP_NAME,
     backgroundColor: '#1d1b22',
