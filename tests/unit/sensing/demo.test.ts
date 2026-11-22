@@ -6,7 +6,7 @@ import { FakeClock } from '../../../src/core/util/Clock';
 
 describe('DemoModel', () => {
   it('maps the documented keys', () => {
-    expect(Object.keys(DEMO_KEYS).sort()).toEqual(['a', 'b', 'e', 'h', 'l', 'n', 'p', 's', 't']);
+    expect(Object.keys(DEMO_KEYS).sort()).toEqual(['a', 'b', 'e', 'h', 'l', 'n', 'o', 'p', 's', 't']);
   });
 
   it('produces a calm, face-ok frame at rest', () => {

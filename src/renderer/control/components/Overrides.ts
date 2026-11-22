@@ -74,6 +74,7 @@ export class HotkeyHelp implements Component {
       ['H', 'smile'],
       ['E', 'eat'],
       ['L', 'look away'],
+      ['O', 'talk to someone off to the side'],
       ['A', 'step away'],
       ['P', 'raise the Comfort-shield trigger'],
     ];

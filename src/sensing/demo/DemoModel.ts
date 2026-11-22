@@ -3,7 +3,7 @@ import type { SignalFrame } from '../../shared/types';
 
 /** Demo actions (REQUIREMENT §8 keyboard map). */
 export type DemoAction =
-  'nod' | 'shake' | 'talk' | 'blink' | 'smile' | 'eat' | 'lookAway' | 'away' | 'shield';
+  'nod' | 'shake' | 'talk' | 'blink' | 'smile' | 'eat' | 'lookAway' | 'away' | 'shield' | 'talkOther';
 
 export const DEMO_KEYS: Readonly<Record<string, DemoAction>> = Object.freeze({
   n: 'nod',
@@ -15,6 +15,7 @@ export const DEMO_KEYS: Readonly<Record<string, DemoAction>> = Object.freeze({
   l: 'lookAway',
   a: 'away',
   p: 'shield',
+  o: 'talkOther',
 });
 
 const NOD_MS = 450;
@@ -30,6 +31,8 @@ export class DemoModel {
   talking = false;
   eating = false;
   lookingAway = false;
+  /** Talking to someone off to the side (head turned). */
+  talkingToOther = false;
   away = false;
   private nodAt = Number.NEGATIVE_INFINITY;
   private shakeAt = Number.NEGATIVE_INFINITY;
@@ -64,6 +67,9 @@ export class DemoModel {
       case 'talk':
         this.talking = !this.talking;
         break;
+      case 'talkOther':
+        this.talkingToOther = !this.talkingToOther;
+        break;
       case 'shield':
         break;
     }
@@ -74,6 +80,7 @@ export class DemoModel {
     this.talking = false;
     this.eating = false;
     this.lookingAway = false;
+    this.talkingToOther = false;
     this.away = false;
     this.smileUntil = Number.NEGATIVE_INFINITY;
   }
@@ -100,9 +107,11 @@ export class DemoModel {
     const shakeT = now - this.shakeAt;
     if (shakeT >= 0 && shakeT < SHAKE_MS) yaw += Math.sin((shakeT / SHAKE_MS) * Math.PI * 2) * 0.1;
     if (this.lookingAway) yaw += 0.55;
+    if (this.talkingToOther) yaw -= 0.5;
+    const talking = this.talking || this.talkingToOther;
 
     let mouthGap = 0.02;
-    if (this.talking) mouthGap = 0.06 + Math.abs(Math.sin(now / 90)) * 0.22;
+    if (talking) mouthGap = 0.06 + Math.abs(Math.sin(now / 90)) * 0.22;
     else if (this.eating) mouthGap = 0.32 + Math.abs(Math.sin(now / 300)) * 0.12;
 
     const blinking = now - this.blinkAt >= 0 && now - this.blinkAt < BLINK_MS;
@@ -111,7 +120,7 @@ export class DemoModel {
       validation: 'ok',
       landmarks: syntheticFace({ pitch, yaw, mouthGap, eyeOpenness: blinking ? 0.02 : 0.3 }),
       blink: blinking,
-      talking: this.talking,
+      talking,
       happy: this.smiling(now) ? 0.85 : 0.08,
       expressions: this.smiling(now) ? { happy: 0.85, neutral: 0.1 } : { happy: 0.08, neutral: 0.8 },
       breathingTrace: [breathing * 3 + 50],

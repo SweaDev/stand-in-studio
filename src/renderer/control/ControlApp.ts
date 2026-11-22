@@ -28,6 +28,9 @@ import { SettingsTabs } from './components/SettingsTabs';
 import { CurrentIntentCard } from './components/CurrentIntentCard';
 import { IntentList } from './components/IntentList';
 import { AdvancedPanel } from './components/AdvancedPanel';
+import { IntentBuilder } from './components/IntentBuilder';
+import { GuidedTuning } from './components/GuidedTuning';
+import { icon } from './icons';
 import type { IntentDef } from '../../shared/intents';
 import { DemoController } from './demo/DemoController';
 import { h } from './dom';
@@ -376,13 +379,30 @@ export class ControlApp {
       const text = this.demo?.script.caption ?? '';
       if (caption.textContent !== text) caption.textContent = text;
     });
+    const builder = new IntentBuilder({
+      intents: () => this.settings.auto.intents,
+      save: (intents) => void this.updateSettings({ auto: { intents } }),
+      liveContext: () => this.engine.signalContext,
+      openExternal: (u) => void this.api.openExternal(u),
+    });
+    const guided = new GuidedTuning(this.engine, (id) =>
+      this.settings.auto.intents.some((i) => i.id === id && i.enabled),
+    );
+    let frame = 0;
+    this.onFrame(() => {
+      guided.update();
+      if (builder.isOpen && frame++ % 6 === 0) builder.live();
+    });
     this.intentList = new IntentList({
       change: (intents: IntentDef[]) => void this.updateSettings({ auto: { intents } }),
       tune: (id) => this.engine.startTuning(id),
+      edit: (id) => builder.open({ kind: 'edit', id }),
+      duplicate: (id) => builder.open({ kind: 'duplicate', id }),
     });
     this.intentList.sync(this.settings.auto.intents, this.engine.intentTuning);
     this.advanced = new AdvancedPanel(this.settings, {
       update: (p) => void this.updateSettings(p),
+      createIntent: () => builder.open({ kind: 'create' }),
       forgetTuning: () => {
         this.engine.clearTuning();
         this.intentList?.sync(this.settings.auto.intents, this.engine.intentTuning);
@@ -406,7 +426,22 @@ export class ControlApp {
             h(
               'div',
               { class: 'group', id: 'group-intents' },
-              h('div', { class: 'group-head' }, h('h3', {}, 'Intents')),
+              h(
+                'div',
+                { class: 'group-head' },
+                h('h3', {}, 'Intents'),
+                h(
+                  'button',
+                  {
+                    type: 'button',
+                    class: 'btn-small',
+                    id: 'new-intent',
+                    onclick: () => builder.open({ kind: 'create' }),
+                  },
+                  icon('plus', 14),
+                  'New intent',
+                ),
+              ),
               this.intentList.el,
             ),
           ],
@@ -436,7 +471,14 @@ export class ControlApp {
     );
     this.root.insertBefore(this.banner.el, this.main);
     this.main.replaceChildren(
-      h('section', { class: 'controls card', 'aria-label': 'Presence' }, dial.el, modes.el, calibration.el),
+      h(
+        'section',
+        { class: 'controls card', 'aria-label': 'Presence' },
+        dial.el,
+        modes.el,
+        calibration.el,
+        guided.el,
+      ),
       h(
         'section',
         { class: 'preview card', 'aria-label': 'What the meeting sees' },
@@ -465,6 +507,7 @@ export class ControlApp {
         obs.el,
       ),
       h('section', { class: 'settings card', 'aria-label': 'Settings' }, this.tabs.el),
+      builder.el,
     );
   }
 }
