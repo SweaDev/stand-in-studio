@@ -38,7 +38,7 @@ It is built on the [Presage SmartSpectra SDK](https://smartspectra.presagetech.c
   - **Character:** the character only.
   - **Camera:** your webcam, optionally with a small character badge.
   - **Blend:** your video at the opacity you choose, with the **Over** or **Beside** layout.
-  - **Auto:** the app sets the opacity from your live signals.
+  - **Auto:** the app sets the opacity from your live signals, through **intents** you control.
 - **Presence dial:**
   - Turn it to blend. In Auto the needle moves on its own, so you always see what the meeting sees.
   - Changes are eased cross-fades, never cuts.
@@ -55,17 +55,28 @@ It is built on the [Presage SmartSpectra SDK](https://smartspectra.presagetech.c
 - **Live signals from SmartSpectra:**
   - the chest breathing waveform;
   - blinking, with eye openness from landmarks as a backup;
-  - face landmarks: head pose for nods and shakes, and mouth opening;
-  - talking and expressions (smile);
-  - validation status (framing and lighting).
+  - face landmarks: head pose for nods and shakes, **iris gaze**, and mouth opening;
+  - talking and expressions (happy, surprised, sad, angry, neutral);
+  - validation status (face found, more than one face, framing and lighting).
 - **15-second calibration.** Everything is measured relative to *you*: neutral head pose, closed mouth, resting expression and blinks.
-- **Auto rules:**
-  - Talking → your max.
-  - Listening → your listening level.
-  - Looking away, eating or yawning, poor framing, or no face → 0%.
+- **Intent-based Auto** (v1.1, details in [docs/intents.md](docs/intents.md)):
+  - Built-in intents, each with an action you choose (*Reveal me*, *Blend*, *Cover me*, *Back soon*):
+    - Talking in the meeting → reveal;
+    - Listening to others → blend at your listening level;
+    - Talking to someone else, Turned away, Looking elsewhere, Eating or yawning, Someone else in view → cover;
+    - Away → back soon.
+  - Checked top to bottom; the first match wins. Reorder, disable or change any of them.
+  - **Custom intents** come from an **intent builder**: a catalogue of every Presage signal with its SDK source, live value and a link to Presage's documentation, plus a live match meter and **conflict warnings** (overlaps, or intents that can never win).
+  - **Tune** an intent by acting it out for 6 s, or let **Tune intents to you** walk through the main ones.
+  - **Developer mode** adds a live **decision log**: every signal's state, every intent's score and the condition that limited it, the winner and the policy step. It can be filtered, paused and copied as JSON lines.
   - Opt-in **Comfort shield** → capped at 15%.
 
-  Smoothing: at most 40%/s, a 2-second hold, and hysteresis on every trigger.
+  Smoothing: at most 40%/s, each intent's own hold (default 0.7 s) with hysteresis, and a further 2 s before showing more of you. Covering is immediate.
+  ![Intent builder](docs/media/builder.png)
+  *The intent builder: Presage signals with SDK source, live value and docs on the left; conditions, action, live match and conflicts on the right.*
+
+  ![Decision log](docs/media/devlog.png)
+  *Developer mode: the live decision log.*
 - **Global hotkeys:** Hide me, Pin, Raise hand, Back soon, Cycle mode.
 - **Demo mode** with keyboard-driven simulated signals and a 60-second scripted meeting. No camera or API key is needed.
 - **Accessibility:**
@@ -76,7 +87,7 @@ It is built on the [Presage SmartSpectra SDK](https://smartspectra.presagetech.c
 ### The Auto invariant
 > *Your body can only make Stand-In show less of you, never more. Numbers never leave your computer.*
 
-Biometric and situational triggers (Comfort shield, looking away, eating, absence, poor framing) can only **lower** the target. Raising opacity comes only from visible, deliberate cues (talking while facing the screen) and is always capped by the max *you* set. Property-based tests (fast-check) enforce this in [`tests/unit/core/auto/AutoPolicy.test.ts`](tests/unit/core/auto/AutoPolicy.test.ts).
+Body signals (pulse, breathing rate) can only **lower** the target. An intent that uses one can only cover you, and the Comfort shield is a cap. Raising opacity comes only from intents whose action *you* chose on visible cues (such as talking while facing the screen). It waits 2 s and is always capped by the max *you* set. Property-based tests (fast-check) enforce this in [`tests/unit/core/auto/IntentPolicy.test.ts`](tests/unit/core/auto/IntentPolicy.test.ts).
 
 ## Requirements
 
@@ -150,6 +161,8 @@ Use **Show test pattern** to confirm the meeting sees the stage. It shows colour
 3. **Pick a mode** or turn the **presence dial**:
    - In **Auto**, set *Your max* (default 100%) and *Listening level* (default 40%).
    - Optionally switch on the **Comfort shield**.
+   - Review the **intents** in the Auto tab: change actions, reorder, disable, or press **Tune** to fit one to you.
+   - **Advanced → Create custom intent** opens the builder. **Advanced → Developer mode** shows the decision log.
 4. **Characters and accessibility:**
    - choose a character and background colour;
    - turn on *Reduced motion* or *High contrast* if you like.
@@ -167,19 +180,21 @@ Use **Show test pattern** to confirm the meeting sees the stage. It shows colour
 
 ### Demo mode keys (in the control window)
 - <kbd>N</kbd> nod · <kbd>S</kbd> shake · <kbd>T</kbd> hold to talk · <kbd>B</kbd> blink · <kbd>H</kbd> smile
-- <kbd>E</kbd> eat · <kbd>L</kbd> look away · <kbd>A</kbd> step away · <kbd>P</kbd> raise the Comfort-shield trigger
+- <kbd>E</kbd> eat · <kbd>L</kbd> look away · <kbd>O</kbd> talk to someone off to the side · <kbd>A</kbd> step away · <kbd>P</kbd> raise the Comfort-shield trigger
 - **Play scripted meeting** runs a 60-second loop showing Auto end to end.
 
 A permanent **"DEMO – simulated signals"** badge stays in the control window. It never appears on the stage.
 
 ## Privacy and consent
 - **On-device:** frames are processed on this computer by the SmartSpectra SDK. Stand-In Studio records and stores **nothing**: no video, images, audio, landmarks or signal values.
-- **What is saved:** only character and mode settings, in `settings.json` in the app's user-data folder.
+- **What is saved:** only character, mode and intent settings (names, conditions, actions, order), in `settings.json` in the app's user-data folder.
   - The settings schema drops anything else, including keys and numbers.
-  - Calibration lives in memory and is discarded on quit.
+  - Calibration and intent tuning live in memory and are discarded on quit.
+  - Opt-in only (Advanced, with a privacy warning): the thresholds learned from tuning recordings, which are averages of head turn, gaze, mouth and expression and never video. Turning the option off deletes them.
+  - The developer-mode decision log is on-screen only: never saved, printed or shown on the stage.
 - **Minimal requests:**
   - face landmarks, blinking, talking, expressions and chest breathing;
-  - **pulse and breathing rate only while the Comfort shield is on**, and used only to *lower* the dial.
+  - **pulse and breathing rate only while the Comfort shield or a body-signal intent is on**, and used only to *lower* the dial.
 - **Telemetry off:** the SDK runs with `enableTelemetry: false`. See Presage's [Telemetry and Privacy](https://smartspectra.presagetech.com/docs/telemetry-and-privacy) page.
 - **No numbers, no labels:** no physiological number is shown on the stage or sent anywhere, and the app never labels feelings. The only output is the composed picture, which goes through OBS, under your control.
 - **Honest residual risk:** others might notice your feed fading and wonder why. Fades have many everyday causes, and the Comfort shield is off by default.
@@ -209,20 +224,20 @@ control renderer ─────────── one getUserMedia stream ─�
   │                                   │                        ▼
   │                                   │                 StudioEngine (Facade, pure TS, injected Clock)
   │                                   │                   features → trackers → PoseMapper
-  │                                   │                   AutoPolicy (Strategy rules) → ModeController (State)
+  │                                   │                   signals → intents (first match) → IntentPolicy → ModeController (State)
   │                                   │                   → OpacitySmoother → StageState
   │                                   ▼                        ▼
   └── window.open('about:blank') ─► "Stand-In Stage" canvas ◄─ StageCompositor + Character (Strategy/Registry)
 ```
 
-- **Pure core** (`src/core`): calibration, landmark features, trackers (breathing, blink, nod/shake, smile, talking, presence, validation filter), pose mapper, Auto policy, Comfort shield, smoother and modes. It has no Electron, SDK or DOM dependency (enforced by ESLint) and is fully unit-tested with a `FakeClock`.
+- **Pure core** (`src/core`): calibration, landmark features, trackers (breathing, blink, nod/shake, smile, talking, presence, validation filter), pose mapper, intents (signal readings, matcher and tracker, tuning, conflict analysis, decision trace), the intent policy, Comfort shield, smoother and modes. It has no Electron, SDK or DOM dependency (enforced by ESLint) and is fully unit-tested with a `FakeClock`.
 - **Sensing** (`src/sensing`): the SDK adapter, the metrics → `SignalFrame` mapper, the minimal metric request builder, the camera filter and Demo mode.
 - **Rendering** (`src/render`): seeded hand-drawn sketch primitives, the four characters and the stage compositor (layers: background → feed at α with blur below 30% → character → badges).
 - **App** (`src/main`, `src/preload`, `src/renderer`): the Electron shell and small DOM components.
 
 Design patterns used:
 - Adapter: signal sources
-- Strategy: Auto rules, landmark layouts, characters
+- Strategy: landmark layouts, characters; intents are data (conditions over a signal catalogue)
 - State: modes, calibration, presence
 - Observer: typed emitter
 - Command: hotkeys

@@ -79,3 +79,12 @@ Setup: Electron 45 renderer SDK on the app's own `getUserMedia` stream (`useMedi
 - **Default capture: 960×540.** At 640×360, faces that are not close to the camera are lost. The app therefore steps down a resolution only when the SDK actually reports `kSustainedLowFrameRate`, one step at a time.
 - The stage loop holds about 28 fps (target 30) while the SDK runs. Its compositing leaves the SDK's input untouched, because the SDK reads the camera track directly.
 - The first packet arrives about 7 s after "Start with my camera". This covers camera start, the SDK pipeline and remote model delivery.
+
+## Teardown and intent-relevant outputs (Phase 10, 2026-11-22)
+- **Teardown before exit.** `js/ffi.js` notes that koffi callback thunks do **not** keep the libuv loop alive. If the main isolate is disposed while an SDK worker thread still relays a callback, the process aborts. A reported crash showed exactly this: `Error::ThrowAsJavaScriptException napi_throw`, then SIGABRT, after a Wayland session. The app therefore defers the first quit, calls `stopAsync()` and then `destroy()` on every live main-process session (5 s timeout), and only then calls `app.exit(0)`. It also never configures a new session before the previous `stop()`/`destroy()` has settled. A replay in this container (`scripts/repro-quit.mjs`, synthetic clip) logs `session created → quitting: stopping 1 → session destroyed` and exits with code 0. The original abort did not reproduce here: it is a timing race, and Xvfb has no desktop portal.
+- **No intent, gaze or attention output.** SDK 3.5.0 metrics are breathing, cardio, HRV, micromotion, EDA and the face bundle (landmarks, blinking, talking, expressions). Intent signals are built from these:
+  - head pose and **iris gaze** from landmarks 468 and 473 of the 478-point mesh;
+  - `kMultipleFacesFound` (2) for "someone else in view";
+  - all eight expression scores. The mapper now keeps happy, surprise, sad, angry and neutral.
+- **`requestInsight(text)` is vitals-only.** It sends pulse, HRV and breathing-rate series plus the prompt to Presage's LLM, never video, landmarks or talking. Replies are asynchronous protobuf `Insight` messages (`analysis` or `error`). It needs breathing and cardio metrics, so it is not usable for real-time intent detection.
+

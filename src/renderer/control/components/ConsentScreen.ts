@@ -50,14 +50,18 @@ export class ConsentScreen implements Component {
         h(
           'li',
           {},
-          'What is read from the camera, and why: your face landmarks (head pose for nods and shakes, mouth opening), blinking, talking, expressions, ',
-          'chest breathing and whether you are well framed. These move the character and the dial. Nothing else.',
+          'What is read from the camera, and why: your face landmarks (head pose and eye gaze, mouth opening), blinking, talking, expressions, ',
+          'chest breathing, and whether a face (or more than one) is in view. These move the character and, through the Auto intents, the dial. Nothing else.',
         ),
         h(
           'li',
           {},
           'Pulse and breathing rate are requested ',
-          h('strong', {}, 'only if you switch on the Comfort shield'),
+          h(
+            'strong',
+            {},
+            'only if you switch on the Comfort shield (or turn on a custom intent that uses them)',
+          ),
           ', and are only ever used to ',
           h('em', {}, 'lower'),
           ' how much of you is shown. Your body can only make Stand-In show less of you, never more.',
@@ -67,7 +71,7 @@ export class ConsentScreen implements Component {
           {},
           'Frames are processed on this computer by the Presage SmartSpectra SDK. ',
           h('strong', {}, 'Nothing is recorded'),
-          ': no video, images, audio, landmarks or signal values are stored. Calibration lives in memory and is discarded on quit. Only your character and mode settings are saved.',
+          ': no video, images, audio, landmarks or signal values are stored. Calibration and intent tuning live in memory and are discarded on quit. Only your character, mode and intent settings are saved, plus learned intent thresholds if you opt in under Advanced.',
         ),
         h(
           'li',

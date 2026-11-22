@@ -97,25 +97,42 @@ Each signal has exactly one job. Every user gets a **15-second calibration** fir
 
 ## 5. Auto mode
 
-Auto picks a **target opacity** for your feed every moment, then moves the actual opacity toward it smoothly. The character is always on the stage. Auto decides only how much of your real feed shows through.
+Auto picks a **target opacity** for your feed every moment, then moves the actual opacity toward it smoothly. It does this through **intents** (v1.1). Each intent is a set of conditions on live Presage signals plus an **action** for the character:
+- **Reveal me:** your max, and the character hides;
+- **Blend:** your listening level, with the character over it;
+- **Cover me:** 0%;
+- **Back soon:** 0% plus the "back soon" state.
 
-**Targets.** When more than one rule applies, the lowest wins:
+Intents are checked **top to bottom, and the first match wins**. The full reference is in [docs/intents.md](docs/intents.md).
 
-| Situation (detected from signals) | Target feed opacity |
-|---|---|
-| You are **talking**, sustained for over 1 s | Your **max** (default 100%): the speaker should be seen |
-| You are **listening**: face OK, facing the screen, not talking | Your **listening level** (default 40%) |
-| You **look away** for over 2 s (head yaw or pitch well past calibration) | **0%**: the character covers |
-| You are **eating or yawning** (mouth open without talking for over 1.5 s) | **0%** |
-| **Poor framing or lighting** (validation not OK) | **0%** |
-| **No face** for over 3 s | **0%**, plus the character's "back soon" state |
-| **Comfort shield** (opt-in): confident pulse more than 12 bpm above your calibrated baseline, **or** breathing rate more than 5/min above it | Capped at **15%**, until you've been back near baseline for 20 s |
+**Built-in intents (default order):**
+
+| Intent | Conditions | Default action |
+|---|---|---|
+| Away from the camera | no face for 3 s | Back soon |
+| Someone else in view | `kMultipleFacesFound` | Cover me |
+| Talking to someone else | talking · head turned left or right | Cover me |
+| Turned away | not talking · head turned | Cover me |
+| Looking elsewhere | not talking · eye gaze away | Cover me |
+| Eating or yawning | not talking · mouth open | Cover me |
+| Talking in the meeting | talking · facing the screen · gaze on screen · just me | Reveal me |
+| Listening to others | not talking · facing · gaze on screen · mouth closed · just me | Blend |
+| *(nothing matches)* | | Blend |
+
+**Your control over intents:**
+- You can change each built-in intent's action, turn it off, or reorder it.
+- **Custom intents** are built in a builder from the signal catalogue: talking, head turn, head tilt, eye gaze, mouth, expression, eyes, nod or shake, face in view, people in view, and (opt-in) pulse and breathing rate. Each signal shows its SDK source, its live value and a link to Presage's documentation.
+- The builder warns when an intent overlaps another, and blocks saving an intent that could never win.
+- *Tune* records 6 s of you acting an intent out and fits its thresholds to you.
+- **Developer mode** (Advanced) shows a live decision log in the control window: each signal's state, each intent's score, and why the winner won.
+
+**Comfort shield** (opt-in): when confident pulse is more than 12 bpm above your calibrated baseline, **or** breathing rate more than 5/min above it, the feed is capped at **15%** until you have been back near baseline for 20 s.
 
 **Smoothing:**
 - Opacity moves at most **40% per second**.
-- A new target must hold for **2 s** before Auto moves toward it.
-- Every trigger has **hysteresis**, so borderline signals don't make the feed flicker.
-- The only exception: drops to 0% for *no face* and *looking away* start immediately once their timers fire.
+- A new intent takes over only after its own hold time (default 0.7 s), with hysteresis: it becomes active at a score of 0.6 and is released below 0.4.
+- Covering you happens at once. Showing more of you waits a further **2 s**.
+- SDK validation flicker (for example `kTooDark` or `kExcessiveMotion`) never hides you on its own. Validation only feeds *Face in view* and *People in view*.
 
 **Overrides, always available as global hotkeys:**
 - **Hide me:** instant 0% in any mode. It always wins until pressed again.
@@ -123,8 +140,8 @@ Auto picks a **target opacity** for your feed every moment, then moves the actua
 - **Raise hand** · **Back soon** · **Cycle mode**.
 
 **The Auto invariant.** Signals about your body can only make Stand-In Studio **show less of you, never more**:
-- **Biometric and situational triggers** can only *lower* the target: Comfort shield, looking away, eating, absence, poor framing.
-- **Raising opacity** comes only from visible, deliberate cues, namely talking and facing the screen. It is always capped by the max *you* set.
+- **Body signals** (pulse, breathing rate) can only *lower* the target. An intent that uses one can only cover you, and the Comfort shield is a cap.
+- **Raising opacity** comes only from intents whose action *you* chose (Reveal or Blend) on visible cues, such as talking while facing the screen. It is always capped by the max *you* set, and waits 2 s.
 
 ## 6. Data handling and consent
 
@@ -134,13 +151,14 @@ Auto picks a **target opacity** for your feed every moment, then moves the actua
   - **Character mode** sends only the drawn character to the meeting.
   - **Camera, Blend and Auto** send **your real video**, at the opacity shown on the dial, to the meeting through OBS.
   - What is read from the camera, and why.
-  - That cardio signals (pulse, breathing rate) are requested **only** if the Comfort shield is switched on.
+  - That cardio signals (pulse, breathing rate) are requested **only** if the Comfort shield, or a custom intent that uses them, is switched on.
   - That nothing is recorded, and that the camera can be stopped at any time.
 - **On-device processing.** Frames are processed **on this computer** by the SmartSpectra SDK.
   - Stand-In Studio records and stores nothing: no video, images, audio, landmarks or signal values.
-  - Calibration values live in memory and are discarded on quit.
-  - Only the character choice and mode settings are saved.
-- **Minimal requests.** The SDK is asked only for what the current settings need: the face signals and chest breathing, plus pulse and breathing rate only with the Comfort shield on.
+  - Calibration values and intent tuning live in memory and are discarded on quit.
+  - Only the character choice, mode and intent settings are saved. Learned intent thresholds are saved only if you opt in under Advanced, with a privacy warning.
+  - Developer mode's decision log is shown on screen only. It is never written to disk or printed.
+- **Minimal requests.** The SDK is asked only for what the current settings need: the face signals and chest breathing, plus pulse and breathing rate only with the Comfort shield or a body-signal intent on.
 - **Telemetry off.** Presage telemetry is off (`enableTelemetry: false`). Link to Presage's Telemetry and Privacy page.
 - **No numbers anywhere.** No physiological number is ever shown on the stage or sent anywhere. The only output is the composed picture, which goes through OBS, and you control OBS.
 - **No labels.** Stand-In Studio never labels feelings ("you seem stressed"). It mirrors visible movement and moves the dial.

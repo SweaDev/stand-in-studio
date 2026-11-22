@@ -9,7 +9,7 @@ test('consent comes first: no stage window and no signals until a choice is made
     for (const phrase of [
       'Character mode',
       'your real video',
-      'only if you switch on the Comfort shield',
+      'only if you switch on the Comfort shield (or turn on a custom intent that uses them)',
       'Nothing is recorded',
       'telemetry is switched off',
       'others may notice your video fading',

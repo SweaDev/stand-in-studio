@@ -32,7 +32,10 @@ test('developer mode shows a live decision log in the control window only', asyn
     await expect(control.locator('#devlog-rows tr').first()).toContainText('Talking to someone else');
 
     // Copy puts JSON lines with the full trace on the clipboard.
+    await app.evaluate(({ clipboard }) => clipboard.clear());
+    await control.bringToFront();
     await control.click('#devlog-copy');
+    await expect.poll(() => app.evaluate(({ clipboard }) => clipboard.readText())).not.toBe('');
     const lines = (await app.evaluate(({ clipboard }) => clipboard.readText())).split('\n');
     const first = JSON.parse(lines[0] as string);
     expect(first.signals.map((s: any) => s.id)).toContain('gaze');

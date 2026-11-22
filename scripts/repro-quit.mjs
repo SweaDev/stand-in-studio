@@ -17,7 +17,8 @@ const require = createRequire(import.meta.url);
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const [label = 'repro-quit', secondsArg = '25'] = process.argv.slice(2);
 const seconds = Math.min(40, Number(secondsArg));
-const clip = join(root, 'test-assets', 'face-960x540.mjpeg');
+// Any MJPEG clip works: the crash path needs a running SDK session, not a face.
+const clip = process.env.STANDIN_REPRO_CLIP ?? join(root, 'test-assets', 'face-960x540.mjpeg');
 const key = process.env.PRESAGE_API_KEY;
 if (!key) throw new Error('PRESAGE_API_KEY is not set');
 if (!existsSync(clip)) throw new Error(`missing ${clip}; run scripts/fetch-test-video.sh`);
@@ -41,6 +42,7 @@ let packets = 0;
 try {
   const page = await app.firstWindow();
   await page.click('#consent-demo');
+  if (await page.locator('#tab-camera').count()) await page.click('#tab-camera');
   await page.fill('#api-key-input', key);
   await page.click('#api-key-save');
   await page.click('#api-key-restart');

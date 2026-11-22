@@ -1,6 +1,6 @@
 // Captures README/POST media in Demo mode (no camera, no API key, no real person):
-// screenshots of the control window, a 2×2 character grid, Auto states and a short
-// recording of the scripted meeting on the stage.
+// screenshots of the control window, a 2×2 character grid, Auto states, the intent
+// builder, the developer decision log and a short recording of the scripted meeting.
 //
 //   xvfb-run -a -s "-screen 0 1600x1000x24" node scripts/capture-media.mjs
 import { _electron as electron } from '@playwright/test';
@@ -24,7 +24,7 @@ const app = await electron.launch({
   recordVideo: { dir: join(tmp, 'video'), size: { width: 1280, height: 720 } },
 });
 const control = await app.firstWindow();
-await app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0].setSize(1280, 860));
+await app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0].setSize(1440, 960));
 await control.waitForTimeout(500);
 await control.screenshot({ path: join(out, 'consent.png') });
 await control.click('#consent-demo');
@@ -39,7 +39,7 @@ const tile = async (name, w = 640, h = 360) => {
 const ff = (...args) => execFileSync('ffmpeg', ['-loglevel', 'error', '-y', ...args]);
 
 // 2×2 grid of the four characters (Character mode, mid-breath, smiling).
-await control.getByRole('radio', { name: 'Character' }).click();
+await control.locator('.mode-switch').getByRole('radio', { name: 'Character' }).click();
 const tiles = [];
 for (const id of ['lantern', 'houseplant', 'cat', 'cloud']) {
   await control.evaluate((c) => window.__standin.setCharacter(c), id);
@@ -56,7 +56,7 @@ ff(
 
 // Auto states with the lantern: listening, speaking, looking away.
 await control.evaluate(() => window.__standin.setCharacter('lantern'));
-await control.getByRole('radio', { name: 'Auto' }).click();
+await control.locator('.mode-switch').getByRole('radio', { name: 'Auto' }).click();
 await control.waitForTimeout(3500);
 const listening = await tile('auto-listening');
 await control.keyboard.down('t');
@@ -84,7 +84,27 @@ await control.waitForTimeout(3000);
 await control.click('#script');
 await control.waitForTimeout(12_000);
 await control.screenshot({ path: join(out, 'control.png') });
-await control.waitForTimeout(18_000);
+
+// Intent builder (Advanced → Create custom intent) with a half-built intent.
+await control.click('#tab-advanced');
+await control.click('#create-intent');
+await control.fill('#intent-name', 'Checking my phone');
+await control.click('#add-headTilt');
+await control.click('#add-talking');
+await control.locator('[data-signal="talking"] [data-state="yes"]').click();
+await control.locator('[data-signal="talking"] [data-state="no"]').click();
+await control.waitForTimeout(800);
+await control.screenshot({ path: join(out, 'builder.png') });
+await control.click('#builder-cancel');
+
+// Developer mode decision log.
+await control.check('#developer-mode');
+await control.evaluate(() => document.activeElement?.blur());
+await control.waitForTimeout(4_000);
+await control.locator('#devlog').scrollIntoViewIfNeeded();
+await control.locator('#devlog').screenshot({ path: join(out, 'devlog.png') });
+await control.click('#tab-auto');
+await control.waitForTimeout(2_000);
 const stage = app.windows().find((p) => p !== control);
 const videoPath = await stage?.video()?.path();
 await app.close();

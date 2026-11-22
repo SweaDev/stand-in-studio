@@ -40,7 +40,10 @@ Each run is charged at max(wall time, content seconds), so the figures are conse
 | 2026-11-20 | T39 | `npm run test:live` (60 s, all 8 checks passed) | 61.8 | 263.9 |
 | 2026-11-20 | T45 | `npm run test:live`, final smoke (all 8 checks passed; 29.3 packets/s, stage 29.1 fps) | 60.9 | **324.8** |
 
-**Total Presage usage: 324.8 s (about 5.4 min) of the 15-minute cap.**
+| 2026-11-22 | T49 | `repro-quit.mjs` on the **v1.0.0** build (synthetic clip): exited cleanly, the abort did not reproduce | 25.2 | 350.0 |
+| 2026-11-22 | T49 | `repro-quit.mjs` on the fixed build: session stopped and destroyed before exit, exit code 0 | 20.2 | **370.2** |
+
+**Total Presage usage: 370.2 s (about 6.2 min) of the 15-minute cap.**
 
 ## Demo media
 `docs/media/*` is generated in Demo mode by `xvfb-run -a -s "-screen 0 1600x1000x24" node scripts/capture-media.mjs`. It uses no camera, no API key and no real person. `demo.webm` is the last 30 s of a Playwright recording of the stage window during the scripted meeting, re-encoded with VP9 at 640×360, 20 fps and 350 kbit/s.
@@ -68,6 +71,7 @@ git push origin --tags
 | v0.8.0 | e8ed84a | Add budget-guarded live test of the real SDK on a fake camera |
 | v0.9.0 | 14dde18 | Add per-meeting presets |
 | v1.0.0 | (the T48 commit) | Release 1.0.0 |
+| v1.1.0 | (the T57 commit, branch `claude/upbeat-wozniak-rslrk1`) | Release 1.1.0: intents, builder, decision log, shutdown fix |
 
 ## Deviations from PLAN.md
 - **T05, fake camera format:** the plan called for a `.y4m` file, but 60 s of 960×540 y4m is about 1 GB. Chromium's `--use-file-for-fake-video-capture` also accepts **`.mjpeg`** (51 MB here), so the fake camera uses `test-assets/face.mjpeg`. The SDK file probe uses `face.mp4`.
@@ -80,4 +84,7 @@ git push origin --tags
 - **T51/T52, intent priority (plan change):** the plan ranked overlapping intents by specificity, then by whichever action shows less. That made a user's custom "reveal" intent always lose to a broader built-in, and let *Listening* beat *Eating* while looking at the screen. Intents are instead checked **top to bottom, first match wins**, like firewall rules. The user reorders them, and the conflict analysis states which intent wins each overlap. Default order: Away, Someone else, Talking to someone else, Turned away, Looking elsewhere, Eating, Talking in the meeting, Listening.
 - **T52, poor validation (plan change):** the plan froze intent switching while validation was "poor". Rooms that read `kTooDark` most of the time would then never cover the user, so validation now only feeds *Face in view* and *People in view*, and landmarks keep driving the other signals.
 - **T52, extra built-in:** *Turned away* (not talking, head turned) is a separate built-in. Conditions are AND-only, and the old look-away rule was based on head yaw, not on eye gaze.
+- **Phase 10, test clip unavailable:** in the new container, `scripts/fetch-test-video.sh` got HTTP 429 from upload.wikimedia.org for over 30 minutes. Their policy expects a contact address in the User-Agent, and none was added, to keep personal data out of requests. The T49 crash replay used a synthetic `ffmpeg testsrc2` MJPEG instead (`test-assets/synthetic-960x540.mjpeg`, git-ignored). It runs a real SDK session but contains no face, so metrics packets stayed at 0. The T57 live smoke with a face (`npm run test:live`) was therefore **not run** in this phase. The intent pipeline is covered by unit tests, Demo-mode e2e tests and synthetic landmarks, including iris points.
+- **T54, forced push not used:** the T54 commit (`eb198aa`) was pushed with two ESLint errors, because a `grep` in the shell chain hid `npm test`'s exit code. Rewriting the pushed commit was not allowed, so `0d1616a` fixes them. Every later commit gates on `npm test`'s exit code.
+- **Phase 10 media:** `docs/media` was regenerated with `scripts/capture-media.mjs`, which now also captures `builder.png` and `devlog.png`, at a 1440×960 window.
 

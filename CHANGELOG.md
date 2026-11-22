@@ -2,6 +2,19 @@
 
 All notable changes to Stand-In Studio. Versions follow the phases in [PLAN.md](PLAN.md).
 
+## 1.1.0 — 2026-11-22
+- **Fix:** quitting no longer risks a native abort (`napi_throw`, SIGABRT). The app stops and destroys every SmartSpectra session before it exits, and camera restarts, camera switches and the frame-rate step-down are serialised so two SDK sessions never overlap.
+- **Fix:** Auto no longer hides you while you talk to the camera. SDK validation flicker (`kTooDark`, `kExcessiveMotion`) and head motion while speaking used to trip the "poor framing" and "look away" rules.
+- **Intent-based Auto:**
+  - Built-in intents (talking in the meeting, listening, talking to someone else, turned away, looking elsewhere, eating, someone else in view, away), each with an action you choose: Reveal me, Blend, Cover me or Back soon.
+  - Intents are checked in priority order and can be reordered and disabled.
+- **Signal catalogue:** every Presage-derived signal (talking, head turn and tilt, **iris gaze**, mouth, expressions, eyes, nod or shake, face in view, **people in view**, and opt-in pulse and breathing rate), with its SDK source and a link to Presage's documentation.
+- **Custom intent builder:** a live match meter, and conflict analysis that warns about overlaps and blocks intents that could never win.
+- **Tuning:** record an intent for 6 s to fit its thresholds to you, or use the guided "Tune intents to you". Learned thresholds are saved only on opt-in, with a privacy warning.
+- **Developer mode:** a live decision log (signals, intent scores, limiting condition, winner, policy step) with pause, filter and JSON-lines copy. It is on screen only.
+- **Redesigned control window:** design tokens, settings tabs (Auto, Stage, Camera, Advanced), a live current-intent card and the intent list.
+- Demo key **O** (talk to someone off to the side).
+
 ## 1.0.0 — 2026-11-20
 - README with install, OBS setup (including Linux v4l2loopback), hotkeys, privacy, testing and architecture.
 - DEV challenge submission post (`POST.md`).

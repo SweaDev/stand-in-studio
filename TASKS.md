@@ -117,4 +117,4 @@ Progress tracker for [PLAN.md](PLAN.md). One task = one commit; tick the box in 
 - [x] T54 Design tokens and the tabbed control-window layout with the current-intent card and intent list
 - [x] T55 Intent builder dialog: signal catalogue with doc links, condition editor, live match, tuning and conflict warnings
 - [x] T56 Developer mode decision log drawer
-- [ ] T57 Docs, live smoke, version 1.1.0 and tag
+- [x] T57 Docs, version 1.1.0 and tag (live face smoke not run: Wikimedia returned HTTP 429 for the test clip; see IMPLEMENTATION_NOTES)

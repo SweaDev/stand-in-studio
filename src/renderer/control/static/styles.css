@@ -401,6 +401,8 @@ output {
 .mode-switch button {
   border-color: transparent;
   background: transparent;
+  /* No colour transition: dark text on a half-faded accent would fail contrast mid-fade. */
+  transition: none;
 }
 .mode-switch button[aria-checked='true'] {
   background: var(--accent);
