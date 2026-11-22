@@ -19,9 +19,11 @@ import {
   MAX_DEMO_NOTES,
   MAX_VIDEO_BYTES,
   VIDEO_TYPES,
+  BUNDLE_SUFFIX,
   cleanName,
 } from '../shared/demos';
 import { type TelemetryFile, sanitizeTelemetry } from '../shared/telemetry';
+import { readZip, writeZip } from './zipStore';
 
 const META = 'meta.json';
 const TELEMETRY = 'telemetry.json';
@@ -179,17 +181,65 @@ export class DemoLibrary {
       rmSync(dir, { recursive: true, force: true });
   }
 
-  /** Copies a demo's video and telemetry into `target` (a folder the user picked). */
+  /** One-file bundle of a demo (stored ZIP: video, telemetry.json, meta.json). */
+  bundle(id: string): Uint8Array {
+    const dir = this.dirOf(id);
+    const meta = this.readMeta(dir);
+    return writeZip([
+      { name: meta.videoFile, data: readFileSync(join(dir, meta.videoFile)) },
+      { name: TELEMETRY, data: readFileSync(join(dir, TELEMETRY)) },
+      { name: META, data: new TextEncoder().encode(JSON.stringify(meta, null, 2)) },
+    ]);
+  }
+
+  /** Adds a demo from a `.standin-demo.zip` bundle (validated like any save). */
+  importBundle(bytes: Uint8Array): DemoSummary {
+    if (!(bytes instanceof Uint8Array) || bytes.byteLength === 0) throw new Error('The demo file is empty.');
+    const files = readZip(bytes, MAX_VIDEO_BYTES);
+    const videoName = [...files.keys()].find(
+      (n) => /^video\.[a-z0-9]+$/.test(n) && n.split('.')[1]! in VIDEO_TYPES,
+    );
+    if (!videoName) throw new Error('The demo file has no video (video.mp4, video.webm, …).');
+    const telemetry = files.get(TELEMETRY);
+    if (!telemetry) throw new Error('The demo file has no telemetry.json.');
+    let meta: Record<string, unknown> = {};
+    try {
+      const m = files.get(META);
+      if (m) meta = JSON.parse(new TextDecoder().decode(m)) as Record<string, unknown>;
+    } catch {
+      // A broken meta.json only loses the name and notes.
+    }
+    let parsed: unknown;
+    try {
+      parsed = JSON.parse(new TextDecoder().decode(telemetry));
+    } catch {
+      throw new Error('The telemetry in the demo file is not valid JSON.');
+    }
+    return this.save({
+      name: cleanName(meta.name),
+      notes: typeof meta.notes === 'string' ? meta.notes : '',
+      telemetry: parsed,
+      video: files.get(videoName) as Uint8Array,
+      ext: videoName.split('.')[1] as string,
+    });
+  }
+
+  /**
+   * Exports into `target` (a folder the user picked): `<name>.standin-demo.zip`, one file
+   * to share, plus the video and telemetry as loose files to inspect.
+   */
   exportTo(id: string, target: string): string[] {
     const summary = this.summary(id);
     const dir = this.dirOf(id);
     const base = slug(summary.name);
     const ext = summary.videoFile.split('.').pop() as string;
     mkdirSync(target, { recursive: true });
+    const zip = join(target, `${base}${BUNDLE_SUFFIX}`);
+    writeFileSync(zip, this.bundle(id));
     const video = join(target, `${base}.${ext}`);
     const json = join(target, `${base}.telemetry.json`);
     copyFileSync(join(dir, summary.videoFile), video);
     copyFileSync(join(dir, TELEMETRY), json);
-    return [video, json];
+    return [zip, video, json];
   }
 }

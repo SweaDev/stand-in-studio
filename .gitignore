@@ -12,3 +12,5 @@ test-assets/
 demos/
 *.telemetry.json
 telemetry*.json
+shared-demos/
+*.standin-demo.zip

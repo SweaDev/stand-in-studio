@@ -3,6 +3,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { DemoLibrary } from '../../../src/main/demoLibrary';
+import { writeZip } from '../../../src/main/zipStore';
 import { cleanName, videoExt } from '../../../src/shared/demos';
 import { DEFAULT_SETTINGS, sanitizeSettings, updateSettings } from '../../../src/shared/settings';
 
@@ -90,13 +91,44 @@ describe('DemoLibrary', () => {
     expect(readdirSync(root).sort()).toEqual(['broken-1', 'notes.txt']);
   });
 
-  it('exports the video and telemetry as two files to share', () => {
+  it('exports one bundle file to share, plus the video and telemetry loose', () => {
     const lib = new DemoLibrary(tmp());
     const s = lib.save({ name: 'Share me', telemetry: telemetry(), video, ext: 'webm' });
     const out = tmp();
     const files = lib.exportTo(s.id, out);
-    expect(files.map((f) => f.slice(out.length + 1))).toEqual(['share-me.webm', 'share-me.telemetry.json']);
-    expect(JSON.parse(readFileSync(files[1] as string, 'utf8')).format).toBe('standin-telemetry');
+    expect(files.map((f) => f.slice(out.length + 1))).toEqual([
+      'share-me.standin-demo.zip',
+      'share-me.webm',
+      'share-me.telemetry.json',
+    ]);
+    expect(JSON.parse(readFileSync(files[2] as string, 'utf8')).format).toBe('standin-telemetry');
+
+    // The bundle alone recreates the demo in another library (another computer).
+    const other = new DemoLibrary(tmp(), true, clock);
+    const imported = other.importBundle(new Uint8Array(readFileSync(files[0] as string)));
+    expect(imported).toMatchObject({ name: 'Share me', frames: 2, videoFile: 'video.webm' });
+    expect([...other.load(imported.id).video]).toEqual([...video]);
+    expect(other.load(imported.id).telemetry).toEqual(lib.load(s.id).telemetry);
+  });
+
+  it('refuses bundles without a video or telemetry, or with bad telemetry', () => {
+    const lib = new DemoLibrary(tmp());
+    const enc = (o: unknown) => new TextEncoder().encode(JSON.stringify(o));
+    expect(() => lib.importBundle(new Uint8Array(0))).toThrow(/empty/);
+    expect(() => lib.importBundle(new TextEncoder().encode('not a zip at all'))).toThrow(/not a ZIP/);
+    expect(() => lib.importBundle(writeZip([{ name: 'telemetry.json', data: enc(telemetry()) }]))).toThrow(
+      /no video/,
+    );
+    expect(() => lib.importBundle(writeZip([{ name: 'video.mp4', data: video }]))).toThrow(/no telemetry/);
+    expect(() =>
+      lib.importBundle(
+        writeZip([
+          { name: 'video.mp4', data: video },
+          { name: 'telemetry.json', data: enc({ x: 1 }) },
+        ]),
+      ),
+    ).toThrow(/Not a Stand-In telemetry/);
+    expect(lib.list().demos).toEqual([]);
   });
 });
 

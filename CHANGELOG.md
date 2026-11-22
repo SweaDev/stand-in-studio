@@ -2,6 +2,11 @@
 
 All notable changes to Stand-In Studio. Versions follow the phases in [PLAN.md](PLAN.md).
 
+## 1.3.1 — 2026-11-22
+- **Single-file demos:** Export also writes `<name>.standin-demo.zip`, with the video, telemetry and name in one file, so the clip and its telemetry can't be separated when shared. Import accepts the zip as well as a video + JSON pair.
+  - The bundle is a plain stored ZIP, written and read without a dependency. Folders, traversal, compressed or encrypted entries and checksum mismatches are refused.
+- The file pickers in the Demo library match the app's buttons.
+
 ## 1.3.0 — 2026-11-22
 - **Recorded input:** *Use a recorded video…* plays a video file in place of the camera, and all four modes work on it. With an API key Presage analyses the clip like a webcam. Pausing the clip pauses the SDK.
 - **Save telemetry:** plays the clip once and saves it, with the signals Presage returned, as a **demo**. Face signals are saved by default, and pulse and breathing only when ticked. A privacy notice comes first, every time.

@@ -45,7 +45,6 @@ test('Demo library: import, replay offline with intents deciding, rename, export
     await expect(control.locator('#demo-list')).toContainText('No saved demos yet');
 
     // Import a video and its telemetry (as shared outside the repo).
-    await control.locator('.demo-import summary').click();
     await control.setInputFiles('#demo-import-video', testClip(10));
     await control.setInputFiles('#demo-import-telemetry', telemetryFile(work));
     await control.click('#demo-import');
@@ -81,11 +80,26 @@ test('Demo library: import, replay offline with intents deciding, rename, export
     await expect(control.locator('.demo-row')).toContainText('Empty chair test');
     await control.locator('.demo-export').click();
     await expect(control.locator('#demo-library-status')).toContainText('Exported');
+    const bundle = join(exportDir, 'empty-chair-test.standin-demo.zip');
+    expect(existsSync(bundle)).toBe(true);
     expect(existsSync(join(exportDir, 'empty-chair-test.webm'))).toBe(true);
     expect(existsSync(join(exportDir, 'empty-chair-test.telemetry.json'))).toBe(true);
     await control.locator('.demo-delete').click();
     await control.locator('.demo-delete').click();
     await expect(control.locator('#demo-list')).toContainText('No saved demos yet');
+
+    // The one exported file brings the whole demo back, and it replays offline.
+    await control.setInputFiles('#demo-import-bundle', bundle);
+    await control.click('#demo-import-bundle-btn');
+    await expect(control.locator('#demo-library-status')).toContainText('Imported “Empty chair test”');
+    await control.locator('.demo-play').click();
+    await expect(control.locator('#sensing-status')).toContainText('Replaying saved telemetry', {
+      timeout: 15_000,
+    });
+    await expect
+      .poll(() => control.evaluate(() => (window as any).__standin.app.replay?.emitted ?? 0))
+      .toBeGreaterThan(10);
+    expect(await control.evaluate(() => (window as any).__standin.app.fakeSdk.created)).toBe(0);
   } finally {
     await app.close();
   }
@@ -99,7 +113,11 @@ test('importing a file that is not telemetry is refused', async () => {
   try {
     await control.click('#consent-demo');
     await openTab(control, 'advanced');
-    await control.locator('.demo-import summary').click();
+    await control.setInputFiles('#demo-import-bundle', bad);
+    await control.click('#demo-import-bundle-btn');
+    await expect(control.locator('#demo-library-status')).toContainText(
+      'Not imported: Not a valid demo file (not a ZIP file)',
+    );
     await control.setInputFiles('#demo-import-video', testClip(4));
     await control.setInputFiles('#demo-import-telemetry', bad);
     await control.click('#demo-import');

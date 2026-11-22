@@ -85,6 +85,7 @@ git push origin --tags
 | v1.1.0 | 8e822b2 (branch `claude/upbeat-wozniak-rslrk1`) | Release 1.1.0: intents, builder, decision log, shutdown fix |
 | v1.2.0 | (the T59 commit, same branch) | Release 1.2.0: Camera mode pauses the Presage SDK |
 | v1.3.0 | (the T65 commit, same branch) | Release 1.3.0: Recorded input, saved-telemetry demos and offline replay |
+| v1.3.1 | (the T66 commit, same branch) | Release 1.3.1: single-file demo bundles |
 
 ## Deviations from PLAN.md
 - **T05, fake camera format:** the plan called for a `.y4m` file, but 60 s of 960×540 y4m is about 1 GB. Chromium's `--use-file-for-fake-video-capture` also accepts **`.mjpeg`** (51 MB here), so the fake camera uses `test-assets/face.mjpeg`. The SDK file probe uses `face.mp4`.
@@ -105,3 +106,4 @@ git push origin --tags
 - **Phase 12, file access:** the renderer reads clips through `<input type=file>` and gets saved demos back as bytes over IPC, played from blob URLs. No custom protocol was needed, contrary to the plan's `standin-media://`, and the page CSP is unchanged.
 - **Phase 12, task boundaries:** the saved-demo picker and the offline replay landed in the T62 commit, together with the recorded input, because they share the same `begin()` path. T64 added the Advanced → Demo library panel.
 - **Phase 12, MediaRecorder WebM:** in-app recordings have no duration in their header, so `RecordedFeed` seeks far ahead once to learn it.
+- **T66, test demo delivery:** the first hand-off of Clip 2 reached the user without the MP4; only `SOURCE.txt` and the telemetry JSON arrived, so the pair could not be imported. The demo was resent as the MP4 alone and as `nasa-epps-interview-45s.standin-demo.zip`. It is also kept in the git-ignored `shared-demos/` folder of the working copy. The delivered zip was imported through the real UI (no API key): 2,562 frames, the same intent sequence as the live run, and 0 SDK sessions. To stop a clip and its telemetry from being separated again, Export now also writes a single-file bundle.

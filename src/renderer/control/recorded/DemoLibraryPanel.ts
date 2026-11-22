@@ -1,4 +1,5 @@
 import {
+  BUNDLE_SUFFIX,
   type DemoLibraryListing,
   type DemoSummary,
   VIDEO_TYPES,
@@ -59,9 +60,21 @@ export class DemoLibraryPanel implements Component {
       'button',
       { type: 'button', id: 'demo-import', class: 'btn-small' },
       icon('plus', 14),
-      'Import',
+      'Import pair',
     );
     importBtn.addEventListener('click', () => void this.importFiles(importVideo, importJson));
+    const importBundle = h('input', {
+      type: 'file',
+      id: 'demo-import-bundle',
+      accept: `${BUNDLE_SUFFIX},.zip,application/zip`,
+    });
+    const bundleBtn = h(
+      'button',
+      { type: 'button', id: 'demo-import-bundle-btn', class: 'btn-small primary' },
+      icon('plus', 14),
+      'Import demo file',
+    );
+    bundleBtn.addEventListener('click', () => void this.importBundleFile(importBundle));
     this.el = h(
       'div',
       { class: 'group', id: 'group-demo-library' },
@@ -112,8 +125,16 @@ export class DemoLibraryPanel implements Component {
       this.list,
       h(
         'details',
-        { class: 'demo-import' },
-        h('summary', {}, 'Import a demo (video + telemetry file)'),
+        { class: 'demo-import', open: true },
+        h('summary', {}, 'Import a demo'),
+        h(
+          'div',
+          { class: 'field' },
+          h('label', { for: 'demo-import-bundle' }, `Demo file (${BUNDLE_SUFFIX})`),
+          importBundle,
+        ),
+        bundleBtn,
+        h('p', { class: 'hint demo-import-or' }, 'Or a video with its telemetry file:'),
         h('div', { class: 'field' }, h('label', { for: 'demo-import-video' }, 'Video'), importVideo),
         h(
           'div',
@@ -192,7 +213,7 @@ export class DemoLibraryPanel implements Component {
       const done = (save: boolean) =>
         void (save ? this.api.rename(d.id, input.value) : Promise.resolve(null))
           .then(() => this.refresh())
-          .catch((e: Error) => this.say(e.message, 'error'));
+          .catch((e: Error) => this.say(ipcMessage(e), 'error'));
       input.addEventListener('keydown', (e) => {
         if (e.key === 'Enter') done(true);
         if (e.key === 'Escape') done(false);
@@ -214,8 +235,15 @@ export class DemoLibraryPanel implements Component {
         () =>
           void this.api
             .exportTo(d.id)
-            .then((files) => files && this.say(`Exported to ${files.join(' and ')}.`, 'ok'))
-            .catch((e: Error) => this.say(e.message, 'error')),
+            .then(
+              (files) =>
+                files &&
+                this.say(
+                  `Exported ${files[0]} (one file to share), plus the video and telemetry separately.`,
+                  'ok',
+                ),
+            )
+            .catch((e: Error) => this.say(ipcMessage(e), 'error')),
         'external',
       ),
       btn(
@@ -231,12 +259,28 @@ export class DemoLibraryPanel implements Component {
           void this.api
             .delete(d.id)
             .then(() => this.say(`Deleted “${d.name}”.`, 'ok'))
-            .catch((e: Error) => this.say(e.message, 'error'))
+            .catch((e: Error) => this.say(ipcMessage(e), 'error'))
             .finally(() => void this.refresh());
         },
         'trash',
       ),
     );
+  }
+
+  private async importBundleFile(input: HTMLInputElement): Promise<void> {
+    const file = input.files?.[0];
+    if (!file) {
+      this.say(`Choose a ${BUNDLE_SUFFIX} file.`, 'error');
+      return;
+    }
+    try {
+      const saved = await this.api.importBundle(new Uint8Array(await file.arrayBuffer()));
+      input.value = '';
+      this.say(`Imported “${saved.name}” (${saved.frames} frames).`, 'ok');
+      await this.refresh();
+    } catch (err) {
+      this.say(`Not imported: ${ipcMessage(err)}`, 'error');
+    }
   }
 
   private async importFiles(videoIn: HTMLInputElement, jsonIn: HTMLInputElement): Promise<void> {
@@ -267,4 +311,12 @@ export class DemoLibraryPanel implements Component {
       this.say(`Not imported: ${(err as Error).message}`, 'error');
     }
   }
+}
+
+/** An error from main, without Electron's "Error invoking remote method" prefix. */
+export function ipcMessage(err: unknown): string {
+  return String((err as Error)?.message ?? err).replace(
+    /^Error invoking remote method '[^']+': (Error: )?/,
+    '',
+  );
 }

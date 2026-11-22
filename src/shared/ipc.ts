@@ -20,6 +20,7 @@ export const IPC = Object.freeze({
   demoRename: 'studio:demo-rename',
   demoDelete: 'studio:demo-delete',
   demoExport: 'studio:demo-export',
+  demoImportBundle: 'studio:demo-import-bundle',
   demoChooseFolder: 'studio:demo-choose-folder',
   demoResetFolder: 'studio:demo-reset-folder',
   demoOpenFolder: 'studio:demo-open-folder',
@@ -32,8 +33,13 @@ export interface DemoLibraryApi {
   save(req: DemoSaveRequest): Promise<DemoSummary>;
   rename(id: string, name: string): Promise<DemoSummary>;
   delete(id: string): Promise<void>;
-  /** Asks for a folder and copies the video and telemetry there; null if cancelled. */
+  /**
+   * Asks for a folder and writes `<name>.standin-demo.zip` plus the loose video and
+   * telemetry there; null if cancelled.
+   */
   exportTo(id: string): Promise<string[] | null>;
+  /** Adds a demo from a `.standin-demo.zip` bundle. */
+  importBundle(bytes: Uint8Array): Promise<DemoSummary>;
   /** Asks for a new library folder; null if cancelled. */
   chooseFolder(): Promise<DemoLibraryListing | null>;
   /** Back to the default folder in the app's data directory. */

@@ -81,7 +81,7 @@ To tune intents on repeatable footage:
 2. Replay the demo from **Demo** on the start screen or **Advanced → Demo library → Play**. The saved signals drive Auto in step with the video, so every replay makes the same decisions with no API use. Turn on **Developer mode** to read the decision log while it plays.
 3. Change an intent, then replay and compare. Scrubbing or looping the clip clears the signal history, just as a resuming SDK does.
 
-Demos are kept in your demo library folder, never in the repository. Use **Export** to share a demo's video and `.telemetry.json` file.
+Demos are kept in your demo library folder, never in the repository. Use **Export** to share a demo as a single `.standin-demo.zip` file, which holds the video and its telemetry. **Import** accepts that file, or a video plus its `.telemetry.json`.
 
 ## Developer mode
 

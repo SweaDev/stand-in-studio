@@ -1561,3 +1561,24 @@ dialog.builder[open] {
 .caption:empty {
   display: none;
 }
+.demo-import-or {
+  margin-top: var(--s3);
+}
+input[type='file'] {
+  font-size: var(--fs-sm);
+  color: var(--muted);
+  max-width: 100%;
+}
+input[type='file']::file-selector-button {
+  margin-right: var(--s2);
+  padding: 5px 12px;
+  border-radius: var(--r-md);
+  border: 1px solid var(--line);
+  background: var(--surface-2);
+  color: var(--text);
+  font: inherit;
+  cursor: pointer;
+}
+input[type='file']::file-selector-button:hover {
+  border-color: var(--line-strong);
+}

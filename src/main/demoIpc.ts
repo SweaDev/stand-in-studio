@@ -53,6 +53,9 @@ export function bindDemoLibrary(opts: {
     const dir = await pickFolder('Export demo video and telemetry to…', true);
     return dir ? lib.exportTo(String(id), dir) : null;
   });
+  ipcMain.handle(IPC.demoImportBundle, (_e, bytes: unknown) =>
+    library().importBundle(bytes instanceof Uint8Array ? bytes : new Uint8Array(0)),
+  );
   ipcMain.handle(IPC.demoChooseFolder, async () => {
     const dir = await pickFolder('Keep saved demos in…', true);
     if (!dir) return null;

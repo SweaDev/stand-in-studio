@@ -130,3 +130,4 @@ Progress tracker for [PLAN.md](PLAN.md). One task = one commit; tick the box in 
 - [x] T63 In-app clip recorder (MediaRecorder) with save to the demo library
 - [x] T64 Demo picker with offline replay of saved demos; Advanced → Demo library (rename, delete, export, import)
 - [x] T65 Budget-guarded live check on an open-licence clip (files handed to the user, not committed), docs, version 1.3.0 and tag
+- [x] T66 Single-file demo bundle (`.standin-demo.zip`, stored ZIP without a dependency): export and import; test demo resent; version 1.3.1 and tag

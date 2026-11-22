@@ -35,6 +35,7 @@ const studio: StudioApi = {
     rename: (id, name) => ipcRenderer.invoke(IPC.demoRename, id, name),
     delete: (id) => ipcRenderer.invoke(IPC.demoDelete, id),
     exportTo: (id) => ipcRenderer.invoke(IPC.demoExport, id),
+    importBundle: (bytes) => ipcRenderer.invoke(IPC.demoImportBundle, bytes),
     chooseFolder: () => ipcRenderer.invoke(IPC.demoChooseFolder),
     resetFolder: () => ipcRenderer.invoke(IPC.demoResetFolder),
     openFolder: () => ipcRenderer.invoke(IPC.demoOpenFolder),

@@ -175,7 +175,11 @@ Recorded clips are a way to test and tune intents on the same footage again and 
 - **Record a demo…** (Camera tab) records your webcam together with its live telemetry.
 - **Saved demos replay offline.** Pick one under *Demo* on the start screen, or press *Play* in Advanced → Demo library. The saved telemetry drives the engine in step with the video, so no API key or credits are used, and Auto decides exactly as it did live.
 - **Where demos are kept:** the **Demo library** folder, `demos/` inside the app's user-data folder by default. You can choose another folder in Advanced. Because it is outside the app, saved demos survive rebuilds and reinstalls. Demos are never part of this repository.
-- **Sharing:** Advanced → Demo library can **Export** a demo as `<name>.<ext>` and `<name>.telemetry.json`, and **Import** such a pair.
+- **Sharing:** **Export** in Advanced → Demo library writes three files:
+  - `<name>.standin-demo.zip`, one file to share, which holds the video, `telemetry.json` and `meta.json`;
+  - the video and `<name>.telemetry.json` as loose copies, to inspect.
+
+  **Import** takes either the `.standin-demo.zip` or a video plus its telemetry file. The zip is a plain stored ZIP, so any unzip tool opens it too.
 - **What a demo contains:** you are asked before every save, with a privacy notice.
   - Saved by default: face landmarks, talking, blinking, expressions, and face or people in view.
   - Pulse and breathing: only if you tick the box.
