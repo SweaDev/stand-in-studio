@@ -129,4 +129,4 @@ Progress tracker for [PLAN.md](PLAN.md). One task = one commit; tick the box in 
 - [x] T62 Recorded file input: consent card, RecordedFeed, SDK on the clip, transport, Save telemetry with privacy notice
 - [x] T63 In-app clip recorder (MediaRecorder) with save to the demo library
 - [x] T64 Demo picker with offline replay of saved demos; Advanced → Demo library (rename, delete, export, import)
-- [ ] T65 Budget-guarded live check on an open-licence clip (files handed to the user, not committed), docs, version 1.3.0 and tag
+- [x] T65 Budget-guarded live check on an open-licence clip (files handed to the user, not committed), docs, version 1.3.0 and tag

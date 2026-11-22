@@ -168,6 +168,19 @@ Use **Show test pattern** to confirm the meeting sees the stage. It shows colour
    - turn on *Reduced motion* or *High contrast* if you like.
 5. **Presets:** save your mode and levels as a meeting preset, such as "Stand-up: Auto, listening 30%".
 
+### Recorded videos and saved demos
+Recorded clips are a way to test and tune intents on the same footage again and again.
+- **Use a recorded video…** (start screen) plays an MP4, WebM, MOV, MKV or OGV file in place of the camera. All four modes work on it: Camera passes it through, and Character, Blend and Auto follow it. With an API key, Presage analyses the clip exactly as it would your webcam.
+- **Save telemetry…** (under the clip) plays the clip once from the start and saves the clip together with the signals Presage returned for it.
+- **Record a demo…** (Camera tab) records your webcam together with its live telemetry.
+- **Saved demos replay offline.** Pick one under *Demo* on the start screen, or press *Play* in Advanced → Demo library. The saved telemetry drives the engine in step with the video, so no API key or credits are used, and Auto decides exactly as it did live.
+- **Where demos are kept:** the **Demo library** folder, `demos/` inside the app's user-data folder by default. You can choose another folder in Advanced. Because it is outside the app, saved demos survive rebuilds and reinstalls. Demos are never part of this repository.
+- **Sharing:** Advanced → Demo library can **Export** a demo as `<name>.<ext>` and `<name>.telemetry.json`, and **Import** such a pair.
+- **What a demo contains:** you are asked before every save, with a privacy notice.
+  - Saved by default: face landmarks, talking, blinking, expressions, and face or people in view.
+  - Pulse and breathing: only if you tick the box.
+  - Format: [`src/shared/telemetry.ts`](src/shared/telemetry.ts), `standin-telemetry` v1. Each frame is stamped with the clip's media time when Presage delivered it, so a replay includes the SDK's real latency.
+
 ### Hotkeys (global, work while your meeting app has focus)
 
 | Action | Linux / Windows | macOS |
@@ -187,7 +200,8 @@ A permanent **"DEMO – simulated signals"** badge stays in the control window. 
 
 ## Privacy and consent
 - **Camera mode uses no API:** in Camera mode the Presage SDK is paused (after a 1.5 s debounce, so cycling modes doesn't stop and restart it), and nothing is analysed. It resumes when you leave Camera mode.
-- **On-device:** frames are processed on this computer by the SmartSpectra SDK. Stand-In Studio records and stores **nothing**: no video, images, audio, landmarks or signal values.
+- **On-device:** frames are processed on this computer by the SmartSpectra SDK. Stand-In Studio records and stores **nothing** unless you ask: no video, images, audio, landmarks or signal values.
+- **Saved demos are opt-in:** *Save telemetry* and *Record a demo* ask first, with a privacy notice. They then save the clip and its face signals (plus pulse and breathing only if ticked) in your demo library folder on this computer. Nothing is uploaded, and you can delete demos in Advanced → Demo library. Replaying a saved demo uses no API.
 - **What is saved:** only character, mode and intent settings (names, conditions, actions, order), in `settings.json` in the app's user-data folder.
   - The settings schema drops anything else, including keys and numbers.
   - Calibration and intent tuning live in memory and are discarded on quit.
@@ -205,10 +219,11 @@ A permanent **"DEMO – simulated signals"** badge stays in the control window. 
 
 | Command | What it runs |
 |---|---|
-| `npm test` | ESLint, Prettier check, TypeScript type-check, and **Vitest** unit and property tests (183 tests; about 98% line coverage of the pure core) |
+| `npm test` | ESLint, Prettier check, TypeScript type-check, and **Vitest** unit and property tests ( tests; about 98% line coverage of the pure core) |
 | `npm run test:e2e` | **Playwright + Electron** end-to-end tests under `xvfb-run`: consent gating, stage window, Demo-mode Auto flow, dial, settings, hotkeys, OBS checklist, API-key isolation, camera manager (fake device), presets, axe-core accessibility |
 | `npm run test:live` | The real app with the **real SDK** for 60 s, using a Chromium fake camera fed a public-domain clip. It checks that metrics, landmarks, breathing and `kOk` arrive, that calibration completes, and that Auto shows the talking speaker. Needs `PRESAGE_API_KEY`, `./scripts/fetch-test-video.sh` and Vulkan. Each run is metered by `scripts/presage-budget.mjs` (15-minute cap). |
 | `npm run presage:budget` | Shows Presage SDK time used by live runs |
+| `node scripts/live-recorded.mjs <clip> [outDir]` | Plays a recorded clip through the real SDK, saves its telemetry, then replays it on the next launch with no API key, and compares the intents. Budget-guarded. |
 | `node scripts/live-probe.mjs 40` | Main-process SDK probe on the test clip: prints field shapes and counts, never values |
 
 CI ([`.github/workflows/ci.yml`](.github/workflows/ci.yml)) runs `npm test` and the e2e suite on Ubuntu 24.04. It never runs live tests.

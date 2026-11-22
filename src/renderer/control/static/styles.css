@@ -1558,3 +1558,6 @@ dialog.builder[open] {
   font-size: var(--fs-sm);
   word-break: break-all;
 }
+.caption:empty {
+  display: none;
+}

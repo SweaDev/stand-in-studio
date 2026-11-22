@@ -152,12 +152,18 @@ Intents are checked **top to bottom, and the first match wins**. The full refere
   - **Camera, Blend and Auto** send **your real video**, at the opacity shown on the dial, to the meeting through OBS.
   - What is read from the camera, and why.
   - That cardio signals (pulse, breathing rate) are requested **only** if the Comfort shield, or a custom intent that uses them, is switched on.
-  - That nothing is recorded, and that the camera can be stopped at any time.
+  - That nothing is recorded unless you choose to save a demo, and that the camera can be stopped at any time.
 - **On-device processing.** Frames are processed **on this computer** by the SmartSpectra SDK.
   - Stand-In Studio records and stores nothing: no video, images, audio, landmarks or signal values.
   - Calibration values and intent tuning live in memory and are discarded on quit.
   - Only the character choice, mode and intent settings are saved. Learned intent thresholds are saved only if you opt in under Advanced, with a privacy warning.
   - Developer mode's decision log is shown on screen only. It is never written to disk or printed.
+- **Saved demos (opt-in).** *Save telemetry* (for a recorded video) and *Record a demo* (from the webcam) save a clip plus the signals Presage returned for it to the **demo library** on this computer. By default the library is `demos/` in the app's data folder; the user can pick another folder. Both actions:
+  - show a privacy notice first, every time;
+  - save face signals only, adding pulse and breathing only when ticked;
+  - upload nothing.
+
+  Demos are never part of the source repository. Replaying a saved demo uses no SDK and no API.
 - **No analysis in Camera mode.** About 1.5 s after you switch to Camera mode, the SDK is stopped: no frames are sent to it. It resumes as soon as you leave Camera mode, and Auto holds its level until the first data arrives. If the camera starts while in Camera mode, the SDK is configured but never started.
 - **Minimal requests.** The SDK is asked only for what the current settings need: the face signals and chest breathing, plus pulse and breathing rate only with the Comfort shield or a body-signal intent on.
 - **Telemetry off.** Presage telemetry is off (`enableTelemetry: false`). Link to Presage's Telemetry and Privacy page.
@@ -181,6 +187,12 @@ An in-app **3-step checklist** walks through steps 3–4, with a *Test pattern* 
 Without an API key (or to save trial credits), **Demo mode** replaces the SDK with simulated signals. A permanent "DEMO – simulated signals" badge appears in the app window, never on the stage.
 - **Keyboard:** N nod · S shake · T hold to talk · B blink · H smile · E eat · L look away · A step away · P raise the Comfort-shield trigger.
 - **Scripted meeting loop:** a 60-second sequence of listening, nodding, talking, looking away and stepping out. It shows Auto mode end to end, with a looping sample video standing in for the camera feed.
+
+### 8a. Recorded input and saved demos
+- **Recorded input:** a video file can stand in for the camera. With an API key the SDK analyses its captured stream exactly as it would the webcam. Pausing the clip pauses the SDK, as Camera mode does.
+- **Saved demos:** the telemetry from one start-to-end pass of a clip, or from an in-app webcam recording, is saved beside the clip. It is the `standin-telemetry` v1 format, with frames stamped by media time.
+- **Replay:** on later runs a saved demo is offered as a Demo option. Its telemetry is replayed in step with the video, and a seek or loop clears the signal history. Auto's decisions match the live run; the live check measured 99% agreement.
+- **Sharing:** demos can be exported and imported as a video plus a `.telemetry.json` file, for debugging and tuning intents outside the repo.
 
 ## 9. Scope
 

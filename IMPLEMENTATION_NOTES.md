@@ -26,6 +26,15 @@ Clips live in the git-ignored `test-assets/` folder and are never committed. Rec
   - `face.mp4` (SDK file input): `... -c:v libx264 -pix_fmt yuv420p -preset veryfast -crf 20 face.mp4`. sha256 `5722f9e8c8e91b98bd8bbd1705e8de58d9e0192e670607e1d8c91b3289560dad` (ffmpeg 6.1.1)
 - Wikimedia's API needs a User-Agent and rate-limits bursts (HTTP 429). The script sends a generic UA.
 
+### Clip 2: "Artemis Interviews with NASA Astronaut Jeanette Epps - October 4, 2019" (downloaded 2026-11-22, Phase 12)
+- NASA Image and Video Library id `iss061m2627771232_Live_Interviews_Jeanette_Epps_191004`. Page: https://images.nasa.gov/details/iss061m2627771232_Live_Interviews_Jeanette_Epps_191004
+- File: `…~medium.mp4` (H.264 1280×720, 1165.6 s, 345,091,605 bytes, sha256 `3f046d49ad3207c7b8daae583678212f8de1eab40410ad40dddb79f0221f1db6`)
+- Author: NASA Johnson Space Center. NASA media is generally not subject to copyright in the US (NASA media usage guidelines), and the clip is used here unaltered apart from trimming. It does not imply NASA endorsement.
+- Why this clip: a live satellite interview, so the speaker faces the camera and alternates between listening and talking (the captions show the turns). That exercises *Listening*, *Talking in the meeting* and *Looking elsewhere*.
+- Segment: 0–45 s, via `ffmpeg -ss 0 -t 45 -i epps-medium.mp4 -an -vf "scale=960:540,fps=30" -c:v libx264 -pix_fmt yuv420p -preset veryfast -crf 22 -movflags +faststart nasa-epps-interview-45s.mp4`. sha256 `868fc873469d6de74556acf1785a0780e727fcfcef1a720d541314e5e24f4c3d`, 1,857,821 bytes.
+- Neither the clip nor its saved telemetry is committed. Both were handed to the user separately.
+- Wikimedia still returned HTTP 429 to a single range request, so Clip 1 was not used.
+
 ## Presage live-run budget (cap 900 s)
 Each run is charged at max(wall time, content seconds), so the figures are conservative.
 
@@ -42,9 +51,10 @@ Each run is charged at max(wall time, content seconds), so the figures are conse
 
 | 2026-11-22 | T49 | `repro-quit.mjs` on the **v1.0.0** build (synthetic clip): exited cleanly, the abort did not reproduce | 25.2 | 350.0 |
 | 2026-11-22 | T49 | `repro-quit.mjs` on the fixed build: session stopped and destroyed before exit, exit code 0 | 20.2 | 370.2 |
-| 2026-11-22 | T59 | `live-camera-pause.mjs` (synthetic clip): 20 reports in Auto, 0 new reports over 4 s in Camera mode (status `paused`), resumed in Auto | 12.8 | **383.0** |
+| 2026-11-22 | T59 | `live-camera-pause.mjs` (synthetic clip): 20 reports in Auto, 0 new reports over 4 s in Camera mode (status `paused`), resumed in Auto | 12.8 | 383.0 |
+| 2026-11-22 | T65 | `live-recorded.mjs` (Clip 2, 45 s), all 5 checks passed. Telemetry saved: 2,562 frames, 1,063 with landmarks and talking, no body signals. The offline replay on the next launch (no API key, 0 SDK sessions) produced the same intent sequence (listening → looking elsewhere → listening → talking in the meeting → listening → talking in the meeting), with 99% of 138 time-matched samples agreeing | 51.4 | **434.4** |
 
-**Total Presage usage: 383.0 s (about 6.4 min) of the 15-minute cap.**
+**Total Presage usage: 434.4 s (about 7.2 min) of the 15-minute cap.**
 
 ## Demo media
 `docs/media/*` is generated in Demo mode by `xvfb-run -a -s "-screen 0 1600x1000x24" node scripts/capture-media.mjs`. It uses no camera, no API key and no real person. `demo.webm` is the last 30 s of a Playwright recording of the stage window during the scripted meeting, re-encoded with VP9 at 640×360, 20 fps and 350 kbit/s.
@@ -74,6 +84,7 @@ git push origin --tags
 | v1.0.0 | (the T48 commit) | Release 1.0.0 |
 | v1.1.0 | 8e822b2 (branch `claude/upbeat-wozniak-rslrk1`) | Release 1.1.0: intents, builder, decision log, shutdown fix |
 | v1.2.0 | (the T59 commit, same branch) | Release 1.2.0: Camera mode pauses the Presage SDK |
+| v1.3.0 | (the T65 commit, same branch) | Release 1.3.0: Recorded input, saved-telemetry demos and offline replay |
 
 ## Deviations from PLAN.md
 - **T05, fake camera format:** the plan called for a `.y4m` file, but 60 s of 960×540 y4m is about 1 GB. Chromium's `--use-file-for-fake-video-capture` also accepts **`.mjpeg`** (51 MB here), so the fake camera uses `test-assets/face.mjpeg`. The SDK file probe uses `face.mp4`.
@@ -89,4 +100,8 @@ git push origin --tags
 - **Phase 10, test clip unavailable:** in the new container, `scripts/fetch-test-video.sh` got HTTP 429 from upload.wikimedia.org for over 30 minutes. Their policy expects a contact address in the User-Agent, and none was added, to keep personal data out of requests. The T49 crash replay used a synthetic `ffmpeg testsrc2` MJPEG instead (`test-assets/synthetic-960x540.mjpeg`, git-ignored). It runs a real SDK session but contains no face, so metrics packets stayed at 0. The T57 live smoke with a face (`npm run test:live`) was therefore **not run** in this phase. The intent pipeline is covered by unit tests, Demo-mode e2e tests and synthetic landmarks, including iris points.
 - **T54, forced push not used:** the T54 commit (`eb198aa`) was pushed with two ESLint errors, because a `grep` in the shell chain hid `npm test`'s exit code. Rewriting the pushed commit was not allowed, so `0d1616a` fixes them. Every later commit gates on `npm test`'s exit code.
 - **Phase 10 media:** `docs/media` was regenerated with `scripts/capture-media.mjs`, which now also captures `builder.png` and `devlog.png`, at a 1440×960 window.
-
+- **Phase 12, recorded input as a source (user decision):** *Recorded* is an input next to the camera and Demo, not a fifth mode button. Saving telemetry needs the SDK to analyse the clip, so the clip has to drive all four modes.
+- **Phase 12, storage (user decision):** demos live in the user's approved data folder (`<userData>/demos` by default, changeable in Advanced). They are never in the repo, and the user shares clips and JSON separately. Only main can change the library folder, from a native folder dialog; the settings IPC drops `recorded.libraryDir` from renderer patches.
+- **Phase 12, file access:** the renderer reads clips through `<input type=file>` and gets saved demos back as bytes over IPC, played from blob URLs. No custom protocol was needed, contrary to the plan's `standin-media://`, and the page CSP is unchanged.
+- **Phase 12, task boundaries:** the saved-demo picker and the offline replay landed in the T62 commit, together with the recorded input, because they share the same `begin()` path. T64 added the Advanced → Demo library panel.
+- **Phase 12, MediaRecorder WebM:** in-app recordings have no duration in their header, so `RecordedFeed` seeks far ahead once to learn it.

@@ -74,6 +74,15 @@ The analysis works from the conditions you wrote. It can't know that, for exampl
 
 In Camera mode the Presage SDK is paused, so Auto has no signals and every intent is frozen. When you switch back, a short warming phase holds the current level until the SDK reports again (at most 10 s), so a resuming SDK never looks like an empty chair.
 
+## Recorded demos
+
+To tune intents on repeatable footage:
+1. Open a recorded video (**Use a recorded video…** on the start screen) and press **Save telemetry…**, or record one with **Camera → Record a demo…**.
+2. Replay the demo from **Demo** on the start screen or **Advanced → Demo library → Play**. The saved signals drive Auto in step with the video, so every replay makes the same decisions with no API use. Turn on **Developer mode** to read the decision log while it plays.
+3. Change an intent, then replay and compare. Scrubbing or looping the clip clears the signal history, just as a resuming SDK does.
+
+Demos are kept in your demo library folder, never in the repository. Use **Export** to share a demo's video and `.telemetry.json` file.
+
 ## Developer mode
 
 **Advanced → Developer mode** opens a decision log in the control window. It is never shown on the stage, never written to disk and never printed to the console. Each row shows:

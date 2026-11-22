@@ -2,6 +2,16 @@
 
 All notable changes to Stand-In Studio. Versions follow the phases in [PLAN.md](PLAN.md).
 
+## 1.3.0 — 2026-11-22
+- **Recorded input:** *Use a recorded video…* plays a video file in place of the camera, and all four modes work on it. With an API key Presage analyses the clip like a webcam. Pausing the clip pauses the SDK.
+- **Save telemetry:** plays the clip once and saves it, with the signals Presage returned, as a **demo**. Face signals are saved by default, and pulse and breathing only when ticked. A privacy notice comes first, every time.
+- **Record a demo** (Camera tab): records the webcam together with its live telemetry.
+- **Saved demos replay offline:** pick one under Demo on the start screen. The saved telemetry drives Auto in step with the video, with no API use. The live check measured the same intent sequence as the live run and 99% sample agreement.
+- **Demo library** (Advanced):
+  - kept in the app's data folder by default, or a folder you choose, so demos survive rebuilds;
+  - play, rename, export (video + `.telemetry.json`), delete and import.
+- **Saved demos never go in the repository:** `.gitignore` covers `demos/` and `*.telemetry.json`.
+
 ## 1.2.0 — 2026-11-22
 - **Camera mode no longer uses the Presage API.**
   - The SDK is paused 1.5 s after entering Camera mode and resumed on leaving it. Quick mode cycling doesn't stop and restart it.
