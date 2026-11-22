@@ -2,6 +2,12 @@
 
 All notable changes to Stand-In Studio. Versions follow the phases in [PLAN.md](PLAN.md).
 
+## 1.4.0 — 2026-11-22
+- **Live input preview:** the control window's big preview shows the raw input (camera, recorded clip or demo video), labelled by source. Before, it repeated the stage.
+- **Virtual Stage inset:** a small inset in the preview's corner shows the processed output, even while the window is closed. Click it to open the window.
+- **"Stand-In Virtual Stage":** the stage window is renamed. If you set up OBS before, pick the window again; the OBS checklist says so.
+- **Open/Close Virtual Stage Window:** the window stays frameless for a clean capture. Its button now follows the window and closes it too, including when the window manager closes it.
+
 ## 1.3.1 — 2026-11-22
 - **Single-file demos:** Export also writes `<name>.standin-demo.zip`, with the video, telemetry and name in one file, so the clip and its telemetry can't be separated when shared. Import accepts the zip as well as a video + JSON pair.
   - The bundle is a plain stored ZIP, written and read without a dependency. Folders, traversal, compressed or encrypted entries and checksum mismatches are refused.

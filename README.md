@@ -135,7 +135,13 @@ Force Demo mode even when a key is set with `STANDIN_DEMO=1 npm start`.
 The key is held only in the Electron main process, in memory. It is never written to disk and never reaches the page. It is injected into the SDK's IPC bridge in main; see [`src/main/sdkKeyInjection.ts`](src/main/sdkKeyInjection.ts).
 
 ## Sending the stage to your meeting (OBS)
-Stand-In Studio opens a frameless 1280×720 window titled **"Stand-In Stage"**. This is the picture the meeting sees. The app shows the same checklist:
+Stand-In Studio opens a frameless 1280×720 window titled **"Stand-In Virtual Stage"**. This is the picture the meeting sees.
+- It has no title bar, so the OBS capture stays clean. Open and close it with **Open/Close Virtual Stage Window** in the control window.
+- The control window's large preview shows your **raw input** (camera, recorded clip or demo video).
+- The small **Virtual Stage** inset in its corner shows what the meeting gets; click it to open the window.
+- *Before 1.4 the window was called "Stand-In Stage"; pick it again in OBS.*
+
+The app shows the same checklist:
 
 1. **OBS Studio → add a source:**
    - Windows: *Window Capture*
@@ -143,12 +149,12 @@ Stand-In Studio opens a frameless 1280×720 window titled **"Stand-In Stage"**. 
    - Linux X11: *Window Capture (Xcomposite)*
    - Linux Wayland: *Screen Capture (PipeWire)*
 
-   Pick "Stand-In Stage" and fit it to the canvas (Ctrl+F).
+   Pick "Stand-In Virtual Stage" and fit it to the canvas (Ctrl+F).
 2. **Start Virtual Camera** in OBS.
    - On Linux this needs the v4l2loopback module: `sudo apt install v4l2loopback-dkms`.
 3. In **Zoom / Meet / Teams**, choose **OBS Virtual Camera**. The meeting never touches your real webcam, so there is no camera conflict.
 
-Use **Show test pattern** to confirm the meeting sees the stage. It shows colour bars, a moving dot and the time. Without OBS, share the "Stand-In Stage" window as a screen share.
+Use **Show test pattern** to confirm the meeting sees the stage. It shows colour bars, a moving dot and the time. Without OBS, share the "Stand-In Virtual Stage" window as a screen share.
 
 ## Using the app
 1. **Consent:** the consent screen explains exactly what is read, sent and stored. The camera starts only after **Start with my camera**.
@@ -247,7 +253,7 @@ control renderer ─────────── one getUserMedia stream ─�
   │                                   │                   signals → intents (first match) → IntentPolicy → ModeController (State)
   │                                   │                   → OpacitySmoother → StageState
   │                                   ▼                        ▼
-  └── window.open('about:blank') ─► "Stand-In Stage" canvas ◄─ StageCompositor + Character (Strategy/Registry)
+  └── window.open('about:blank') ─► "Stand-In Virtual Stage" canvas ◄─ StageCompositor + Character (Strategy/Registry)
 ```
 
 - **Pure core** (`src/core`): calibration, landmark features, trackers (breathing, blink, nod/shake, smile, talking, presence, validation filter), pose mapper, intents (signal readings, matcher and tracker, tuning, conflict analysis, decision trace), the intent policy, Comfort shield, smoother and modes. It has no Electron, SDK or DOM dependency (enforced by ESLint) and is fully unit-tested with a `FakeClock`.

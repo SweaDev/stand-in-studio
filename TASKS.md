@@ -134,4 +134,4 @@ Progress tracker for [PLAN.md](PLAN.md). One task = one commit; tick the box in 
 
 **Phase 13 — Live input preview & Virtual Stage → v1.4.0** (session branch `claude/upbeat-wozniak-rslrk1`)
 - [x] T67 The control window's preview shows the raw input (camera, clip or demo) with a small Virtual Stage output inset; the stage window is renamed "Stand-In Virtual Stage" (still frameless) and the Open/Close Virtual Stage Window button follows it
-- [ ] T68 Docs, version 1.4.0 and tag
+- [x] T68 Docs, version 1.4.0 and tag

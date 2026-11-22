@@ -49,7 +49,7 @@ All modes produce one picture, the **stage**, which the meeting receives as your
 | **Blend** | Your feed at the opacity you choose, with the character overlaid | Opacity slider 0–100% with presets 25 / 50 / 75%. Layout: **Over** (character centred, feed dimmed behind) or **Beside** (character in the lower third, feed above) |
 | **Auto** | Your feed at an opacity chosen live by the Auto rules (§5), with the character always present | Your **max** (default 100%), **listening level** (default 40%), and Comfort shield on/off |
 
-**Presence dial.** This is the main control in the app window: a large round dial, with a mode switch beside it and a live thumbnail of the stage.
+**Presence dial.** This is the main control in the app window: a large round dial, with a mode switch beside it. Beside them, a preview of the **raw input** (camera, recorded clip or demo video) carries a small inset of the processed Virtual Stage output.
 - Turning the dial switches to Blend and sets the opacity.
 - In Auto, the dial needle moves on its own so you always see what the meeting sees.
 - The lantern icon in the dial brightens as more of the character shows, and your face icon brightens as more of the feed shows.
@@ -177,7 +177,7 @@ Intents are checked **top to bottom, and the first match wins**. The full refere
 
 1. Stand-In Studio **owns the physical webcam**. It opens the camera once with `getUserMedia` (1280×720, 30 fps) and gives that **same stream** to the SDK with `sdk.useMediaStream(stream)`. Several challenge submissions use this pattern, so there's one camera stream for both sensing and the feed.
 2. A separate **Stage window** (1280×720, no window chrome) composes the background, feed, character and badges at 30 fps.
-3. **OBS Studio:** a *Window Capture* of "Stand-In Stage", then *Start Virtual Camera*.
+3. **OBS Studio:** a *Window Capture* of "Stand-In Virtual Stage", then *Start Virtual Camera*. The window is frameless, so the capture has no title bar. The control window opens and closes it with **Open/Close Virtual Stage Window**.
 4. In Zoom, Meet or Teams, choose **OBS Virtual Camera**. The meeting app never touches the real webcam, so there is no camera contention.
 
 An in-app **3-step checklist** walks through steps 3–4, with a *Test pattern* button so you can confirm the meeting sees the stage. Without OBS, the fallback is sharing the Stage window as a screen share.

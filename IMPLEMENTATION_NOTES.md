@@ -86,6 +86,7 @@ git push origin --tags
 | v1.2.0 | (the T59 commit, same branch) | Release 1.2.0: Camera mode pauses the Presage SDK |
 | v1.3.0 | (the T65 commit, same branch) | Release 1.3.0: Recorded input, saved-telemetry demos and offline replay |
 | v1.3.1 | (the T66 commit, same branch) | Release 1.3.1: single-file demo bundles |
+| v1.4.0 | (the T68 commit, same branch) | Release 1.4.0: live input preview and the Virtual Stage window |
 
 ## Deviations from PLAN.md
 - **T05, fake camera format:** the plan called for a `.y4m` file, but 60 s of 960×540 y4m is about 1 GB. Chromium's `--use-file-for-fake-video-capture` also accepts **`.mjpeg`** (51 MB here), so the fake camera uses `test-assets/face.mjpeg`. The SDK file probe uses `face.mp4`.
@@ -107,3 +108,5 @@ git push origin --tags
 - **Phase 12, task boundaries:** the saved-demo picker and the offline replay landed in the T62 commit, together with the recorded input, because they share the same `begin()` path. T64 added the Advanced → Demo library panel.
 - **Phase 12, MediaRecorder WebM:** in-app recordings have no duration in their header, so `RecordedFeed` seeks far ahead once to learn it.
 - **T66, test demo delivery:** the first hand-off of Clip 2 reached the user without the MP4; only `SOURCE.txt` and the telemetry JSON arrived, so the pair could not be imported. The demo was resent as the MP4 alone and as `nasa-epps-interview-45s.standin-demo.zip`. It is also kept in the git-ignored `shared-demos/` folder of the working copy. The delivered zip was imported through the real UI (no API key): 2,562 frames, the same intent sequence as the live run, and 0 SDK sessions. To stop a clip and its telemetry from being separated again, Export now also writes a single-file bundle.
+- **Phase 13, stage window frame (user decision):** the user first asked for Electron's default close button. OBS window capture can include a native title bar, especially on Linux/Wayland, so the user chose to keep the **Virtual Stage frameless**. The control window's button toggles between *Open* and *Close Virtual Stage Window* and follows the window's real state, including closes from the window manager.
+- **Phase 13, rename:** the stage window title changed from "Stand-In Stage" to "Stand-In Virtual Stage". OBS matches windows by title, so existing OBS setups must re-pick it; the OBS checklist says so.
