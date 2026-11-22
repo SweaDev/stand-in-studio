@@ -5,7 +5,7 @@ test('OBS checklist names the stage window and the test pattern reaches the stag
   const { app, control } = await launchApp();
   try {
     await passConsent(control);
-    await expect(control.locator('.obs')).toContainText('“Stand-In Stage”');
+    await expect(control.locator('.obs')).toContainText('“Stand-In Virtual Stage”');
     await expect(control.locator('.obs')).toContainText('Start Virtual Camera');
     await expect(control.locator('.obs')).toContainText('OBS Virtual Camera');
     await expect(control.locator('.obs')).toContainText('v4l2loopback');

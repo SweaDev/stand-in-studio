@@ -4,7 +4,8 @@ import { STAGE_FRAME_NAME } from '../../../shared/ipc';
 /**
  * Owns the stage window: a same-origin about:blank child of the control window, so this
  * renderer can draw the shared camera stream straight into its canvas. OBS captures it by
- * its title, "Stand-In Stage".
+ * its title, "Stand-In Virtual Stage". It is frameless (a clean capture), so the control
+ * window's Open/Close Virtual Stage Window button is how it is closed.
  */
 export class StageHost {
   private win: Window | null = null;

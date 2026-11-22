@@ -5,7 +5,7 @@ import { launchApp, passConsent } from './helpers';
 
 const outDir = join(__dirname, '..', '..', 'test-results', 'tiles');
 
-test('opens a frameless "Stand-In Stage" window and draws both priority characters', async () => {
+test('opens a frameless "Stand-In Virtual Stage" window and draws both priority characters', async () => {
   const { app, control } = await launchApp();
   try {
     await passConsent(control);
@@ -13,7 +13,7 @@ test('opens a frameless "Stand-In Stage" window and draws both priority characte
     const titles = await app.evaluate(({ BrowserWindow }) =>
       BrowserWindow.getAllWindows().map((w) => ({ title: w.getTitle(), size: w.getContentSize() })),
     );
-    expect(titles).toContainEqual({ title: 'Stand-In Stage', size: [1280, 720] });
+    expect(titles).toContainEqual({ title: 'Stand-In Virtual Stage', size: [1280, 720] });
 
     mkdirSync(outDir, { recursive: true });
     for (const id of ['lantern', 'houseplant']) {

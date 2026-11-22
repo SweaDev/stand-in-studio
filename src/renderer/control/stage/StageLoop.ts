@@ -2,6 +2,7 @@ import type { StudioEngine } from '../../../core/StudioEngine';
 import type { StageState } from '../../../shared/types';
 import { StageCompositor, type FeedSource } from '../../../render/StageCompositor';
 import { STAGE_HEIGHT, STAGE_WIDTH } from '../../../shared/app';
+import { drawRawPreview } from '../../../render/rawPreview';
 import type { StageHost } from './StageHost';
 
 const FRAME_MS = 1000 / 30;
@@ -9,12 +10,14 @@ const FRAME_MS = 1000 / 30;
 /**
  * Drives the stage at 30 fps with a timer (not requestAnimationFrame, which pauses for
  * hidden windows): engine tick → compositor → stage canvas, plus a control-window
- * thumbnail and a listener for UI updates.
+ * preview of the raw input, a small inset of the processed output, and a listener for UI
+ * updates.
  */
 export class StageLoop {
   private timer: number | undefined;
   private compositor: StageCompositor | null = null;
   private surface: HTMLCanvasElement | null = null;
+  private insetCompositor: StageCompositor | null = null;
   private frames = 0;
   private fpsWindowStart = performance.now();
   fps = 0;
@@ -23,7 +26,8 @@ export class StageLoop {
     private readonly engine: StudioEngine,
     private readonly host: StageHost,
     private readonly feed: () => FeedSource | null,
-    private readonly thumbnail: HTMLCanvasElement | null,
+    /** Control-window previews: the raw input, and an inset of the Virtual Stage output. */
+    private readonly previews: { raw: HTMLCanvasElement | null; inset: HTMLCanvasElement | null },
     private readonly onFrame: (s: StageState) => void = () => undefined,
     /** Runs before each engine tick (a replay feeds the frames due by now). */
     private readonly beforeTick: () => void = () => undefined,
@@ -52,14 +56,20 @@ export class StageLoop {
     const feed = this.feed();
     if (this.compositor) this.compositor.render(state, feed, t);
 
-    if (this.thumbnail && this.frames % 2 === 0) {
-      const tctx = this.thumbnail.getContext('2d');
-      if (tctx) {
+    if (this.frames % 2 === 0) {
+      const { raw, inset } = this.previews;
+      const rctx = raw?.getContext('2d');
+      if (raw && rctx) drawRawPreview(rctx, raw.width, raw.height, feed);
+      const ictx = inset?.getContext('2d');
+      if (inset && ictx) {
         if (surface) {
-          tctx.drawImage(surface, 0, 0, this.thumbnail.width, this.thumbnail.height);
+          ictx.drawImage(surface, 0, 0, inset.width, inset.height);
         } else {
-          // Stage window closed: still preview what it would show.
-          new StageCompositor(tctx, this.thumbnail.width, this.thumbnail.height).render(state, feed, t);
+          // Virtual Stage window closed: still show what it would send.
+          if (this.insetCompositor?.width !== inset.width) {
+            this.insetCompositor = new StageCompositor(ictx, inset.width, inset.height);
+          }
+          this.insetCompositor.render(state, feed, t);
         }
       }
     }

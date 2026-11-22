@@ -53,7 +53,7 @@ try {
   // Close the control window the way a user does (title-bar ×), not app.close().
   await app.evaluate(({ BrowserWindow }) =>
     BrowserWindow.getAllWindows()
-      .find((w) => !w.getParentWindow() && w.getTitle() !== 'Stand-In Stage')
+      .find((w) => !w.getParentWindow() && w.getTitle() !== 'Stand-In Virtual Stage')
       ?.close(),
   );
 } catch (err) {

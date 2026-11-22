@@ -79,6 +79,8 @@ export class ControlApp {
   private feed: () => FeedSource | null = () => null;
   private readonly frameListeners: ((s: StageState) => void)[] = [];
   readonly thumb: HTMLCanvasElement;
+  /** Small preview of the Virtual Stage output, inside the raw preview. */
+  readonly inset: HTMLCanvasElement;
   readonly main: HTMLElement;
 
   constructor(
@@ -92,13 +94,14 @@ export class ControlApp {
       width: 960,
       height: 540,
       role: 'img',
-      'aria-label': 'Live preview of what the meeting sees',
+      'aria-label': 'Live input: your camera, clip or demo video as it comes in',
     });
+    this.inset = h('canvas', { id: 'stage-inset', width: 320, height: 180, 'aria-hidden': 'true' });
     this.loop = new StageLoop(
       this.engine,
       this.host,
       () => this.feed(),
-      this.thumb,
+      { raw: this.thumb, inset: this.inset },
       (s) => this.frameListeners.forEach((fn) => fn(s)),
       () => this.beforeTick(),
     );
@@ -776,6 +779,14 @@ export class ControlApp {
     return h('div', { class: 'group', id: 'group-camera-device' }, h('h3', {}, 'Camera'), picker.el);
   }
 
+  /** What feeds the stage: shown on the raw preview. */
+  private sourceLabel(): string {
+    if (this.replay) return 'saved demo';
+    if (this.clip) return 'recorded clip';
+    if (this.demo) return 'simulated demo';
+    return 'camera';
+  }
+
   /** Transport for a recorded clip, plus Save telemetry when Presage analyses it. */
   private buildTransport(clip: RecordedFeed): TransportBar {
     const extra: HTMLElement[] = [];
@@ -862,6 +873,19 @@ export class ControlApp {
       if (sensingChip.hidden !== (text === '')) sensingChip.hidden = text === '';
     });
     this.transport = this.clip ? this.buildTransport(this.clip) : null;
+    // The Virtual Stage is frameless (clean OBS capture), so it is opened and closed here.
+    const stageBtn = h('button', {
+      type: 'button',
+      id: 'open-stage',
+      onclick: () => (this.host.isOpen ? this.host.close() : this.host.open()),
+    });
+    let stageOpen: boolean | null = null;
+    this.onFrame(() => {
+      const open = this.host.isOpen;
+      if (open === stageOpen) return;
+      stageOpen = open;
+      stageBtn.textContent = open ? 'Close Virtual Stage Window' : 'Open Virtual Stage Window';
+    });
     this.onFrame((s) => {
       dial.set(s.feedOpacity, MODE_LABELS[s.mode]);
       overrides.set(this.engine.overrideState);
@@ -993,16 +1017,30 @@ export class ControlApp {
       ),
       h(
         'section',
-        { class: 'preview card', 'aria-label': 'What the meeting sees' },
-        h('div', { class: 'thumb-frame' }, this.thumb, h('span', { class: 'thumb-label' }, 'Live stage')),
+        { class: 'preview card', 'aria-label': 'Live input and Virtual Stage' },
+        h(
+          'div',
+          { class: 'thumb-frame' },
+          this.thumb,
+          h('span', { class: 'thumb-label' }, `Live input · ${this.sourceLabel()}`),
+          h(
+            'button',
+            {
+              type: 'button',
+              class: 'stage-inset',
+              id: 'stage-inset-btn',
+              title: 'Open the Virtual Stage window',
+              'aria-label': 'Virtual Stage output: open or focus the Virtual Stage window',
+              onclick: () => this.host.open(),
+            },
+            this.inset,
+            h('span', { class: 'stage-inset-label' }, 'Virtual Stage'),
+          ),
+        ),
         h(
           'div',
           { class: 'row toolbar' },
-          h(
-            'button',
-            { type: 'button', id: 'open-stage', onclick: () => this.host.open() },
-            'Open stage window',
-          ),
+          stageBtn,
           this.demo ? scriptBtn : null,
           h('button', { type: 'button', id: 'show-help', onclick: () => help.open() }, 'Shortcuts'),
           this.camera

@@ -56,6 +56,11 @@ export class ObsChecklist implements Component {
           'In ',
           link(EXTERNAL_LINKS.obs, 'OBS Studio'),
           `, add a source: ${captureSourceName(platform)}, and choose the window “${STAGE_WINDOW_TITLE}”. Fit it to the canvas (Ctrl+F in OBS).`,
+          h(
+            'p',
+            { class: 'hint obs-renamed' },
+            'Set up OBS before version 1.4? The window was called “Stand-In Stage”: pick it again under its new name.',
+          ),
         ),
         step(
           2,
@@ -78,7 +83,11 @@ export class ObsChecklist implements Component {
         ),
       ),
       h('div', { class: 'row' }, this.testBtn),
-      h('p', { class: 'hint' }, 'No OBS? Share the “Stand-In Stage” window as a screen share instead.'),
+      h(
+        'p',
+        { class: 'hint' },
+        `No OBS? Share the “${STAGE_WINDOW_TITLE}” window as a screen share instead.`,
+      ),
     );
   }
 }

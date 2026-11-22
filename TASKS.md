@@ -131,3 +131,7 @@ Progress tracker for [PLAN.md](PLAN.md). One task = one commit; tick the box in 
 - [x] T64 Demo picker with offline replay of saved demos; Advanced → Demo library (rename, delete, export, import)
 - [x] T65 Budget-guarded live check on an open-licence clip (files handed to the user, not committed), docs, version 1.3.0 and tag
 - [x] T66 Single-file demo bundle (`.standin-demo.zip`, stored ZIP without a dependency): export and import; test demo resent; version 1.3.1 and tag
+
+**Phase 13 — Live input preview & Virtual Stage → v1.4.0** (session branch `claude/upbeat-wozniak-rslrk1`)
+- [x] T67 The control window's preview shows the raw input (camera, clip or demo) with a small Virtual Stage output inset; the stage window is renamed "Stand-In Virtual Stage" (still frameless) and the Open/Close Virtual Stage Window button follows it
+- [ ] T68 Docs, version 1.4.0 and tag
