@@ -48,7 +48,7 @@ export class CurrentIntentCard implements Component {
     if (!debug) return;
     const t = debug.trace;
     const intent = debug.intent;
-    let note = '';
+    let note: string;
     if (mode !== 'auto') note = `Auto is off: ${MODE_NAMES[mode]} mode decides the stage.`;
     else if (t.policy.override === 'hidden') note = 'Hide me is on: the character covers you.';
     else if (t.policy.override === 'pinned') note = 'Pinned: Auto will not change the opacity.';

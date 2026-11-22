@@ -1,8 +1,7 @@
-import { expect, test } from '@playwright/test';
+import { expect, type Page, test } from '@playwright/test';
 import { launchApp, openTab, passConsent } from './helpers';
 
-const saved = (control: import('@playwright/test').Page) =>
-  control.evaluate(() => (window as any).studio.getSettings());
+const saved = (control: Page) => control.evaluate(() => (window as any).studio.getSettings());
 
 test('Auto tab shows the active intent and lets you change, reorder and disable intents', async () => {
   const { app, control } = await launchApp();
