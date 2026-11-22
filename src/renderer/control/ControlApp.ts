@@ -42,6 +42,7 @@ import { RecordedFeed } from './recorded/RecordedFeed';
 import { TransportBar } from './recorded/TransportBar';
 import { SaveDemoDialog } from './recorded/SaveDemoDialog';
 import { ClipRecorder, MAX_RECORDING_MS } from './recorded/ClipRecorder';
+import { DemoLibraryPanel } from './recorded/DemoLibraryPanel';
 import { ReplaySignalSource } from '../../sensing/recorded/ReplaySignalSource';
 import { TelemetryRecorder } from '../../sensing/recorded/TelemetryRecorder';
 import { sanitizeTelemetry } from '../../shared/telemetry';
@@ -300,7 +301,12 @@ export class ControlApp {
     return this.serial(() => this.doRestart());
   }
 
-  private async doRestart(): Promise<void> {
+  /** Replays a saved demo now (from the demo library), without going back to the start screen. */
+  playDemo(id: string): Promise<void> {
+    return this.serial(() => this.doRestart({ kind: 'replay', id }));
+  }
+
+  private async doRestart(next?: ConsentChoice): Promise<void> {
     if (this.pauseTimer) clearTimeout(this.pauseTimer);
     this.pauseTimer = undefined;
     this.engine.setSensing('live');
@@ -329,7 +335,13 @@ export class ControlApp {
     this.main.hidden = true;
     this.root.insertBefore(this.banner.el, this.main);
     this.main.replaceChildren();
+    this.demoLibraryChanged = () => undefined;
     await this.start();
+    if (next) {
+      // Consent was already given this launch; a replay uses no camera and no API.
+      document.querySelector('.consent')?.remove();
+      await this.begin(next);
+    }
   }
 
   /** Runs after consent: starts signals, the stage window and the loop. */
@@ -905,6 +917,8 @@ export class ControlApp {
       },
       openExternal: (u) => void this.api.openExternal(u),
     });
+    const library = new DemoLibraryPanel(this.api.demos, { play: (id) => void this.playDemo(id) });
+    this.demoLibraryChanged = () => void library.refresh();
     const current = new CurrentIntentCard();
     this.onFrame((s) => {
       current.update(this.engine.debug, s.mode);
@@ -962,7 +976,7 @@ export class ControlApp {
               .el,
           ],
         },
-        { id: 'advanced', label: 'Advanced', content: [this.advanced.el] },
+        { id: 'advanced', label: 'Advanced', content: [this.advanced.el, library.el] },
       ],
       'auto',
     );
