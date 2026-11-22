@@ -134,7 +134,7 @@ export function buildTrace(i: TraceInput): DecisionTrace {
     parts.push(`waiting for ${pending.name} ${Math.round(pending.elapsedMs)}/${pending.holdMs} ms`);
   if (i.policy.raisePendingMs !== null)
     parts.push(
-      `raise to ${pct(i.policy.candidate)} in ${Math.max(0, i.policyHoldMs - i.policy.raisePendingMs)} ms`,
+      `raise to ${pct(i.policy.candidate)} in ${Math.round(Math.max(0, i.policyHoldMs - i.policy.raisePendingMs))} ms`,
     );
   if (i.policy.capped && i.shieldCap !== null) parts.push(`Comfort shield cap ${pct(i.shieldCap)}`);
   if (i.override) parts.push(`override: ${i.override}`);

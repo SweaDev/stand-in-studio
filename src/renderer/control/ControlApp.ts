@@ -30,6 +30,7 @@ import { IntentList } from './components/IntentList';
 import { AdvancedPanel } from './components/AdvancedPanel';
 import { IntentBuilder } from './components/IntentBuilder';
 import { GuidedTuning } from './components/GuidedTuning';
+import { DecisionLog } from './components/DecisionLog';
 import { icon } from './icons';
 import type { IntentDef } from '../../shared/intents';
 import { DemoController } from './demo/DemoController';
@@ -136,6 +137,7 @@ export class ControlApp {
   private presets: PresetPanel | null = null;
   private intentList: IntentList | null = null;
   private advanced: AdvancedPanel | null = null;
+  private devlog: DecisionLog | null = null;
   tabs: SettingsTabs | null = null;
 
   /** Applies a settings change locally at once and persists it in main. */
@@ -145,6 +147,7 @@ export class ControlApp {
     this.panel?.sync(this.settings);
     this.presets?.sync(this.settings);
     this.advanced?.sync(this.settings);
+    this.devlog?.setEnabled(this.settings.advanced.developerMode);
     if (patch.auto?.intents) this.intentList?.sync(this.settings.auto.intents, this.engine.intentTuning);
     // Re-requests metrics only when cardio need changes (Comfort shield or a body-signal intent).
     void this.presage?.setComfortShield(needsCardio(this.settings));
@@ -388,8 +391,11 @@ export class ControlApp {
     const guided = new GuidedTuning(this.engine, (id) =>
       this.settings.auto.intents.some((i) => i.id === id && i.enabled),
     );
+    this.devlog = new DecisionLog();
+    this.devlog.setEnabled(this.settings.advanced.developerMode);
     let frame = 0;
     this.onFrame(() => {
+      this.devlog?.push(this.engine.debug?.trace);
       guided.update();
       if (builder.isOpen && frame++ % 6 === 0) builder.live();
     });
@@ -507,6 +513,7 @@ export class ControlApp {
         obs.el,
       ),
       h('section', { class: 'settings card', 'aria-label': 'Settings' }, this.tabs.el),
+      this.devlog.el,
       builder.el,
     );
   }

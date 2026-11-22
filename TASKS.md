@@ -116,5 +116,5 @@ Progress tracker for [PLAN.md](PLAN.md). One task = one commit; tick the box in 
 - [x] T53 Settings: intents, custom intents, opt-in tuning save, developer mode
 - [x] T54 Design tokens and the tabbed control-window layout with the current-intent card and intent list
 - [x] T55 Intent builder dialog: signal catalogue with doc links, condition editor, live match, tuning and conflict warnings
-- [ ] T56 Developer mode decision log drawer
+- [x] T56 Developer mode decision log drawer
 - [ ] T57 Docs, live smoke, version 1.1.0 and tag
