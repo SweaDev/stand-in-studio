@@ -32,6 +32,7 @@ function bootstrap(): void {
     version: app.getVersion(),
     e2e: process.env.STANDIN_E2E === '1',
     forceDemo: process.env.STANDIN_DEMO === '1',
+    fakeSdk: process.env.STANDIN_E2E === '1' && process.env.STANDIN_FAKE_SDK === '1',
   };
   let control: BrowserWindow | null = null;
   let store: SettingsStore | null = null;

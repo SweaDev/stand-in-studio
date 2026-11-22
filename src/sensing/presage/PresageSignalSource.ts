@@ -66,6 +66,9 @@ export class PresageSignalSource implements SignalSource {
   private retries = 0;
   private retryTimer: ReturnType<typeof setTimeout> | undefined;
   private comfortShield: boolean;
+  private paused = false;
+  /** Metrics changed while paused: rebuild the SDK on resume. */
+  private reconfigure = false;
   /** Latest validation hint from the SDK (shown during calibration only). */
   lastHint = '';
   /** Diagnostic counters: how many packets carried each signal. Counts only, never values. */
@@ -93,9 +96,18 @@ export class PresageSignalSource implements SignalSource {
     return this._status;
   }
 
-  async start(): Promise<void> {
+  get isPaused(): boolean {
+    return this.paused;
+  }
+
+  /**
+   * Configures the SDK on the camera stream and starts analysing frames. With
+   * `{ paused: true }` it configures only, so nothing is sent to the SDK until resume().
+   */
+  async start(opts: { paused?: boolean } = {}): Promise<void> {
     if (this.sdk) return;
-    this.setStatus('starting');
+    this.paused = opts.paused === true;
+    this.setStatus(this.paused ? 'paused' : 'starting');
     const sdk = this.factory.create({
       apiKey: '',
       requestedMetrics: requestedMetrics({ comfortShield: this.comfortShield }),
@@ -130,6 +142,7 @@ export class PresageSignalSource implements SignalSource {
     });
     sdk.on('error', (code, message, retryable) => this.onError(code, message, retryable));
     sdk.useMediaStream(this.stream);
+    if (this.paused) return;
     try {
       await sdk.start();
       if (this.sdk === sdk) this.setStatus('running');
@@ -139,9 +152,44 @@ export class PresageSignalSource implements SignalSource {
     }
   }
 
+  /**
+   * Stops frame analysis but keeps the configured SDK (the camera stream itself keeps
+   * running for the preview and the stage). Used while the stage is in Camera mode.
+   */
+  async pause(): Promise<void> {
+    if (!this.sdk || this.paused) return;
+    this.paused = true;
+    if (this.retryTimer) clearTimeout(this.retryTimer);
+    this.retryTimer = undefined;
+    this.setStatus('paused');
+    await this.sdk.stop().catch(() => undefined);
+  }
+
+  /** Resumes frame analysis after pause() (or a paused start()). */
+  async resume(): Promise<void> {
+    if (!this.sdk || !this.paused) return;
+    this.paused = false;
+    if (this.reconfigure) {
+      this.reconfigure = false;
+      await this.stop();
+      await this.start();
+      return;
+    }
+    const sdk = this.sdk;
+    this.setStatus('starting');
+    try {
+      await sdk.start();
+      if (this.sdk === sdk && !this.paused) this.setStatus('running');
+    } catch (err) {
+      const e = err as { code?: number; message?: string; retryable?: boolean };
+      this.onError(e.code ?? -1, e.message ?? String(e), e.retryable ?? false);
+    }
+  }
+
   async stop(): Promise<void> {
     if (this.retryTimer) clearTimeout(this.retryTimer);
     this.retryTimer = undefined;
+    this.paused = false;
     const sdk = this.sdk;
     this.sdk = null;
     if (sdk) {
@@ -155,6 +203,10 @@ export class PresageSignalSource implements SignalSource {
   async setComfortShield(on: boolean): Promise<void> {
     if (on === this.comfortShield) return;
     this.comfortShield = on;
+    if (this.paused) {
+      this.reconfigure = true;
+      return;
+    }
     if (this.sdk) {
       await this.stop();
       await this.start();
@@ -166,6 +218,8 @@ export class PresageSignalSource implements SignalSource {
   }
 
   private onError(code: number, message: string, retryable: boolean): void {
+    // A paused SDK analyses nothing; late errors from stopping it are not the user's problem.
+    if (this.paused) return;
     const reason = ERROR_REASONS[code] ?? 'unknown';
     const canRetry = retryable && this.retries < RETRY_DELAYS_MS.length;
     const err: SourceError = { reason, message: MESSAGES[reason] ?? message, retrying: canRetry };
@@ -179,7 +233,7 @@ export class PresageSignalSource implements SignalSource {
     this.retryTimer = setTimeout(() => {
       this.retryTimer = undefined;
       const sdk = this.sdk;
-      if (!sdk) return;
+      if (!sdk || this.paused) return;
       void sdk
         .reset()
         .then(() => sdk.start())

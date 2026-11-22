@@ -125,6 +125,52 @@ describe('PresageSignalSource', () => {
     expect(src.requested).toContain(Metric.BREATHING_RATE);
   });
 
+  it('pauses frame analysis without touching the camera stream, and resumes on the same SDK', async () => {
+    const { sdks, src, statuses } = setup();
+    await src.start();
+    const sdk = sdks[0] as FakeSdk;
+    await src.pause();
+    expect(sdk.stopped).toBe(1);
+    expect(sdk.destroyed).toBe(false);
+    expect(src.isPaused).toBe(true);
+    expect(statuses.at(-1)).toBe('paused');
+    await src.pause(); // idempotent
+    expect(sdk.stopped).toBe(1);
+    await src.resume();
+    expect(sdk.started).toBe(2);
+    expect(sdks).toHaveLength(1);
+    expect(statuses.at(-1)).toBe('running');
+  });
+
+  it('can be configured paused (launching straight into Camera mode) and never starts until resumed', async () => {
+    const { sdks, src, statuses } = setup();
+    await src.start({ paused: true });
+    const sdk = sdks[0] as FakeSdk;
+    expect(sdk.stream).not.toBeNull();
+    expect(sdk.started).toBe(0);
+    expect(statuses).toEqual(['paused']);
+    await src.resume();
+    expect(sdk.started).toBe(1);
+  });
+
+  it('ignores errors and cancels retries while paused; applies a shield change on resume', async () => {
+    const { sdks, src, errors } = setup();
+    await src.start();
+    const sdk = sdks[0] as FakeSdk;
+    sdk.emit('error', 14, 'low fps', true); // schedules a retry
+    await src.pause();
+    await vi.advanceTimersByTimeAsync(RETRY_DELAYS_MS[0] * 2);
+    expect(sdk.resets).toBe(0);
+    sdk.emit('error', 8, 'stopped', true);
+    expect(errors).toHaveLength(1);
+    await src.setComfortShield(true);
+    expect(sdks).toHaveLength(1); // nothing rebuilt while paused
+    await src.resume();
+    expect(sdks).toHaveLength(2);
+    expect((sdks[1] as FakeSdk).options.requestedMetrics).toContain(Metric.PULSE_RATE);
+    expect((sdks[1] as FakeSdk).started).toBe(1);
+  });
+
   it('stops for good on auth or credit errors', async () => {
     const { sdks, src, errors, statuses } = setup();
     await src.start();

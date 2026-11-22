@@ -11,7 +11,7 @@ export const MODE_LABELS: Record<Mode, string> = {
 
 const HINTS: Record<Mode, string> = {
   character: 'Only the character. Your video is at 0%.',
-  camera: 'Your webcam at 100%; the character is hidden.',
+  camera: 'Your webcam at 100%; the character is hidden. Live sensing pauses: nothing is analysed.',
   blend: 'Your video at the opacity you choose, with the character overlaid.',
   auto: 'Stand-In moves the dial for you from your live signals.',
 };

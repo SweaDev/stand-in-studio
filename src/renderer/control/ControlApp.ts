@@ -20,6 +20,7 @@ import { CameraPicker } from './components/CameraPicker';
 import { CameraManager } from './camera/CameraManager';
 import { PresageSignalSource } from '../../sensing/presage/PresageSignalSource';
 import { realSdkFactory } from './presage/sdkFactory';
+import { type FakeSdkStats, createFakeSdkFactory } from './presage/fakeSdkFactory';
 import { type CaptureProfile, lowerProfile } from '../../shared/settings';
 import { COMMANDS, type CommandName, type CommandReceiver } from '../../core/stage/commands';
 import { nextMode } from '../../core/stage/ModeController';
@@ -140,10 +141,51 @@ export class ControlApp {
   private devlog: DecisionLog | null = null;
   tabs: SettingsTabs | null = null;
 
+  /** How long the stage must stay in Camera mode before the SDK is paused (mode cycling). */
+  static readonly PAUSE_DEBOUNCE_MS = 1_500;
+  private pauseTimer: ReturnType<typeof setTimeout> | undefined;
+
+  /**
+   * Camera mode passes the webcam straight through, so the Presage SDK must not analyse
+   * anything then: pause it after a short debounce on entering Camera mode, resume at once
+   * on leaving it. Goes through the transition chain so it never races a restart.
+   */
+  private syncSensing(): void {
+    const src = this.presage;
+    if (this.pauseTimer) clearTimeout(this.pauseTimer);
+    this.pauseTimer = undefined;
+    if (!src) return;
+    if (this.engine.currentMode === 'camera') {
+      if (src.isPaused) return;
+      this.pauseTimer = setTimeout(() => {
+        this.pauseTimer = undefined;
+        void this.serial(async () => {
+          if (this.presage !== src || this.engine.currentMode !== 'camera' || src.isPaused) return;
+          this.engine.setSensing('paused');
+          await src.pause();
+        });
+      }, ControlApp.PAUSE_DEBOUNCE_MS);
+    } else if (src.isPaused) {
+      void this.serial(async () => {
+        if (this.presage !== src || this.engine.currentMode === 'camera' || !src.isPaused) return;
+        this.engine.setSensing('live');
+        await src.resume();
+      });
+    }
+  }
+
+  /** Starts sensing on a new source: paused from the outset when the stage is in Camera mode. */
+  private async startSensing(src: PresageSignalSource): Promise<void> {
+    const paused = this.engine.currentMode === 'camera';
+    if (paused) this.engine.setSensing('paused');
+    await src.start({ paused });
+  }
+
   /** Applies a settings change locally at once and persists it in main. */
   async updateSettings(patch: DeepPartial<Settings>): Promise<void> {
     this.settings = updateSettings(this.settings, patch);
     this.engine.applySettings(this.settings);
+    this.syncSensing();
     this.panel?.sync(this.settings);
     this.presets?.sync(this.settings);
     this.advanced?.sync(this.settings);
@@ -196,6 +238,9 @@ export class ControlApp {
   }
 
   private async doRestart(): Promise<void> {
+    if (this.pauseTimer) clearTimeout(this.pauseTimer);
+    this.pauseTimer = undefined;
+    this.engine.setSensing('live');
     this.loop.stop();
     await this.demo?.stop();
     this.demo = null;
@@ -284,16 +329,24 @@ export class ControlApp {
       return v && v.videoWidth > 0 ? { image: v, width: v.videoWidth, height: v.videoHeight } : null;
     };
     this.presage = this.createPresage(stream);
-    await this.presage.start();
     this.engine.startCalibration();
+    // In Camera mode the SDK is configured but never started (calibration waits for it).
+    await this.startSensing(this.presage);
     return true;
+  }
+
+  /** E2E: counters of the fake SDK (STANDIN_FAKE_SDK=1). */
+  readonly fakeSdk: FakeSdkStats = { created: 0, starts: 0, stops: 0, running: false, reports: 0 };
+
+  private sdkFactory() {
+    return this.api.info.e2e && this.api.info.fakeSdk ? createFakeSdkFactory(this.fakeSdk) : realSdkFactory;
   }
 
   private createPresage(stream: MediaStream): PresageSignalSource {
     const src = new PresageSignalSource(
       stream,
       { comfortShield: needsCardio(this.settings) },
-      realSdkFactory,
+      this.sdkFactory(),
       this.clock,
     );
     src.events.on('frame', (f) => this.engine.ingest(f));
@@ -327,7 +380,7 @@ export class ControlApp {
     const stream = await this.camera.open(deviceId, profile);
     await this.updateSettings({ camera: { deviceId: this.camera.deviceId, profile } });
     this.presage = this.createPresage(stream);
-    await this.presage.start();
+    await this.startSensing(this.presage);
   }
 
   private cameraGroup(): HTMLElement {
@@ -361,6 +414,15 @@ export class ControlApp {
       setBlend: (v) => this.turnDial(v),
     });
     const modes = new ModeSwitch((m) => this.setMode(m));
+    const sensingChip = h(
+      'p',
+      { class: 'sensing-chip', id: 'sensing-status', role: 'status', hidden: true },
+      'Presage paused · your video passes straight through',
+    );
+    this.onFrame(() => {
+      const paused = this.presage?.status === 'paused';
+      if (sensingChip.hidden === paused) sensingChip.hidden = !paused;
+    });
     this.onFrame((s) => {
       dial.set(s.feedOpacity, MODE_LABELS[s.mode]);
       overrides.set(this.engine.overrideState);
@@ -482,6 +544,7 @@ export class ControlApp {
         { class: 'controls card', 'aria-label': 'Presence' },
         dial.el,
         modes.el,
+        sensingChip,
         calibration.el,
         guided.el,
       ),

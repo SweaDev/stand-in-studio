@@ -23,6 +23,8 @@ export interface AppInfo {
   e2e: boolean;
   /** Force Demo mode even if a key is available (STANDIN_DEMO=1). */
   forceDemo: boolean;
+  /** E2E only: use a fake SDK in the renderer (STANDIN_E2E=1 and STANDIN_FAKE_SDK=1). */
+  fakeSdk: boolean;
 }
 
 /** Whether a Presage API key is available in the main process. Never the key itself. */

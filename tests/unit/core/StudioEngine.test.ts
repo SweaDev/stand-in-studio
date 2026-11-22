@@ -226,6 +226,79 @@ describe('StudioEngine (intents)', () => {
   });
 });
 
+describe('StudioEngine (SDK paused in Camera mode)', () => {
+  /** Ticks with no SDK data at all (the SDK is stopped). */
+  function idle(engine: StudioEngine, clock: FakeClock, ms: number): StageState[] {
+    const out: StageState[] = [];
+    const end = clock.now() + ms;
+    while (clock.now() < end) {
+      out.push(engine.tick());
+      clock.advance(33);
+    }
+    return out;
+  }
+
+  it('while paused there is no "back soon", no away pose, and late packets are ignored', () => {
+    const { clock, engine } = setup('camera');
+    run(engine, clock, 1000);
+    engine.setSensing('paused');
+    run(engine, clock, 500, { face: false }); // late packets after stop: ignored
+    const s = idle(engine, clock, 8000);
+    expect(last(s).feedOpacity).toBe(1);
+    expect(last(s).badges.backSoon).toBe(false);
+    expect(last(s).pose.presence).toBe('present');
+    expect(engine.debug?.sensing).toBe('paused');
+    expect(engine.debug?.trace.summary).toContain('sensing paused');
+  });
+
+  it('switching from Camera to Auto holds the feed while the SDK warms up, then follows intents', () => {
+    const { clock, engine } = setup('camera');
+    run(engine, clock, 1000);
+    engine.setSensing('paused');
+    idle(engine, clock, 3000);
+    engine.setMode('auto');
+    engine.setSensing('live');
+    // Several seconds without data (models loading): no drop, no "Away".
+    let s = idle(engine, clock, 6000);
+    expect(Math.min(...s.map((x) => x.feedOpacity))).toBe(1);
+    expect(s.some((x) => x.badges.backSoon)).toBe(false);
+    expect(engine.debug?.sensing).toBe('warming');
+    // Data arrives: listening quietly → the listening level.
+    s = run(engine, clock, 6000);
+    expect(engine.debug?.sensing).toBe('live');
+    expect(engine.debug?.intent.id).toBe('listening');
+    expect(last(s).feedOpacity).toBeCloseTo(0.4, 2);
+  });
+
+  it('gives up warming after 10 s without data, so a really empty chair still shows "back soon"', () => {
+    const { clock, engine } = setup('auto');
+    engine.setSensing('paused');
+    engine.setSensing('live');
+    const s = idle(engine, clock, 16_000);
+    expect(engine.debug?.sensing).toBe('live');
+    expect(last(s).badges.backSoon).toBe(true);
+  });
+
+  it('a pause interrupts calibration and tuning; calibration restarts on resume', () => {
+    const clock = new FakeClock(0);
+    const engine = new StudioEngine(DEFAULT_SETTINGS, clock);
+    const phases: string[] = [];
+    const tuning: string[] = [];
+    engine.events.on('calibration', (c) => phases.push(c.phase));
+    engine.events.on('tuning', (t) => tuning.push(t.phase));
+    engine.startCalibration(3000);
+    engine.startTuning('listening', 3000);
+    run(engine, clock, 1000);
+    engine.setSensing('paused');
+    expect(engine.calibrationStatus().phase).toBe('idle');
+    expect(tuning).toEqual(['recording', 'cancelled']);
+    engine.setSensing('live');
+    expect(engine.calibrationStatus().phase).toBe('collecting');
+    run(engine, clock, 4000);
+    expect(phases.at(-1)).toBe('done');
+  });
+});
+
 describe('StudioEngine (modes and overrides)', () => {
   it('cross-fades between modes', () => {
     const { clock, engine } = setup('character');

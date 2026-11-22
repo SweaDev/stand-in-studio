@@ -1424,3 +1424,14 @@ dialog.builder[open] {
     grid-template-columns: 1fr;
   }
 }
+.sensing-chip {
+  margin: 0;
+  width: 100%;
+  padding: 6px 10px;
+  border-radius: var(--r-md);
+  font-size: var(--fs-sm);
+  text-align: center;
+  color: var(--info);
+  background: var(--info-soft);
+  border: 1px solid rgba(156, 194, 255, 0.35);
+}

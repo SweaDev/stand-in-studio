@@ -100,6 +100,30 @@ export class IntentPolicy {
     return this.committed;
   }
 
+  /**
+   * Holds the committed decision unchanged (no signals to act on: the SDK is paused or
+   * warming up). Only the Comfort shield cap and a lower max can still lower it.
+   */
+  hold(max: number, shieldCap: number | null): PolicyDecision {
+    this.pendingSince = null;
+    if (this.committed > max) this.committed = clamp01(max);
+    const capped = shieldCap !== null && shieldCap < this.committed;
+    if (capped) this.committed = shieldCap as number;
+    return {
+      target: this.committed,
+      character: this.committedAction === 'reveal' && !capped && this.committed > 0 ? 0 : 1,
+      action: this.committedAction,
+      candidate: this.committed,
+      raisePendingMs: null,
+      capped,
+    };
+  }
+
+  /** The action behind the committed target. */
+  get action(): IntentAction {
+    return this.committedAction;
+  }
+
   reset(initial: number): void {
     this.committed = clamp01(initial);
     this.committedAction = 'blend';

@@ -28,9 +28,13 @@ export interface TraceIntent {
 }
 
 /** One evaluation of Auto, for the developer-mode decision log (control window only). */
+/** live: SDK analysing; paused: SDK stopped (Camera mode); warming: resumed, waiting for data. */
+export type SensingState = 'live' | 'paused' | 'warming';
+
 export interface DecisionTrace {
   t: number;
   mode: Mode;
+  sensing: SensingState;
   signals: TraceSignal[];
   intents: TraceIntent[];
   current: { id: string | null; name: string; action: IntentAction; score: number | null };
@@ -55,6 +59,7 @@ const NONE_NAME = 'No intent matches';
 export interface TraceInput {
   now: number;
   mode: Mode;
+  sensing: SensingState;
   ctx: SignalContext;
   evals: readonly IntentEval[];
   tracker: TrackerState;
@@ -138,12 +143,16 @@ export function buildTrace(i: TraceInput): DecisionTrace {
     );
   if (i.policy.capped && i.shieldCap !== null) parts.push(`Comfort shield cap ${pct(i.shieldCap)}`);
   if (i.override) parts.push(`override: ${i.override}`);
+  if (i.sensing === 'paused')
+    parts.push('sensing paused (Presage SDK stopped in Camera mode): intents frozen');
+  if (i.sensing === 'warming') parts.push('sensing warming up after resume: intents frozen');
   if (i.mode !== 'auto') parts.push(`mode ${i.mode}: Auto not applied`);
   parts.push(`feed → ${pct(i.feedTarget)}`);
 
   return {
     t: i.now,
     mode: i.mode,
+    sensing: i.sensing,
     signals,
     intents,
     current,

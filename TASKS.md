@@ -118,3 +118,7 @@ Progress tracker for [PLAN.md](PLAN.md). One task = one commit; tick the box in 
 - [x] T55 Intent builder dialog: signal catalogue with doc links, condition editor, live match, tuning and conflict warnings
 - [x] T56 Developer mode decision log drawer
 - [x] T57 Docs, version 1.1.0 and tag (live face smoke not run: Wikimedia returned HTTP 429 for the test clip; see IMPLEMENTATION_NOTES)
+
+**Phase 11 — Camera mode without the API → v1.2.0** (session branch `claude/upbeat-wozniak-rslrk1`)
+- [x] T58 Pause the Presage SDK in Camera mode (1.5 s debounce, resume on leaving it, configured-but-paused start); engine paused/warming states so a paused SDK never looks like an empty chair; status chip and notes
+- [ ] T59 Budget-guarded live check that SDK traffic stops in Camera mode, docs, version 1.2.0 and tag

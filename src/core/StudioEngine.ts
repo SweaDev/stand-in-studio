@@ -3,7 +3,7 @@ import type { Mode, SignalFrame, StageState, ValidationState } from '../shared/t
 import { type IntentDef, type IntentTuning, defaultIntents, usesBodySignals } from '../shared/intents';
 import { ComfortShield } from './auto/ComfortShield';
 import { IntentPolicy, type PolicyDecision } from './auto/IntentPolicy';
-import { type DecisionTrace, buildTrace } from './intent/DecisionTrace';
+import { type DecisionTrace, type SensingState, buildTrace } from './intent/DecisionTrace';
 import { IntentTracker, NONE_HOLD_MS, type TrackerState, evaluateAll } from './intent/IntentMatcher';
 import type { SignalContext } from './intent/signals';
 import { TUNING_MS, TuningRecorder, computeTuning } from './intent/tuning';
@@ -30,6 +30,8 @@ import { TimeWindow } from './util/RingBuffer';
 const FEATURES_STALE_MS = 1_000;
 /** Window for the talking and multiple-faces shares. */
 const SHARE_WINDOW_MS = 1_500;
+/** After resuming the SDK, intents stay frozen until data arrives or this long has passed. */
+const WARMING_MAX_MS = 10_000;
 /** Eye openness below this fraction of the calibrated level counts as closed. */
 const EYES_CLOSED_RATIO = 0.5;
 /** Vertical iris movement is smaller than horizontal; weight it up. */
@@ -57,6 +59,7 @@ export interface EngineEvents {
 /** Diagnostics for the control window (never sent to the stage or anywhere else). */
 export interface EngineDebug {
   validation: ValidationState;
+  sensing: SensingState;
   policy: PolicyDecision;
   intent: { id: string | null; name: string; score: number | null; action: PolicyDecision['action'] };
   trace: DecisionTrace;
@@ -103,6 +106,10 @@ export class StudioEngine implements CommandReceiver {
   private tuning: Record<string, IntentTuning> = {};
   private recorder: TuningRecorder | null = null;
   private readonly tracker = new IntentTracker();
+  private sensing: SensingState = 'live';
+  private warmingSince = 0;
+  /** Calibration was interrupted by a pause and restarts on resume. */
+  private calibrationInterrupted = false;
   private readonly auto: IntentPolicy;
   private readonly feed: OpacitySmoother;
   private readonly character: OpacitySmoother;
@@ -132,7 +139,10 @@ export class StudioEngine implements CommandReceiver {
   // ---------------------------------------------------------------- inputs
 
   ingest(frame: SignalFrame): void {
+    // Late packets from a stopping SDK are dropped while paused.
+    if (this.sensing === 'paused') return;
     const now = frame.t;
+    if (frame.validation && this.sensing === 'warming') this.sensing = 'live';
     if (frame.validation) {
       this.validation.push(frame.validation, now);
       this.facesShare.push(now, frame.multipleFaces ? 1 : 0);
@@ -189,6 +199,45 @@ export class StudioEngine implements CommandReceiver {
   }
 
   // ---------------------------------------------------------------- control
+
+  /**
+   * Tells the engine whether the SDK is analysing frames. Paused (Camera mode): presence
+   * stays "present", intents are frozen, and calibration or tuning in progress is cancelled
+   * (calibration restarts on resume). Live again: a warming phase holds the current Auto
+   * decision until the first validation report arrives, so a resuming SDK never looks like
+   * an empty chair.
+   */
+  setSensing(state: 'live' | 'paused'): void {
+    const now = this.clock.now();
+    if (state === 'paused') {
+      if (this.sensing === 'paused') return;
+      this.sensing = 'paused';
+      if (this.calibrator.state === 'collecting') {
+        this.calibrationInterrupted = true;
+        this.calibrator.reset();
+        this.emitCalibration();
+      }
+      this.cancelTuning();
+      return;
+    }
+    if (this.sensing !== 'paused') return;
+    this.sensing = 'warming';
+    this.warmingSince = now;
+    this.validation.reset();
+    this.talk.reset();
+    this.talkShare.clear();
+    this.facesShare.clear();
+    this.tracker.reset();
+    this.presence.reset('present');
+    if (this.calibrationInterrupted) {
+      this.calibrationInterrupted = false;
+      this.startCalibration(this.calibrationDurationMs);
+    }
+  }
+
+  get sensingState(): SensingState {
+    return this.sensing;
+  }
 
   startCalibration(durationMs: number = C.CALIBRATION_MS): void {
     this.calibrationDurationMs = durationMs;
@@ -350,8 +399,11 @@ export class StudioEngine implements CommandReceiver {
     const b = this.baseline();
 
     const features = now - this.featuresAt <= FEATURES_STALE_MS ? this.features : null;
+    if (this.sensing === 'warming' && now - this.warmingSince >= WARMING_MAX_MS) this.sensing = 'live';
+    const live = this.sensing === 'live';
     const validation = this.validation.evaluate(now);
-    let presence = this.presence.update(validation, now);
+    // Not analysing (Camera mode) or just resumed: you are not "away", there is just no data.
+    let presence = live ? this.presence.update(validation, now) : 'present';
     if (this.overrides.backSoon) presence = 'away';
     const talking = this.talk.isTalking(now);
 
@@ -360,18 +412,23 @@ export class StudioEngine implements CommandReceiver {
     const evals = evaluateAll(this.intents, ctx, this.tuning);
     const holdOf = (id: string | null) =>
       id === null ? NONE_HOLD_MS : (this.intents.find((i) => i.id === id)?.holdMs ?? NONE_HOLD_MS);
-    const tracked: TrackerState = this.tracker.update(evals, holdOf, now);
+    // Frozen while not live: keep the active intent and the committed Auto decision.
+    const tracked: TrackerState = live
+      ? this.tracker.update(evals, holdOf, now)
+      : { current: this.tracker.active, best: null };
     const active = this.intents.find((i) => i.id === tracked.current);
-    this.recordTuning(ctx, now);
+    if (live) this.recordTuning(ctx, now);
 
     const shieldCap = this.shield.update({}, now);
-    const decision = this.auto.update({
-      now,
-      action: active?.action ?? 'blend',
-      max: this.settings.auto.max,
-      listening: this.settings.auto.listening,
-      shieldCap,
-    });
+    const decision = live
+      ? this.auto.update({
+          now,
+          action: active?.action ?? 'blend',
+          max: this.settings.auto.max,
+          listening: this.settings.auto.listening,
+          shieldCap,
+        })
+      : this.auto.hold(this.settings.auto.max, shieldCap);
 
     const resolved = resolveStage(
       this.mode,
@@ -430,6 +487,7 @@ export class StudioEngine implements CommandReceiver {
     const trace = buildTrace({
       now,
       mode: this.mode,
+      sensing: this.sensing,
       ctx,
       evals,
       tracker: tracked,
@@ -444,6 +502,7 @@ export class StudioEngine implements CommandReceiver {
     const currentEval = evals.find((e) => e.id === tracked.current);
     this.lastDebug = {
       validation,
+      sensing: this.sensing,
       policy: decision,
       intent: {
         id: tracked.current,

@@ -50,6 +50,13 @@ export class ConsentScreen implements Component {
         h(
           'li',
           {},
+          'In ',
+          h('strong', {}, 'Camera mode the Presage SDK is paused'),
+          ': your video passes straight through and nothing is analysed.',
+        ),
+        h(
+          'li',
+          {},
           'What is read from the camera, and why: your face landmarks (head pose and eye gaze, mouth opening), blinking, talking, expressions, ',
           'chest breathing, and whether a face (or more than one) is in view. These move the character and, through the Auto intents, the dial. Nothing else.',
         ),

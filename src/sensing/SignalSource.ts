@@ -3,7 +3,8 @@ import type { SignalFrame } from '../shared/types';
 
 export type SourceKind = 'presage' | 'demo';
 
-export type SourceStatus = 'idle' | 'starting' | 'running' | 'stopped' | 'error';
+/** `paused`: configured but not analysing frames (Camera mode never uses the SDK). */
+export type SourceStatus = 'idle' | 'starting' | 'running' | 'paused' | 'stopped' | 'error';
 
 export interface SourceError {
   message: string;
