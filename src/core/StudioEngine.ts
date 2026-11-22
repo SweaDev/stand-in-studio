@@ -125,6 +125,8 @@ export class StudioEngine implements CommandReceiver {
     this.character.snap(1, now);
     this.shield.setEnabled(settings.auto.comfortShield, now);
     this.presence.reset('present');
+    this.setIntents(settings.auto.intents);
+    if (settings.auto.saveTuning) this.loadTuning(settings.intentTuning);
   }
 
   // ---------------------------------------------------------------- inputs
@@ -215,6 +217,7 @@ export class StudioEngine implements CommandReceiver {
     const modeChanged = next.mode !== this.settings.mode;
     this.settings = next;
     this.shield.setEnabled(next.auto.comfortShield, now);
+    this.setIntents(next.auto.intents);
     if (modeChanged) this.setMode(next.mode);
   }
 

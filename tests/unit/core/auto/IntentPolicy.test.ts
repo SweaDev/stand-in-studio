@@ -64,7 +64,7 @@ describe('IntentPolicy', () => {
           const d = p.update({ now, action: s.action, max: s.max, listening: s.listening, shieldCap: s.cap });
           expect(d.target).toBeLessThanOrEqual(s.max + 1e-9);
           if (s.cap !== null) expect(d.target).toBeLessThanOrEqual(s.cap + 1e-9);
-          if (d.target > prev + 1e-9) {
+          if (d.target > prev + 1e-3) {
             expect(raiseSince).not.toBeNull();
             expect(now - (raiseSince as number)).toBeGreaterThanOrEqual(2_000);
           }

@@ -1,3 +1,11 @@
+import {
+  type IntentDef,
+  type IntentTuning,
+  defaultIntents,
+  sanitizeIntents,
+  sanitizeTuning,
+  usesBodySignals,
+} from './intents';
 import { CHARACTER_IDS, MODES } from './types';
 import type { BlendLayout, CharacterId, Mode } from './types';
 
@@ -14,18 +22,31 @@ export interface MeetingPreset {
 }
 
 /**
- * Everything Stand-In Studio persists. Deliberately limited to character and mode
- * settings: no signals, calibration values or API keys ever go here.
+ * Everything Stand-In Studio persists. Deliberately limited to character, mode and intent
+ * settings: no signals, calibration values or API keys ever go here. The one exception is
+ * opt-in: with `auto.saveTuning` on, the thresholds learned from intent recordings are kept
+ * in `intentTuning` (never video or raw signal values).
  */
 export interface Settings {
   character: CharacterId;
   background: string;
   mode: Mode;
   blend: { opacity: number; layout: BlendLayout };
-  auto: { max: number; listening: number; comfortShield: boolean };
+  auto: {
+    max: number;
+    listening: number;
+    comfortShield: boolean;
+    /** Intents in priority order (first match wins). */
+    intents: IntentDef[];
+    /** Opt-in: also save learned intent thresholds on this computer. */
+    saveTuning: boolean;
+  };
   camera: { badge: boolean; deviceId: string | null; profile: CaptureProfile };
   accessibility: { reducedMotion: boolean; highContrast: boolean };
   presets: MeetingPreset[];
+  /** Learned intent thresholds; always empty unless `auto.saveTuning` is on. */
+  intentTuning: Record<string, IntentTuning>;
+  advanced: { developerMode: boolean };
 }
 
 export const BACKGROUNDS = ['#2b2d42', '#264653', '#3d405b', '#f4f1de', '#e9edc9', '#1d1b22'] as const;
@@ -35,10 +56,12 @@ export const DEFAULT_SETTINGS: Settings = Object.freeze({
   background: '#2b2d42',
   mode: 'auto',
   blend: { opacity: 0.5, layout: 'over' },
-  auto: { max: 1, listening: 0.4, comfortShield: false },
+  auto: { max: 1, listening: 0.4, comfortShield: false, intents: defaultIntents(), saveTuning: false },
   camera: { badge: false, deviceId: null, profile: '960x540' },
   accessibility: { reducedMotion: false, highContrast: false },
   presets: [],
+  intentTuning: {},
+  advanced: { developerMode: false },
 }) as Settings;
 
 const HEX = /^#[0-9a-f]{6}$/i;
@@ -81,6 +104,9 @@ export function sanitizeSettings(raw: unknown): Settings {
   const auto = obj(r.auto);
   const camera = obj(r.camera);
   const a11y = obj(r.accessibility);
+  const advanced = obj(r.advanced);
+  const intents = sanitizeIntents(auto.intents);
+  const saveTuning = bool(auto.saveTuning, d.auto.saveTuning);
   const max = num01(auto.max, d.auto.max);
   const presets = Array.isArray(r.presets)
     ? r.presets
@@ -101,6 +127,8 @@ export function sanitizeSettings(raw: unknown): Settings {
       // The listening level can never exceed the user's max.
       listening: Math.min(max, num01(auto.listening, d.auto.listening)),
       comfortShield: bool(auto.comfortShield, d.auto.comfortShield),
+      intents,
+      saveTuning,
     },
     camera: {
       badge: bool(camera.badge, d.camera.badge),
@@ -112,7 +140,15 @@ export function sanitizeSettings(raw: unknown): Settings {
       highContrast: bool(a11y.highContrast, d.accessibility.highContrast),
     },
     presets,
+    // Switching the opt-in off deletes saved tuning on the next write.
+    intentTuning: saveTuning ? sanitizeTuning(r.intentTuning, intents) : {},
+    advanced: { developerMode: bool(advanced.developerMode, d.advanced.developerMode) },
   };
+}
+
+/** Cardio and breathing rate are requested only for the Comfort shield or a body-signal intent. */
+export function needsCardio(s: Settings): boolean {
+  return s.auto.comfortShield || s.auto.intents.some((i) => i.enabled && usesBodySignals(i));
 }
 
 /** Deep-merges a partial update into settings and re-validates the result. */

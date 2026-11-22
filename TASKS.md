@@ -113,7 +113,7 @@ Progress tracker for [PLAN.md](PLAN.md). One task = one commit; tick the box in 
 - [x] T50 Signal catalogue: iris gaze, people in view, and every Presage-derived signal with states, memberships and doc links; `docs/intents.md`
 - [x] T51 Intent core: built-in and custom intents, matcher with specificity and privacy-first tie-breaks, tracker, tuning and conflict analysis
 - [x] T52 IntentPolicy and DecisionTrace in StudioEngine; Auto no longer hides the speaker on validation flicker
-- [ ] T53 Settings: intents, custom intents, opt-in tuning save, developer mode
+- [x] T53 Settings: intents, custom intents, opt-in tuning save, developer mode
 - [ ] T54 Design tokens and the tabbed control-window layout with the current-intent card and intent list
 - [ ] T55 Intent builder dialog: signal catalogue with doc links, condition editor, live match, tuning and conflict warnings
 - [ ] T56 Developer mode decision log drawer

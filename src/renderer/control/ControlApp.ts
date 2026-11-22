@@ -4,7 +4,7 @@ import { SystemClock } from '../../core/util/Clock';
 import type { FeedSource } from '../../render/StageCompositor';
 import { APP_NAME } from '../../shared/app';
 import type { StudioApi } from '../../shared/ipc';
-import { type DeepPartial, type Settings, updateSettings } from '../../shared/settings';
+import { type DeepPartial, type Settings, needsCardio, updateSettings } from '../../shared/settings';
 import type { Mode, StageState } from '../../shared/types';
 import { ConsentScreen, type ConsentChoice } from './components/ConsentScreen';
 import { MODE_LABELS, ModeSwitch } from './components/ModeSwitch';
@@ -126,8 +126,8 @@ export class ControlApp {
     this.engine.applySettings(this.settings);
     this.panel?.sync(this.settings);
     this.presets?.sync(this.settings);
-    if (patch.auto?.comfortShield !== undefined)
-      void this.presage?.setComfortShield(this.settings.auto.comfortShield);
+    // Re-requests metrics only when cardio need changes (Comfort shield or a body-signal intent).
+    void this.presage?.setComfortShield(needsCardio(this.settings));
     this.settings = await this.api.setSettings(patch);
   }
 
@@ -259,7 +259,7 @@ export class ControlApp {
   private createPresage(stream: MediaStream): PresageSignalSource {
     const src = new PresageSignalSource(
       stream,
-      { comfortShield: this.settings.auto.comfortShield },
+      { comfortShield: needsCardio(this.settings) },
       realSdkFactory,
       this.clock,
     );

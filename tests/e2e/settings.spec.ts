@@ -32,8 +32,21 @@ test('settings panel changes the stage and persists only settings', async () => 
       accessibility: { highContrast: true },
     });
     expect(Object.keys(saved).sort()).toEqual(
-      ['accessibility', 'auto', 'background', 'blend', 'camera', 'character', 'mode', 'presets'].sort(),
+      [
+        'accessibility',
+        'advanced',
+        'auto',
+        'background',
+        'blend',
+        'camera',
+        'character',
+        'intentTuning',
+        'mode',
+        'presets',
+      ].sort(),
     );
+    // Learned intent tuning is never saved unless the user opts in.
+    expect(saved.intentTuning).toEqual({});
   } finally {
     await app.close();
   }
