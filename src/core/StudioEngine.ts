@@ -221,18 +221,36 @@ export class StudioEngine implements CommandReceiver {
       return;
     }
     if (this.sensing !== 'paused') return;
+    this.clearSignalHistory(now);
+    if (this.calibrationInterrupted) {
+      this.calibrationInterrupted = false;
+      this.startCalibration(this.calibrationDurationMs);
+    }
+  }
+
+  /**
+   * The signal timeline jumped (a recorded clip was rewound, looped or seeked): drops the
+   * signal history so nothing from before the jump carries over, and warms up like a
+   * resuming SDK, holding the current Auto decision until the next validation report.
+   * Calibration and the learned baseline are kept.
+   */
+  resetSignals(): void {
+    if (this.sensing === 'paused') return;
+    this.clearSignalHistory(this.clock.now());
+  }
+
+  private clearSignalHistory(now: number): void {
     this.sensing = 'warming';
     this.warmingSince = now;
     this.validation.reset();
     this.talk.reset();
     this.talkShare.clear();
     this.facesShare.clear();
+    this.eyesClosedSince = null;
+    this.expressions = {};
+    this.expressionsAt = Number.NEGATIVE_INFINITY;
     this.tracker.reset();
     this.presence.reset('present');
-    if (this.calibrationInterrupted) {
-      this.calibrationInterrupted = false;
-      this.startCalibration(this.calibrationDurationMs);
-    }
   }
 
   get sensingState(): SensingState {

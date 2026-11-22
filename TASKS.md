@@ -122,3 +122,11 @@ Progress tracker for [PLAN.md](PLAN.md). One task = one commit; tick the box in 
 **Phase 11 — Camera mode without the API → v1.2.0** (session branch `claude/upbeat-wozniak-rslrk1`)
 - [x] T58 Pause the Presage SDK in Camera mode (1.5 s debounce, resume on leaving it, configured-but-paused start); engine paused/warming states so a paused SDK never looks like an empty chair; status chip and notes
 - [x] T59 Budget-guarded live check that SDK traffic stops in Camera mode, docs, version 1.2.0 and tag
+
+**Phase 12 — Recorded input & saved-telemetry demos → v1.3.0** (session branch `claude/upbeat-wozniak-rslrk1`; demos live in the user's data folder, never in the repo)
+- [x] T60 Telemetry format (`standin-telemetry` v1, body signals opt-in), TelemetryRecorder, ReplaySignalSource and `engine.resetSignals()`; replay reproduces the live intent sequence
+- [ ] T61 Main-process demo library (default `userData/demos`, folder chooser), `standin-media://` protocol, IPC and settings
+- [ ] T62 Recorded file input: consent card, RecordedFeed, SDK on the clip, transport, Save telemetry with privacy notice
+- [ ] T63 In-app clip recorder (MediaRecorder) with save to the demo library
+- [ ] T64 Demo picker with offline replay of saved demos; Advanced → Demo library (rename, delete, export, import)
+- [ ] T65 Budget-guarded live check on an open-licence clip (files handed to the user, not committed), docs, version 1.3.0 and tag

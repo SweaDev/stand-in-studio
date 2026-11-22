@@ -145,7 +145,7 @@ export function buildTrace(i: TraceInput): DecisionTrace {
   if (i.override) parts.push(`override: ${i.override}`);
   if (i.sensing === 'paused')
     parts.push('sensing paused (Presage SDK stopped in Camera mode): intents frozen');
-  if (i.sensing === 'warming') parts.push('sensing warming up after resume: intents frozen');
+  if (i.sensing === 'warming') parts.push('sensing warming up (waiting for signals): intents frozen');
   if (i.mode !== 'auto') parts.push(`mode ${i.mode}: Auto not applied`);
   parts.push(`feed → ${pct(i.feedTarget)}`);
 

@@ -1,7 +1,7 @@
 import type { Emitter } from '../core/util/Emitter';
 import type { SignalFrame } from '../shared/types';
 
-export type SourceKind = 'presage' | 'demo';
+export type SourceKind = 'presage' | 'demo' | 'replay';
 
 /** `paused`: configured but not analysing frames (Camera mode never uses the SDK). */
 export type SourceStatus = 'idle' | 'starting' | 'running' | 'paused' | 'stopped' | 'error';

@@ -51,7 +51,7 @@ export class CurrentIntentCard implements Component {
     let note: string;
     if (debug.sensing === 'paused')
       note = 'Presage is paused: Camera mode passes your video straight through, so nothing is analysed.';
-    else if (debug.sensing === 'warming') note = 'Presage is starting up; Auto holds the current level.';
+    else if (debug.sensing === 'warming') note = 'Waiting for signals; Auto holds the current level.';
     else if (mode !== 'auto') note = `Auto is off: ${MODE_NAMES[mode]} mode decides the stage.`;
     else if (t.policy.override === 'hidden') note = 'Hide me is on: the character covers you.';
     else if (t.policy.override === 'pinned') note = 'Pinned: Auto will not change the opacity.';
