@@ -1,6 +1,7 @@
 import type { CommandName } from '../core/stage/commands';
 import type { DemoLibraryListing, DemoLoaded, DemoSaveRequest, DemoSummary } from './demos';
 import type { DeepPartial, Settings } from './settings';
+import type { VcamSetupResult, VcamStatus } from './vcam';
 import { INTENTS_GUIDE, PRESAGE_DOCS } from './signalCatalog';
 
 /** IPC channel names shared by main and preload. */
@@ -24,6 +25,12 @@ export const IPC = Object.freeze({
   demoChooseFolder: 'studio:demo-choose-folder',
   demoResetFolder: 'studio:demo-reset-folder',
   demoOpenFolder: 'studio:demo-open-folder',
+  vcamStatus: 'studio:vcam-status',
+  vcamSetup: 'studio:vcam-setup',
+  vcamStart: 'studio:vcam-start',
+  vcamStop: 'studio:vcam-stop',
+  vcamFrame: 'studio:vcam-frame',
+  vcamPausedFrame: 'studio:vcam-paused-frame',
 });
 
 /** The demo library in main (saved clips + telemetry in the user's data folder). */
@@ -78,6 +85,20 @@ export interface StudioApi {
   /** Main is about to quit: stop sensing now. */
   onQuitting(fn: () => void): () => void;
   demos: DemoLibraryApi;
+  vcam: VirtualCameraApi;
+}
+
+/** The native virtual camera ("Stand-In Camera"; Linux for now). */
+export interface VirtualCameraApi {
+  status(): Promise<VcamStatus>;
+  /** One-time setup: the system asks for the user's password (pkexec). */
+  setup(): Promise<VcamSetupResult>;
+  start(): Promise<VcamStatus>;
+  /** Stops; `pausedFrame` (YUYV) is the picture apps keep showing. */
+  stop(pausedFrame?: Uint8Array): Promise<VcamStatus>;
+  /** Also stored in main and shown when the app quits. */
+  setPausedFrame(frame: Uint8Array): void;
+  sendFrame(frame: Uint8Array): void;
 }
 
 /** Name of the stage window opened with window.open (main matches it). */

@@ -30,8 +30,9 @@ await Promise.all([
     outdir: join(out, 'main'),
     platform: 'node',
     format: 'cjs',
-    // The SDK loads native libraries relative to its own package, so it must stay in node_modules.
-    external: ['electron', '@smartspectra/node-sdk', '@smartspectra/node-sdk/*'],
+    // The SDK (and koffi, used for V4L2 ioctls) load native libraries relative to their own
+    // packages, so they must stay in node_modules.
+    external: ['electron', 'koffi', '@smartspectra/node-sdk', '@smartspectra/node-sdk/*'],
     define: {},
   }),
   build({

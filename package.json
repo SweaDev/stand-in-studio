@@ -26,7 +26,8 @@
     "presage:budget": "node scripts/presage-budget.mjs"
   },
   "dependencies": {
-    "@smartspectra/node-sdk": "3.5.0"
+    "@smartspectra/node-sdk": "3.5.0",
+    "koffi": "2.16.4"
   },
   "devDependencies": {
     "@eslint/js": "10.0.1",

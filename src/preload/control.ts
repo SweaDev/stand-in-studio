@@ -40,6 +40,14 @@ const studio: StudioApi = {
     resetFolder: () => ipcRenderer.invoke(IPC.demoResetFolder),
     openFolder: () => ipcRenderer.invoke(IPC.demoOpenFolder),
   },
+  vcam: {
+    status: () => ipcRenderer.invoke(IPC.vcamStatus),
+    setup: () => ipcRenderer.invoke(IPC.vcamSetup),
+    start: () => ipcRenderer.invoke(IPC.vcamStart),
+    stop: (pausedFrame) => ipcRenderer.invoke(IPC.vcamStop, pausedFrame),
+    setPausedFrame: (frame) => ipcRenderer.send(IPC.vcamPausedFrame, frame),
+    sendFrame: (frame) => ipcRenderer.send(IPC.vcamFrame, frame),
+  },
 };
 
 export type StudioBridge = StudioApi;

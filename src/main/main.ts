@@ -12,6 +12,10 @@ import { createQuitHandler } from './sdkShutdown';
 import { installPermissionHandlers } from './permissions';
 import { SettingsStore } from './settingsStore';
 import { createControlWindow } from './windows';
+import { FileSink } from './vcam/FileSink';
+import { LinuxV4l2Sink } from './vcam/LinuxV4l2Sink';
+import { probeHost } from './vcam/linuxDevices';
+import { VirtualCameraService } from './vcam/VirtualCameraService';
 
 /**
  * Test-only fake camera (STANDIN_FAKE_CAMERA=1, or a path to an .mjpeg/.y4m clip). Never
@@ -80,6 +84,33 @@ function bootstrap(): void {
     available: sdkAvailable && keys.status().available,
   }));
 
+  // The Stand-In Camera: v4l2loopback on Linux; other platforms use OBS for now.
+  const fakeVcam = info.e2e ? process.env.STANDIN_FAKE_VCAM : undefined;
+  const vcam = new VirtualCameraService({
+    platform: process.platform,
+    sink: fakeVcam
+      ? new FileSink(fakeVcam)
+      : process.platform === 'linux'
+        ? new LinuxV4l2Sink(() => probeHost().devices)
+        : null,
+    deviceless: Boolean(fakeVcam),
+  });
+  let pausedFrame: Uint8Array | undefined;
+  const bytes = (v: unknown) => (v instanceof Uint8Array ? v : undefined);
+  ipcMain.handle(IPC.vcamStatus, () => vcam.status());
+  ipcMain.handle(IPC.vcamSetup, () => vcam.setup());
+  ipcMain.handle(IPC.vcamStart, () => vcam.start());
+  ipcMain.handle(IPC.vcamStop, (_e, frame: unknown) => vcam.stop(bytes(frame) ?? pausedFrame));
+  ipcMain.on(IPC.vcamPausedFrame, (_e, frame: unknown) => {
+    pausedFrame = bytes(frame) ?? pausedFrame;
+  });
+  ipcMain.on(IPC.vcamFrame, (e, frame: unknown) => {
+    if (e.sender === control?.webContents) {
+      const f = bytes(frame);
+      if (f) vcam.frame(f);
+    }
+  });
+
   app.whenReady().then(() => {
     installPermissionHandlers(session.defaultSession, (wc) => wc === control?.webContents);
     control = createControlWindow();
@@ -102,6 +133,8 @@ function bootstrap(): void {
         if (control && !control.isDestroyed()) control.webContents.send(IPC.appQuitting);
       },
       exit: (code) => app.exit(code),
+      // Leave meeting apps on the "paused" picture rather than a frozen last frame.
+      alsoBeforeExit: () => vcam.stop(pausedFrame),
       log: (m) => console.info(m),
     }),
   );

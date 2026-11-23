@@ -23,6 +23,8 @@ export interface ShutdownDeps {
   exit: (code: number) => void;
   timeoutMs?: number;
   log?: (msg: string) => void;
+  /** Other cleanup to finish before exit (e.g. the virtual camera's last frame). */
+  alsoBeforeExit?: () => Promise<unknown>;
 }
 
 export interface QuitEvent {
@@ -66,7 +68,11 @@ export function createQuitHandler(deps: ShutdownDeps): (e: QuitEvent) => void {
     const timeout = new Promise<'timeout'>((resolve) => {
       timer = setTimeout(() => resolve('timeout'), timeoutMs);
     });
-    void Promise.race([teardownSessions(sessions).then(() => 'ok' as const), timeout]).then((r) => {
+    const cleanup = Promise.allSettled([
+      teardownSessions(sessions),
+      Promise.resolve().then(() => deps.alsoBeforeExit?.()),
+    ]);
+    void Promise.race([cleanup.then(() => 'ok' as const), timeout]).then((r) => {
       if (timer) clearTimeout(timer);
       if (r === 'timeout') deps.log?.('[stand-in] SDK teardown timed out; exiting anyway');
       phase = 'done';
