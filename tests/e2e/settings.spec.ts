@@ -46,7 +46,9 @@ test('settings panel changes the stage and persists only settings', async () => 
         'intentTuning',
         'mode',
         'presets',
+        'onboarding',
         'recorded',
+        'ui',
         'virtualCamera',
       ].sort(),
     );

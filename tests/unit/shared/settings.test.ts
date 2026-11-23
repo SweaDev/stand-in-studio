@@ -147,4 +147,22 @@ describe('intent settings', () => {
     expect(needsCardio(s)).toBe(true);
     expect(needsCardio(updateSettings(s, { auto: { intents: [{ ...pulse, enabled: false }] } }))).toBe(false);
   });
+
+  it('shows the essentials by default; the rest is opt-in under Advanced → Interface', () => {
+    expect(DEFAULT_SETTINGS.ui).toEqual({
+      overrides: false,
+      intents: false,
+      tuning: true,
+      meetingSetup: true,
+      presets: true,
+    });
+    expect(DEFAULT_SETTINGS.onboarding.tourOffered).toBe(false);
+    const s = updateSettings(DEFAULT_SETTINGS, { ui: { intents: true }, onboarding: { tourOffered: true } });
+    expect(s.ui.intents).toBe(true);
+    expect(s.ui.tuning).toBe(true);
+    expect(s.onboarding.tourOffered).toBe(true);
+    const bad = sanitizeSettings({ ui: { overrides: 'yes', bogus: true }, onboarding: 3 });
+    expect(bad.ui).toEqual(DEFAULT_SETTINGS.ui);
+    expect(bad.onboarding).toEqual({ tourOffered: false });
+  });
 });

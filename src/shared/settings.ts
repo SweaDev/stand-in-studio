@@ -59,7 +59,36 @@ export interface Settings {
    * after consent whenever a device is ready, and asks for the one-time setup otherwise.
    */
   virtualCamera: { enabled: boolean };
+  /**
+   * What the main window shows (Advanced → Interface). The essentials (dial, modes, preview,
+   * Hide me, status bar) are always shown; these add the rest.
+   */
+  ui: UiOptions;
+  /** First-run tour: offered once, re-run any time from Help. */
+  onboarding: { tourOffered: boolean };
 }
+
+/** Optional parts of the main window (Advanced → Interface). */
+export interface UiOptions {
+  /** Pin, Raise hand, Back soon and Cycle mode buttons (Hide me is always shown). */
+  overrides: boolean;
+  /** The intent list and builder in the Auto tab. */
+  intents: boolean;
+  /** Calibration status and intent tuning. */
+  tuning: boolean;
+  /** Ways to send the stage: Stand-In Camera, OBS and screen share. */
+  meetingSetup: boolean;
+  /** Meeting presets in the Stage tab. */
+  presets: boolean;
+}
+
+export const UI_OPTION_KEYS: readonly (keyof UiOptions)[] = [
+  'overrides',
+  'intents',
+  'tuning',
+  'meetingSetup',
+  'presets',
+];
 
 export const BACKGROUNDS = ['#2b2d42', '#264653', '#3d405b', '#f4f1de', '#e9edc9', '#1d1b22'] as const;
 
@@ -76,6 +105,8 @@ export const DEFAULT_SETTINGS: Settings = Object.freeze({
   advanced: { developerMode: false },
   recorded: { libraryDir: null, saveBody: false, lastDemo: null },
   virtualCamera: { enabled: true },
+  ui: { overrides: false, intents: false, tuning: true, meetingSetup: true, presets: true },
+  onboarding: { tourOffered: false },
 }) as Settings;
 
 const HEX = /^#[0-9a-f]{6}$/i;
@@ -121,6 +152,8 @@ export function sanitizeSettings(raw: unknown): Settings {
   const advanced = obj(r.advanced);
   const recorded = obj(r.recorded);
   const vcam = obj(r.virtualCamera);
+  const ui = obj(r.ui);
+  const onboarding = obj(r.onboarding);
   const intents = sanitizeIntents(auto.intents);
   const saveTuning = bool(auto.saveTuning, d.auto.saveTuning);
   const max = num01(auto.max, d.auto.max);
@@ -171,6 +204,8 @@ export function sanitizeSettings(raw: unknown): Settings {
         typeof recorded.lastDemo === 'string' && DEMO_ID.test(recorded.lastDemo) ? recorded.lastDemo : null,
     },
     virtualCamera: { enabled: bool(vcam.enabled, d.virtualCamera.enabled) },
+    ui: Object.fromEntries(UI_OPTION_KEYS.map((k) => [k, bool(ui[k], d.ui[k])])) as unknown as UiOptions,
+    onboarding: { tourOffered: bool(onboarding.tourOffered, d.onboarding.tourOffered) },
   };
 }
 

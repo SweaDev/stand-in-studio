@@ -141,3 +141,13 @@ Progress tracker for [PLAN.md](PLAN.md). One task = one commit; tick the box in 
 - [x] T70 Renderer: WebGL2/JS YUYV conversion of the Virtual Stage, Stand-In Camera default on Linux with setup prompt, OBS and screen share as alternatives on every platform, settings and consent
 - [x] T71 Docs, version 1.5.0 and tag
 - [x] T72 E2E coverage: recorded video files and saved-demo replays through the Stand-In Camera (no code change needed); docs, version 1.5.1 and tag
+
+**Phase 15 — Tidy, obvious UI → v1.6.0** (session branch `claude/upbeat-wozniak-rslrk1`)
+- [x] T73 Settings for Interface options (`ui.*`, minimal by default) and the first-run tour flag; `describeInput` status model for the camera, Presage and the input
+- [ ] T74 Header status bar: input, camera (privacy shutter) and Presage (on/off) pills, plus the Stand-In Camera
+- [ ] T75 Camera tab controls the input: switch Camera / Video file / Demo / saved demo in place, camera device, what Presage reads, back to the start screen
+- [ ] T76 Tidy start screen: five key points with the full privacy details folded, three source cards, camera picker, "save telemetry" option for a video
+- [ ] T77 Obvious telemetry saving: a Save-as-demo card with progress, REC indicator and "Play it now"
+- [ ] T78 Minimal default UI with Advanced → Interface toggles, and a visual polish pass
+- [ ] T79 Help tab (getting started, modes, shortcuts, privacy) and an interactive first-run tour
+- [ ] T80 Docs, media, version 1.6.0 and tag
