@@ -93,18 +93,27 @@ describe('ValidationFilter', () => {
 });
 
 describe('PresenceTracker', () => {
-  it('goes away after 3 s not OK and wakes after 1 s OK', () => {
+  it('goes away after 3 s with no face and wakes after 1 s with one', () => {
     const p = new PresenceTracker();
     expect(p.update('ok', 0)).toBe('present');
     expect(p.wakeProgress(0)).toBe(1);
     expect(p.update('noFace', 1000)).toBe('present');
-    expect(p.update('poor', 3999)).toBe('present');
+    expect(p.update('noFace', 3999)).toBe('present');
     expect(p.update('noFace', 4000)).toBe('away');
     expect(p.wakeProgress(4000)).toBe(0);
     expect(p.update('ok', 5000)).toBe('away');
     expect(p.update('ok', 6000)).toBe('waking');
     expect(p.wakeProgress(6600)).toBeCloseTo(0.5);
     expect(p.update('ok', 7200)).toBe('present');
+  });
+
+  it('a face rated poor (cropped, too close, dim) still counts as present', () => {
+    const p = new PresenceTracker();
+    p.update('ok', 0);
+    for (let t = 100; t <= 10_000; t += 100) expect(p.update('poor', t)).toBe('present');
+    p.reset('away');
+    p.update('poor', 20_000);
+    expect(p.update('poor', 21_000)).toBe('waking');
   });
 
   it('falls back to away when the face is lost again while waking', () => {

@@ -93,7 +93,7 @@ Each signal has exactly one job. Every user gets a **15-second calibration** fir
 | Face landmarks → inner-lip gap | Mouth opens and closes | Shown only while talking (next row), so chewing or yawning never looks like speech |
 | Talking (`face.talking`) | Mouth animates; a soft **speaking ring** | The ring tells others who is speaking, even on a muted or low-volume call |
 | Expressions (happy probability) | Warm glow; a laugh (glow plus a talking burst) adds sparkles | Compared with the calibrated resting level, because some faces read "surprised" or "happy" at rest. On above rest + 0.25 for 400 ms; off below rest + 0.15 |
-| Validation status | Presence: dims to "back soon" | Not OK or no face for 3 s → away. Back to OK for 1 s → a wake-up stretch |
+| Validation status | Presence: dims to "back soon" | No face for 3 s → away. A face again for 1 s → a wake-up stretch. A face the SDK rates poor (cropped, too close, dim) still counts as present |
 
 ## 5. Auto mode
 

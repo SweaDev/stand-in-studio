@@ -4,7 +4,12 @@
 // scripted meeting. The recorded-clip view plays a clip of Demo mode's simulated sample feed
 // (made here, never kept) with the e2e fake SDK, so no Presage contact and no real person.
 //
-//   xvfb-run -a -s "-screen 0 1600x1000x24" node scripts/capture-media.mjs
+//   xvfb-run -a -s "-screen 0 1600x1000x24" node scripts/capture-media.mjs [--demo <bundle.zip> --clip <video>]
+//
+// With --demo, the start screen, control window, Camera tab, tour, Auto states, builder,
+// decision log and recorded-clip shots are re-taken on that saved demo (offline replay, no
+// API) and its video; the characters grid and the scripted-meeting recording stay on the
+// simulated person.
 import { _electron as electron } from '@playwright/test';
 import { execFileSync } from 'node:child_process';
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
@@ -14,6 +19,9 @@ import { createRequire } from 'node:module';
 import { fileURLToPath } from 'node:url';
 
 const require = createRequire(import.meta.url);
+const cli = {};
+for (let i = 2; i < process.argv.length; i += 2)
+  cli[process.argv[i].replace(/^--/, '')] = process.argv[i + 1];
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const out = join(root, 'docs', 'media');
 const tmp = mkdtempSync(join(tmpdir(), 'standin-media-'));
@@ -181,7 +189,7 @@ const app2 = await electron.launch({
 });
 const c2 = await app2.firstWindow();
 await app2.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0].setSize(1440, 960));
-await c2.setInputFiles('#consent-clip-file', clipFile);
+await c2.setInputFiles('#consent-clip-file', cli.clip ? cli.clip : clipFile);
 await c2.waitForSelector('#clip-play');
 await c2.locator('.mode-switch').getByRole('radio', { name: 'Blend' }).click();
 await c2.waitForTimeout(2_500);
@@ -194,5 +202,81 @@ await c2.screenshot({
   clip: { x: top.x, y: top.y, width: top.width, height: bottom.y + bottom.height + pad - top.y },
 });
 await app2.close();
+
+if (cli.demo) {
+  // ---- The same shots on a saved demo of a real person (offline replay: no API).
+  const launch3 = () =>
+    electron.launch({
+      executablePath: require('electron'),
+      args: [root, '--no-sandbox', `--user-data-dir=${join(tmp, 'profile3')}`],
+      env: { ...process.env, STANDIN_E2E: '1', PRESAGE_API_KEY: '' },
+    });
+  let app3 = await launch3();
+  let c3 = await app3.firstWindow();
+  await c3.click('#consent-demo');
+  await c3.click('#tab-advanced');
+  await c3.setInputFiles('#demo-import-bundle', cli.demo);
+  await c3.click('#demo-import-bundle-btn');
+  await c3.waitForFunction(() =>
+    /Imported/.test(document.querySelector('#demo-library-status')?.textContent ?? ''),
+  );
+  const id = await c3.evaluate(async () => (await window.studio.demos.list()).demos[0].id);
+  await c3.evaluate((lastDemo) => window.studio.setSettings({ recorded: { lastDemo }, mode: 'auto' }), id);
+  await app3.close();
+  app3 = await launch3();
+  c3 = await app3.firstWindow();
+  await app3.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0].setSize(1440, 960));
+  await c3.waitForTimeout(700);
+  await c3.screenshot({ path: join(out, 'consent.png') });
+  await c3.click('#consent-demo');
+  await c3.waitForSelector('#clip-play');
+  const at = async (ms, settle) => {
+    await c3.evaluate((m) => window.__standin.app.clip.seek(m), ms);
+    await c3.waitForTimeout(settle);
+  };
+  const tile3 = async (name) => {
+    const url = await c3.evaluate(() => window.__standin.tile(640, 360));
+    const file = join(tmp, `${name}.png`);
+    writeFileSync(file, Buffer.from(url.split(',')[1], 'base64'));
+    return file;
+  };
+  // Auto on the clip: listening (blend), turned to the side (covered), talking (revealed).
+  await at(22_000, 8_000);
+  const s1 = await tile3('demo-listening');
+  await at(38_000, 7_000);
+  const s2 = await tile3('demo-turned');
+  await at(49_500, 7_500);
+  const s3 = await tile3('demo-talking');
+  ff('-i', s1, '-i', s2, '-i', s3, '-filter_complex', 'hstack=inputs=3', join(out, 'auto-states.png'));
+  // Control window, talking in the meeting, with the intent list shown.
+  await c3.evaluate(() => window.__standin.app.updateSettings({ ui: { intents: true } }));
+  await at(50_000, 6_500);
+  await toTop(c3);
+  await c3.screenshot({ path: join(out, 'control.png') });
+  await c3.evaluate(() => window.__standin.app.startTour());
+  await c3.waitForTimeout(600);
+  await c3.screenshot({ path: join(out, 'tour.png') });
+  await c3.keyboard.press('Escape');
+  await toTop(c3);
+  await c3.click('#tab-camera');
+  await c3.waitForTimeout(500);
+  await c3.locator('.settings').screenshot({ path: join(out, 'camera-tab.png') });
+  await c3.click('#tab-advanced');
+  await c3.click('#create-intent');
+  await c3.fill('#intent-name', 'Checking my phone');
+  await c3.click('#add-headTilt');
+  await c3.click('#add-talking');
+  await c3.locator('[data-signal="talking"] [data-state="yes"]').click();
+  await c3.locator('[data-signal="talking"] [data-state="no"]').click();
+  await c3.waitForTimeout(800);
+  await c3.screenshot({ path: join(out, 'builder.png') });
+  await c3.click('#builder-cancel');
+  await c3.check('#developer-mode');
+  await c3.evaluate(() => document.activeElement?.blur());
+  await at(49_000, 4_000);
+  await c3.locator('#devlog').scrollIntoViewIfNeeded();
+  await c3.locator('#devlog').screenshot({ path: join(out, 'devlog.png') });
+  await app3.close();
+}
 rmSync(tmp, { recursive: true, force: true });
 console.log(`media written to ${out}`);

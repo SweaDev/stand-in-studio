@@ -2,8 +2,10 @@ import type { Presence, ValidationState } from '../../shared/types';
 import { C } from '../constants';
 
 /**
- * Presence state machine (REQUIREMENT §4): not OK or no face for 3 s → away ("back soon");
- * OK again for 1 s → a wake-up stretch → present.
+ * Presence state machine (REQUIREMENT §4): no face for 3 s → away ("back soon"); a face
+ * again for 1 s → a wake-up stretch → present. A face the SDK rates "poor" (cropped, too
+ * close, dim) still counts as present: you are there, so the character never says
+ * "back soon" while the meeting can see you.
  */
 export class PresenceTracker {
   private state: Presence = 'present';
@@ -12,7 +14,7 @@ export class PresenceTracker {
   private wakeStartedAt = 0;
 
   update(validation: ValidationState, now: number): Presence {
-    const ok = validation === 'ok';
+    const ok = validation !== 'noFace';
     if (ok) {
       this.notOkSince = undefined;
       this.okSince ??= now;

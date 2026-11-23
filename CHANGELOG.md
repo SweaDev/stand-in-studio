@@ -2,6 +2,10 @@
 
 All notable changes to Stand-In Studio. Versions follow the phases in [PLAN.md](PLAN.md).
 
+## 1.6.1 — 2026-11-23
+- **Fix:** a face the SDK rates "poor" (cropped at the frame edge, too close or dim) no longer counts as away. Before, real footage with the forehead cut off showed the "back soon" tag while you were in view at 40%. Only a missing face for 3 s now means away, which matches the *Away from the camera* intent.
+- Stage tab: the character and layout choices no longer pick up the Camera tab's input-switcher style.
+
 ## 1.6.0 — 2026-11-23
 - **Status bar:** pills at the top show the input, whether the camera is on, what Presage is reading (camera name or video file) and the Stand-In Camera.
   - **Camera off** is a privacy shutter. The webcam is released, Presage stops, and the meeting sees only your character until you turn it back on. Hide me is left untouched.
