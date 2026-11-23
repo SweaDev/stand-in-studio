@@ -5,18 +5,35 @@ test('consent comes first: no stage window and no signals until a choice is made
   const { app, control } = await launchApp();
   try {
     await expect(control.getByRole('dialog', { name: 'Before your camera starts' })).toBeVisible();
-    const text = await control.locator('.consent').innerText();
+    // Five key points up front: everything REQUIREMENT §6 asks the screen to state.
+    const short = await control.locator('.consent').innerText();
     for (const phrase of [
       'Character mode',
-      'your real video',
-      'only if you switch on the Comfort shield (or turn on a custom intent that uses them)',
-      'Nothing is recorded',
-      'telemetry is switched off',
+      'send your real video',
+      'Pulse and breathing only if you switch on the Comfort shield',
+      'Nothing is recorded unless you save a demo',
       'others may notice your video fading',
+      'not a medical',
+    ]) {
+      expect(short).toContain(phrase);
+    }
+    // Every detail one click away.
+    await expect(control.locator('#consent-more')).not.toHaveAttribute('open', '');
+    expect(short).not.toContain('telemetry is switched off');
+    await control.click('#consent-more summary');
+    const text = await control.locator('#consent-more').innerText();
+    for (const phrase of [
+      'only if you switch on the Comfort shield (or turn on a custom intent that uses them)',
+      'Nothing is recorded unless you ask',
+      'telemetry is switched off',
+      'Honest note: others may notice your video fading',
       'not a medical',
     ]) {
       expect(text).toContain(phrase);
     }
+    // Three ways to start.
+    await expect(control.locator('.source-card')).toHaveCount(3);
+    await expect(control.locator('#consent-save-telemetry')).toHaveCount(0);
     // No key in the e2e environment: camera is unavailable, Demo is offered.
     await expect(control.locator('#consent-camera')).toBeDisabled();
     await expect(control.locator('#consent-nokey')).toBeVisible();

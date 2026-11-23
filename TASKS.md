@@ -146,7 +146,7 @@ Progress tracker for [PLAN.md](PLAN.md). One task = one commit; tick the box in 
 - [x] T73 Settings for Interface options (`ui.*`, minimal by default) and the first-run tour flag; `describeInput` status model for the camera, Presage and the input
 - [x] T74 Header status bar: input, camera (privacy shutter) and Presage (on/off) pills, plus the Stand-In Camera
 - [x] T75 Camera tab controls the input: switch Camera / Video file / Demo / saved demo in place, camera device, what Presage reads, back to the start screen
-- [ ] T76 Tidy start screen: five key points with the full privacy details folded, three source cards, camera picker, "save telemetry" option for a video
+- [x] T76 Tidy start screen: five key points with the full privacy details folded, three source cards, camera picker, "save telemetry" option for a video
 - [ ] T77 Obvious telemetry saving: a Save-as-demo card with progress, REC indicator and "Play it now"
 - [ ] T78 Minimal default UI with Advanced → Interface toggles, and a visual polish pass
 - [ ] T79 Help tab (getting started, modes, shortcuts, privacy) and an interactive first-run tour

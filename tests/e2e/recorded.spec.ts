@@ -83,3 +83,22 @@ test('without an API key a recorded clip only plays through', async () => {
     await app.close();
   }
 });
+
+test('"Save its telemetry as a demo" on the start screen asks first, then saves the clip as it plays', async () => {
+  const profile = mkdtempSync(join(tmpdir(), 'standin-e2e-rec-start-'));
+  const { app, control } = await launchApp(ENV, profile);
+  try {
+    await control.check('#consent-save-telemetry');
+    await control.setInputFiles('#consent-clip-file', testClip(4));
+    // The privacy notice still comes first, every time.
+    await expect(control.locator('#save-demo')).toBeVisible({ timeout: 15_000 });
+    await control.fill('#demo-name', 'From the start screen');
+    await control.click('#demo-save-confirm');
+    await expect(control.locator('#telemetry-status')).toContainText('Saved “From the start screen”', {
+      timeout: 20_000,
+    });
+    expect(readdirSync(join(profile, 'demos'))).toHaveLength(1);
+  } finally {
+    await app.close();
+  }
+});

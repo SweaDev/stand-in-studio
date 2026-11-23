@@ -313,6 +313,9 @@ export class ControlApp {
         openExternal: (u) => void this.api.openExternal(u),
         demos: library?.demos ?? [],
         lastDemo: this.settings.recorded.lastDemo,
+        listCameras: () => new CameraManager().list(),
+        cameraId: this.settings.camera.deviceId,
+        pickCamera: (id) => void this.updateSettings({ camera: { deviceId: id || null } }),
       },
       (choice) => {
         consent.el.remove();
@@ -411,6 +414,9 @@ export class ControlApp {
     this.host.open();
     this.loop.start();
     void this.syncVcam();
+    // Chosen on the start screen: save the clip's telemetry (the privacy notice still comes first).
+    if (typeof choice === 'object' && choice.kind === 'clip' && choice.saveTelemetry && this.presage)
+      void this.saveClipTelemetry();
   }
 
   // ---------------------------------------------------------------- Stand-In Camera

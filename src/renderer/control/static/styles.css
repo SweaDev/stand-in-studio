@@ -1003,7 +1003,7 @@ input.switch:checked::after {
 
 /* ------------------------------------------------------------------ consent, dialogs, misc */
 .consent {
-  max-width: 760px;
+  max-width: 880px;
   margin: var(--s5) auto;
   background: var(--surface);
   border: 1px solid var(--line);
@@ -1014,12 +1014,122 @@ input.switch:checked::after {
 .consent .lead {
   color: var(--muted);
 }
-.consent ul {
-  padding-left: 20px;
-  margin: 10px 0 18px;
+.consent h2 {
+  font-size: var(--fs-xl);
+  margin-bottom: var(--s1);
 }
-.consent li {
-  margin-bottom: 8px;
+.consent .lead {
+  margin-bottom: var(--s3);
+}
+.key-points {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 var(--s3);
+  display: grid;
+  gap: var(--s2);
+}
+.key-points li {
+  display: flex;
+  gap: var(--s3);
+  align-items: flex-start;
+  padding: var(--s2) var(--s3);
+  border-radius: var(--r-md);
+  background: var(--surface-2);
+  font-size: var(--fs-sm);
+  color: var(--muted);
+}
+.key-points strong {
+  color: var(--text);
+}
+.point-icon {
+  display: inline-flex;
+  color: var(--accent);
+  margin-top: 1px;
+}
+.consent-more {
+  margin: 0 0 var(--s4);
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  padding: var(--s2) var(--s3);
+}
+.consent-more summary {
+  cursor: pointer;
+  font-weight: 600;
+  color: var(--accent);
+  font-size: var(--fs-sm);
+}
+.consent-more ul {
+  padding-left: 20px;
+  margin: var(--s3) 0 var(--s2);
+  font-size: var(--fs-sm);
+  color: var(--muted);
+}
+.consent-more li {
+  margin-bottom: 6px;
+}
+.consent-more strong {
+  color: var(--text);
+}
+.source-cards {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--s3);
+  margin-bottom: var(--s3);
+}
+@media (max-width: 760px) {
+  .source-cards {
+    grid-template-columns: 1fr;
+  }
+}
+.source-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s2);
+  padding: var(--s4);
+  border-radius: var(--r-md);
+  border: 1px solid var(--line);
+  background: var(--surface-2);
+}
+.source-card:first-child {
+  border-color: rgba(242, 166, 90, 0.5);
+  background: linear-gradient(180deg, var(--accent-soft), var(--surface-2) 70%);
+}
+.source-card h3 {
+  margin: 0;
+  font-size: var(--fs-md);
+  color: var(--text);
+  text-transform: none;
+  letter-spacing: 0;
+}
+.source-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  display: grid;
+  place-items: center;
+  background: var(--surface-3);
+  color: var(--accent);
+}
+.source-blurb {
+  margin: 0;
+  color: var(--muted);
+  font-size: var(--fs-sm);
+  flex: 1;
+}
+.source-card select {
+  margin: 0;
+}
+.source-card > button {
+  width: 100%;
+}
+.card-field {
+  font-size: var(--fs-sm);
+}
+label.check {
+  display: flex;
+  gap: var(--s2);
+  align-items: center;
+  cursor: pointer;
 }
 dialog {
   background: var(--surface);
