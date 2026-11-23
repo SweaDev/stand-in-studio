@@ -10,7 +10,7 @@ test('Camera mode pauses the Presage SDK (after a short debounce) and leaving it
   const { app, control } = await launchApp(ENV);
   try {
     await control.click('#consent-camera');
-    await expect(control.locator('#stop-camera')).toBeVisible({ timeout: 15_000 });
+    await expect(control.locator('#pill-camera')).toHaveText('Camera on', { timeout: 15_000 });
     await expect.poll(async () => (await sdk(control)).reports).toBeGreaterThan(10);
     expect(await sdk(control)).toMatchObject({ created: 1, starts: 1, stops: 0, running: true });
 
@@ -50,7 +50,7 @@ test('starting the camera while already in Camera mode never starts the SDK unti
     await control.evaluate(() => (window as any).studio.setSettings({ mode: 'camera' }));
     await control.reload();
     await control.click('#consent-camera');
-    await expect(control.locator('#stop-camera')).toBeVisible({ timeout: 15_000 });
+    await expect(control.locator('#pill-camera')).toHaveText('Camera on', { timeout: 15_000 });
     await expect(control.locator('#sensing-status')).toBeVisible();
     await control.waitForTimeout(1_000);
     expect(await sdk(control)).toMatchObject({ created: 1, starts: 0, reports: 0 });

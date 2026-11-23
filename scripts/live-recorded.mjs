@@ -67,7 +67,8 @@ try {
   const status = (await page.textContent('#telemetry-status')) ?? '';
   result.checks['telemetry saved from the live SDK'] = status.startsWith('Saved');
   result.info.status = status.replace(/“.*”/, '“…”');
-  await page.click('#close-clip').catch(() => undefined);
+  await page.click('#tab-camera').catch(() => undefined);
+  await page.click('#back-to-start').catch(() => undefined);
   await page.waitForTimeout(500);
 } finally {
   await app.close();

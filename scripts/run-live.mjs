@@ -68,7 +68,8 @@ const result = await (async () => {
       );
     }
     if (!samples.some((s) => s.status)) sdkStartedAt = null; // SDK never started
-    await page.click('#stop-camera').catch(() => undefined);
+    await page.click('#tab-camera').catch(() => undefined);
+    await page.click('#back-to-start').catch(() => undefined);
     await page.waitForTimeout(500);
     sdkStoppedAt = Date.now();
     return samples;

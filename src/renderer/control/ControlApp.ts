@@ -51,6 +51,7 @@ import { TelemetryRecorder } from '../../sensing/recorded/TelemetryRecorder';
 import { sanitizeTelemetry } from '../../shared/telemetry';
 import { formatDuration, videoExt } from '../../shared/demos';
 import { StatusBar } from './components/StatusBar';
+import { InputPanel } from './components/InputPanel';
 import { type InputFacts, type InputSource, describeInput } from '../../shared/inputStatus';
 
 /** Presage SDK version bundled with the app (stamped into saved telemetry). */
@@ -72,8 +73,9 @@ export class ControlApp {
   clip: RecordedFeed | null = null;
   /** Offline replay of a saved demo's telemetry (never uses the SDK). */
   replay: ReplaySignalSource | null = null;
-  /** Name of the saved demo being replayed. */
+  /** Name and id of the saved demo being replayed. */
   replayName = '';
+  private replayId: string | null = null;
   /** Telemetry being saved for the clip (one pass, start to end). */
   telemetry: TelemetryRecorder | null = null;
   private transport: TransportBar | null = null;
@@ -160,9 +162,9 @@ export class ControlApp {
   private setBusy(busy: boolean): void {
     this.root.toggleAttribute('aria-busy', busy);
     for (const el of this.root.querySelectorAll<HTMLButtonElement | HTMLSelectElement>(
-      '#stop-camera, #pill-camera, #group-camera-device select, #group-camera-device button',
+      '#pill-camera, #camera-on, #input-source button, #input-demo-pick, #back-to-start, #group-camera-device select',
     ))
-      el.disabled = busy;
+      el.disabled = busy || el.dataset.locked === 'true';
   }
 
   get currentSettings(): Settings {
@@ -328,10 +330,19 @@ export class ControlApp {
 
   /** Replays a saved demo now (from the demo library), without going back to the start screen. */
   playDemo(id: string): Promise<void> {
-    return this.serial(() => this.doRestart({ kind: 'replay', id }));
+    return this.switchSource({ kind: 'replay', id });
   }
 
+  /** Switches the input in place (Camera tab): consent was already given this launch. */
+  switchSource(choice: ConsentChoice): Promise<void> {
+    return this.serial(() => this.doRestart(choice));
+  }
+
+  /** The settings tab to show again after switching the input in place. */
+  private reopenTab: string | null = null;
+
   private async doRestart(next?: ConsentChoice): Promise<void> {
+    this.reopenTab = next ? (this.tabs?.selected ?? null) : null;
     await this.stopVcam().catch(() => undefined);
     this.vcamPanel = null;
     if (this.pauseTimer) clearTimeout(this.pauseTimer);
@@ -354,6 +365,7 @@ export class ControlApp {
     this.telemetry = null;
     await this.replay?.stop();
     this.replay = null;
+    this.replayId = null;
     this.clip?.close();
     this.clip = null;
     this.transport = null;
@@ -368,9 +380,15 @@ export class ControlApp {
     this.demoLibraryChanged = () => undefined;
     await this.start();
     if (next) {
-      // Consent was already given this launch; a replay uses no camera and no API.
+      // Consent was already given this launch.
       document.querySelector('.consent')?.remove();
-      await this.begin(next);
+      const wait = h('p', { class: 'switching', role: 'status' }, 'Switching input…');
+      this.root.insertBefore(wait, this.main);
+      try {
+        await this.begin(next);
+      } finally {
+        wait.remove();
+      }
     }
   }
 
@@ -661,6 +679,7 @@ export class ControlApp {
       );
       this.clip = clip;
       this.replayName = demo.summary.name;
+      this.replayId = id;
       this.replay = new ReplaySignalSource(telemetry, this.clock, () => this.engine.resetSignals());
       this.replay.events.on('frame', (f) => this.engine.ingest(f));
       clip.onPlayState(() => this.syncSensing());
@@ -1003,12 +1022,56 @@ export class ControlApp {
     await this.startSensing(this.presage);
   }
 
-  private cameraGroup(): HTMLElement {
-    const picker = new CameraPicker((id, profile) => void this.switchCamera(id, profile));
-    void this.camera
-      ?.list()
-      .then((d) => picker.setDevices(d, this.camera?.deviceId ?? null, this.settings.camera.profile));
-    return h('div', { class: 'group', id: 'group-camera-device' }, h('h3', {}, 'Camera'), picker.el);
+  /** Camera device and resolution: switches the open camera, or is remembered for next time. */
+  private cameraGroup(): HTMLElement | null {
+    if (!this.apiAvailable) return null;
+    const picker = new CameraPicker((id, profile) => {
+      if (this.camera && !this.cameraOff) void this.switchCamera(id, profile);
+      else void this.updateSettings({ camera: { deviceId: id || null, profile } });
+    });
+    void (this.camera ?? new CameraManager())
+      .list()
+      .then((d) =>
+        picker.setDevices(
+          d,
+          this.camera?.deviceId ?? this.settings.camera.deviceId,
+          this.settings.camera.profile,
+        ),
+      )
+      .catch(() => picker.setDevices([], null, this.settings.camera.profile));
+    return h(
+      'div',
+      { class: 'device-pick', id: 'group-camera-device' },
+      picker.el,
+      this.camera ? null : h('p', { class: 'hint' }, 'Used when the input is Camera.'),
+    );
+  }
+
+  /** Camera tab, top: the input switcher and what Presage reads. */
+  private inputPanel(): InputPanel {
+    const panel = new InputPanel(
+      this.inputSource(),
+      { apiKey: this.apiAvailable, replayId: this.replayId },
+      {
+        switchTo: (c) => void this.switchSource(c),
+        setPresageOff: (o) => this.setPresageOff(o),
+        backToStart: () => void this.restart(),
+      },
+      this.cameraGroup(),
+    );
+    const refresh = () =>
+      void this.api.demos
+        .list()
+        .then((l) => panel.setDemos(l.demos))
+        .catch(() => undefined);
+    refresh();
+    const prev = this.demoLibraryChanged;
+    this.demoLibraryChanged = () => {
+      prev();
+      refresh();
+    };
+    this.onFrame(() => panel.update(describeInput(this.inputFacts()), this.presageOff));
+    return panel;
   }
 
   /** Covers the raw preview while the camera is off. */
@@ -1268,15 +1331,15 @@ export class ControlApp {
           id: 'camera',
           label: 'Camera',
           content: [
-            this.camera ? this.cameraGroup() : null,
-            this.camera && this.presage ? this.recordGroup() : null,
+            this.inputPanel().el,
+            this.camera && this.apiAvailable ? this.recordGroup() : null,
             new ApiKeyPanel(this.api, this.demo === null && this.replay === null, () => void this.restart())
               .el,
           ],
         },
         { id: 'advanced', label: 'Advanced', content: [this.advanced.el, library.el] },
       ],
-      'auto',
+      this.reopenTab ?? 'auto',
     );
     this.root.insertBefore(this.banner.el, this.main);
     this.main.replaceChildren(
@@ -1318,20 +1381,19 @@ export class ControlApp {
           stageBtn,
           this.demo ? scriptBtn : null,
           h('button', { type: 'button', id: 'show-help', onclick: () => help.open() }, 'Shortcuts'),
-          this.camera
-            ? h(
-                'button',
-                { type: 'button', id: 'stop-camera', onclick: () => void this.restart() },
-                'Stop camera',
-              )
-            : null,
-          this.clip
-            ? h(
-                'button',
-                { type: 'button', id: 'close-clip', onclick: () => void this.restart() },
-                this.replay ? 'Close demo' : 'Close clip',
-              )
-            : null,
+          h(
+            'button',
+            {
+              type: 'button',
+              id: 'change-input',
+              onclick: () => {
+                this.tabs?.select('camera', true);
+                this.tabs?.el.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+              },
+            },
+            icon('video', 16),
+            'Change input',
+          ),
         ),
         this.transport?.el ?? null,
         caption,

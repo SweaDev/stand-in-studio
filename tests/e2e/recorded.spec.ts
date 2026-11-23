@@ -65,7 +65,7 @@ test('a recorded clip is analysed like the camera, its telemetry is saved, and i
       .poll(() => control.evaluate(() => (window as any).__standin.app.replay?.emitted ?? 0))
       .toBeGreaterThan(10);
     expect(await sdk(control)).toMatchObject({ created: 0, starts: 0 });
-    await expect(control.locator('#close-clip')).toHaveText('Close demo');
+    await expect(control.locator('#change-input')).toBeVisible();
   } finally {
     await app.close();
   }

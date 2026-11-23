@@ -87,7 +87,9 @@ export class StatusBar implements Component {
 
   /** Updates every pill (cheap: only touches the DOM when something changed). */
   update(s: InputStatus, cameraInUse: boolean, vcam: { state: VcamState; enabled: boolean }): void {
-    this.apply(this.source, s.source, null);
+    // With the camera as input, the camera and Presage pills already say it all.
+    this.source.el.hidden = cameraInUse;
+    if (!cameraInUse) this.apply(this.source, s.source, null);
     this.camera.el.hidden = !cameraInUse;
     if (cameraInUse) {
       const on = s.camera.tone === 'live';

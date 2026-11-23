@@ -17,7 +17,7 @@ test('the status bar shows the camera and what Presage reads; the camera and Pre
     await control.click('#consent-camera');
     await expect(control.locator('#pill-camera')).toHaveText('Camera on', { timeout: 15_000 });
     await expect(control.locator('#pill-camera')).toHaveAttribute('aria-pressed', 'true');
-    await expect(control.locator('#pill-source')).toContainText('Camera ·');
+    await expect(control.locator('#pill-source')).toBeHidden();
     await expect(control.locator('#pill-presage')).toHaveText(/^Presage · /, { timeout: 10_000 });
     await expect(control.locator('#pill-presage')).toHaveClass(/is-analysing/);
 

@@ -11,7 +11,7 @@ test('Record a demo with the camera saves the clip and its telemetry after a pri
   const { app, control } = await launchApp(ENV, profile);
   try {
     await control.click('#consent-camera');
-    await expect(control.locator('#stop-camera')).toBeVisible({ timeout: 15_000 });
+    await expect(control.locator('#pill-camera')).toHaveText('Camera on', { timeout: 15_000 });
     await openTab(control, 'camera');
     await control.click('#record-demo');
     await expect(control.locator('#save-demo')).toContainText('the video clip itself');
@@ -30,9 +30,11 @@ test('Record a demo with the camera saves the clip and its telemetry after a pri
     expect(t.video.durationMs).toBeGreaterThan(2_500);
     expect(readFileSync(join(lib, id as string, 'video.webm')).length).toBeGreaterThan(1_000);
 
-    // The recorded WebM plays back as a demo (duration recovered despite MediaRecorder).
-    await control.click('#stop-camera');
-    await control.click('#consent-demo');
+    // The recorded WebM plays back as a demo (duration recovered despite MediaRecorder),
+    // switched to in place from the Camera tab.
+    await control.click('#input-demo');
+    await expect(control.locator('#input-demo-pick option')).toHaveCount(2, { timeout: 15_000 });
+    await control.selectOption('#input-demo-pick', { index: 1 });
     await expect(control.locator('#clip-time')).toContainText(/\/ 0:0[3-4]/, { timeout: 15_000 });
   } finally {
     await app.close();
@@ -44,7 +46,7 @@ test('recording cancelled at the privacy notice saves nothing', async () => {
   const { app, control } = await launchApp(ENV, profile);
   try {
     await control.click('#consent-camera');
-    await expect(control.locator('#stop-camera')).toBeVisible({ timeout: 15_000 });
+    await expect(control.locator('#pill-camera')).toHaveText('Camera on', { timeout: 15_000 });
     await openTab(control, 'camera');
     await control.click('#record-demo');
     await control.click('#demo-save-cancel');

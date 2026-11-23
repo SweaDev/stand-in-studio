@@ -64,7 +64,8 @@ try {
   }
   result.samples.resumed = q;
   result.checks['Back in Auto: SDK analyses frames again'] = q.n > p2.n + 10 && q.status === 'running';
-  await page.click('#stop-camera').catch(() => undefined);
+  await page.click('#tab-camera').catch(() => undefined);
+  await page.click('#back-to-start').catch(() => undefined);
   await page.waitForTimeout(500);
 } finally {
   await app.close();

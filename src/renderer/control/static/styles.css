@@ -1767,3 +1767,102 @@ input[type='file']::file-selector-button:hover {
 .camera-off button {
   margin-top: var(--s2);
 }
+
+/* ------------------------------------------------------------------ input switcher (Camera tab) */
+.segmented {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 4px;
+  padding: 4px;
+  border-radius: var(--r-md);
+  background: var(--field);
+  border: 1px solid var(--line);
+  margin-bottom: var(--s3);
+}
+.segmented button {
+  border-color: transparent;
+  background: transparent;
+  color: var(--muted);
+  font-weight: 600;
+  padding: 8px 10px;
+  transition: none;
+}
+.segmented button[aria-pressed='true'] {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--on-accent);
+}
+.input-lead {
+  margin-top: 0;
+}
+.demo-pick-row,
+.device-pick {
+  margin-bottom: var(--s3);
+}
+.device-pick .camera-picker {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 6px var(--s3);
+  align-items: center;
+}
+.device-pick .camera-picker select {
+  margin: 0;
+}
+.device-pick .camera-picker .hint {
+  grid-column: 1 / -1;
+  margin: 0;
+}
+.demo-pick-row {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: var(--s3);
+  align-items: center;
+}
+.demo-pick-row select {
+  margin: 0;
+}
+.readout {
+  --rc: var(--faint);
+  display: flex;
+  gap: var(--s3);
+  align-items: flex-start;
+  padding: var(--s3);
+  border-radius: var(--r-md);
+  border: 1px solid var(--line);
+  background: var(--surface-2);
+  margin-bottom: var(--s3);
+}
+.readout > .icon {
+  color: var(--rc);
+  margin-top: 2px;
+}
+.readout[data-tone='live'] {
+  --rc: var(--ok);
+  border-color: rgba(129, 230, 160, 0.35);
+}
+.readout[data-tone='warn'] {
+  --rc: var(--warn);
+  border-color: rgba(245, 200, 106, 0.4);
+}
+.readout-body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s2);
+  flex: 1;
+  font-size: var(--fs-sm);
+}
+.readout-body .switch-wrap {
+  margin-left: 0;
+  gap: var(--s2);
+  align-items: center;
+  color: var(--text);
+  font-weight: 600;
+}
+.input-actions {
+  margin-top: var(--s2);
+}
+.switching {
+  margin: var(--s6) auto;
+  text-align: center;
+  color: var(--muted);
+}

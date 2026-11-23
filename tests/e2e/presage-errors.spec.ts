@@ -9,7 +9,7 @@ test('camera path: same stream for SDK and stage; a rejected key offers Demo mod
   const { app, control } = await launchApp({ PRESAGE_API_KEY: 'invalid-e2e-key', STANDIN_FAKE_CAMERA: '1' });
   try {
     await control.click('#consent-camera');
-    await expect(control.locator('#stop-camera')).toBeVisible({ timeout: 15_000 });
+    await expect(control.locator('#pill-camera')).toHaveText('Camera on', { timeout: 15_000 });
     await expect(control.locator('#camera-select option')).not.toHaveCount(0);
     await expect(control.locator('#status-banner')).toBeVisible({ timeout: 45_000 });
     await expect(control.locator('#status-text')).toContainText(/API key|Presage/);

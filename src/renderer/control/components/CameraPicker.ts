@@ -35,8 +35,11 @@ export class CameraPicker implements Component {
 
   setDevices(devices: CameraDevice[], selected: string | null, profile: CaptureProfile): void {
     this.select.replaceChildren(
-      ...devices.map((d) => h('option', { value: d.deviceId, selected: d.deviceId === selected }, d.label)),
+      ...(devices.length > 0
+        ? devices.map((d) => h('option', { value: d.deviceId, selected: d.deviceId === selected }, d.label))
+        : [h('option', { value: '' }, 'No camera found')]),
     );
+    this.select.disabled = devices.length === 0;
     this.profile.value = profile;
   }
 }
