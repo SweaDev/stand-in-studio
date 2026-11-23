@@ -86,7 +86,7 @@ export class ConsentScreen implements Component {
           h('strong', {}, 'Camera, Blend and Auto'),
           ' send ',
           h('strong', {}, 'your real video'),
-          ', at the opacity shown on the dial, to the meeting through OBS.',
+          ', at the opacity shown on the dial, to the meeting: through the Stand-In Camera (a virtual webcam on Linux), OBS, or a screen share of the Virtual Stage window. Each sends exactly what the Virtual Stage shows.',
         ),
         h(
           'li',

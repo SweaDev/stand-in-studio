@@ -47,6 +47,7 @@ test('settings panel changes the stage and persists only settings', async () => 
         'mode',
         'presets',
         'recorded',
+        'virtualCamera',
       ].sort(),
     );
     // Recorded clips and their telemetry live in the demo library, never in settings.

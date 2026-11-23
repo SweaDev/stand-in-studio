@@ -29,9 +29,16 @@ function configureFakeCamera(): void {
   if (fake !== '1') app.commandLine.appendSwitch('use-file-for-fake-video-capture', fake);
 }
 
+/** E2E only (STANDIN_E2E=1 STANDIN_SWIFTSHADER=1): software WebGL on GPU-less test machines. */
+function configureSoftwareGl(): void {
+  if (process.env.STANDIN_E2E === '1' && process.env.STANDIN_SWIFTSHADER === '1')
+    app.commandLine.appendSwitch('enable-unsafe-swiftshader');
+}
+
 /** Application entry point: owns windows, settings and IPC. */
 function bootstrap(): void {
   configureFakeCamera();
+  configureSoftwareGl();
   const info: AppInfo = {
     platform: process.platform,
     version: app.getVersion(),

@@ -54,6 +54,11 @@ export interface Settings {
    * saved telemetry. `lastDemo` is the saved demo Demo mode opens by default.
    */
   recorded: { libraryDir: string | null; saveBody: boolean; lastDemo: string | null };
+  /**
+   * The native virtual camera ("Stand-In Camera", Linux for now). On by default: it starts
+   * after consent whenever a device is ready, and asks for the one-time setup otherwise.
+   */
+  virtualCamera: { enabled: boolean };
 }
 
 export const BACKGROUNDS = ['#2b2d42', '#264653', '#3d405b', '#f4f1de', '#e9edc9', '#1d1b22'] as const;
@@ -70,6 +75,7 @@ export const DEFAULT_SETTINGS: Settings = Object.freeze({
   intentTuning: {},
   advanced: { developerMode: false },
   recorded: { libraryDir: null, saveBody: false, lastDemo: null },
+  virtualCamera: { enabled: true },
 }) as Settings;
 
 const HEX = /^#[0-9a-f]{6}$/i;
@@ -114,6 +120,7 @@ export function sanitizeSettings(raw: unknown): Settings {
   const a11y = obj(r.accessibility);
   const advanced = obj(r.advanced);
   const recorded = obj(r.recorded);
+  const vcam = obj(r.virtualCamera);
   const intents = sanitizeIntents(auto.intents);
   const saveTuning = bool(auto.saveTuning, d.auto.saveTuning);
   const max = num01(auto.max, d.auto.max);
@@ -163,6 +170,7 @@ export function sanitizeSettings(raw: unknown): Settings {
       lastDemo:
         typeof recorded.lastDemo === 'string' && DEMO_ID.test(recorded.lastDemo) ? recorded.lastDemo : null,
     },
+    virtualCamera: { enabled: bool(vcam.enabled, d.virtualCamera.enabled) },
   };
 }
 

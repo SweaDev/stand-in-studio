@@ -43,6 +43,9 @@ import { TransportBar } from './recorded/TransportBar';
 import { SaveDemoDialog } from './recorded/SaveDemoDialog';
 import { ClipRecorder, MAX_RECORDING_MS } from './recorded/ClipRecorder';
 import { DemoLibraryPanel } from './recorded/DemoLibraryPanel';
+import { VirtualCameraFeed } from './vcam/VirtualCameraFeed';
+import { VirtualCameraPanel } from './vcam/VirtualCameraPanel';
+import type { VcamStatus } from '../../shared/vcam';
 import { ReplaySignalSource } from '../../sensing/recorded/ReplaySignalSource';
 import { TelemetryRecorder } from '../../sensing/recorded/TelemetryRecorder';
 import { sanitizeTelemetry } from '../../shared/telemetry';
@@ -256,6 +259,8 @@ export class ControlApp {
     if (patch.auto?.intents) this.intentList?.sync(this.settings.auto.intents, this.engine.intentTuning);
     // Re-requests metrics only when cardio need changes (Comfort shield or a body-signal intent).
     void this.presage?.setComfortShield(needsCardio(this.settings));
+    if (patch.background && this.vcamFeed && this.vcamStatus.state === 'live')
+      this.api.vcam.setPausedFrame(this.vcamFeed.pausedFrame(this.settings.background));
     this.settings = await this.api.setSettings(patch);
   }
 
@@ -310,6 +315,8 @@ export class ControlApp {
   }
 
   private async doRestart(next?: ConsentChoice): Promise<void> {
+    await this.stopVcam().catch(() => undefined);
+    this.vcamPanel = null;
     if (this.pauseTimer) clearTimeout(this.pauseTimer);
     this.pauseTimer = undefined;
     this.engine.setSensing('live');
@@ -361,10 +368,97 @@ export class ControlApp {
     } else if (!(await this.startCamera())) {
       return;
     }
+    this.vcamStatus = await this.api.vcam.status().catch(() => ({ state: 'unsupported' }) as VcamStatus);
     this.buildWorkspace();
     this.main.hidden = false;
     this.host.open();
     this.loop.start();
+    void this.syncVcam();
+  }
+
+  // ---------------------------------------------------------------- Stand-In Camera
+
+  /** The native virtual camera's last known status ('unsupported' off Linux). */
+  vcamStatus: VcamStatus = { state: 'unsupported' };
+  vcamFeed: VirtualCameraFeed | null = null;
+  private vcamPanel: VirtualCameraPanel | null = null;
+  private vcamBusy = false;
+
+  /**
+   * Brings the Stand-In Camera in line with the setting: starts it when enabled and a
+   * device is ready (it is the default on Linux), stops it otherwise. Setup is never run
+   * without the user's click.
+   */
+  async syncVcam(): Promise<void> {
+    if (this.vcamBusy || this.vcamStatus.state === 'unsupported') return;
+    this.vcamBusy = true;
+    try {
+      const want = this.settings.virtualCamera.enabled && !this.main.hidden;
+      const live = this.vcamStatus.state === 'live';
+      if (want && !live) {
+        this.vcamStatus = await this.api.vcam.status();
+        if (this.vcamStatus.state === 'ready') {
+          this.vcamFeed ??= new VirtualCameraFeed(this.api.vcam);
+          this.api.vcam.setPausedFrame(this.vcamFeed.pausedFrame(this.settings.background));
+          this.vcamStatus = await this.api.vcam.start();
+          if (this.vcamStatus.state === 'live') {
+            const feed = this.vcamFeed;
+            feed.live = true;
+            this.loop.output = (picture) => feed.push(picture);
+          }
+        }
+      } else if (!want && live) {
+        await this.stopVcam();
+      }
+    } finally {
+      this.vcamBusy = false;
+      this.vcamPanel?.update(this.vcamStatus, this.settings.virtualCamera.enabled);
+      this.onVcamChange();
+    }
+  }
+
+  private async stopVcam(): Promise<void> {
+    this.loop.output = null;
+    if (this.vcamFeed) this.vcamFeed.live = false;
+    if (this.vcamStatus.state !== 'live') return;
+    const paused = this.vcamFeed?.pausedFrame(this.settings.background);
+    this.vcamStatus = await this.api.vcam.stop(paused);
+  }
+
+  /** One-time setup (the system asks for the password), then start if it worked. */
+  async setupVcam(): Promise<void> {
+    this.vcamPanel?.setBusy(true);
+    this.vcamPanel?.say('');
+    try {
+      const r = await this.api.vcam.setup();
+      this.vcamStatus = r.status;
+      if (r.ok) this.vcamPanel?.say('Stand-In Camera is set up. Pick it in your meeting app.', 'ok');
+      else if (r.reason === 'cancelled')
+        this.vcamPanel?.say('Setup was cancelled. OBS and screen sharing below still work.', '');
+      else if (r.reason !== 'notInstalled') this.vcamPanel?.say(r.message ?? 'Setup failed.', 'error');
+    } finally {
+      this.vcamPanel?.setBusy(false);
+    }
+    await this.syncVcam();
+  }
+
+  private onVcamChange: () => void = () => undefined;
+
+  private vcamSection(): HTMLElement | null {
+    if (this.vcamStatus.state === 'unsupported') return null;
+    this.vcamPanel = new VirtualCameraPanel(this.settings.virtualCamera.enabled, {
+      setEnabled: (on) =>
+        void this.updateSettings({ virtualCamera: { enabled: on } }).then(() => this.syncVcam()),
+      setup: () => void this.setupVcam(),
+    });
+    this.vcamPanel.onRecheck(() => {
+      void this.api.vcam.status().then((st) => {
+        this.vcamStatus = st;
+        return this.syncVcam();
+      });
+    });
+    this.vcamPanel.update(this.vcamStatus, this.settings.virtualCamera.enabled);
+    return this.vcamPanel.el;
   }
 
   /** Runs a command from a hotkey or a button (Command pattern). */
@@ -849,7 +943,17 @@ export class ControlApp {
       this.api.info.platform,
       (u) => void this.api.openExternal(u),
       (on) => this.engine.setTestPattern(on),
+      this.vcamSection(),
     );
+    // OBS becomes the optional alternative once the Stand-In Camera is live.
+    let obsFolded: boolean | null = null;
+    this.onVcamChange = () => {
+      const live = this.vcamStatus.state === 'live';
+      if (live !== obsFolded) {
+        obsFolded = live;
+        obs.obsDetails.open = !live;
+      }
+    };
     this.panel = new ModePanel(this.settings, {
       update: (p) => void this.updateSettings(p),
       setBlend: (v) => this.turnDial(v),

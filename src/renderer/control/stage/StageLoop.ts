@@ -18,6 +18,10 @@ export class StageLoop {
   private compositor: StageCompositor | null = null;
   private surface: HTMLCanvasElement | null = null;
   private insetCompositor: StageCompositor | null = null;
+  /** Full-size picture for the virtual camera while the stage window is closed. */
+  private offscreen: { canvas: OffscreenCanvas; compositor: StageCompositor } | null = null;
+  /** Receives the full-size Virtual Stage picture every frame (the virtual camera). */
+  output: ((picture: CanvasImageSource) => void) | null = null;
   private frames = 0;
   private fpsWindowStart = performance.now();
   fps = 0;
@@ -55,6 +59,20 @@ export class StageLoop {
     }
     const feed = this.feed();
     if (this.compositor) this.compositor.render(state, feed, t);
+    // The virtual camera needs the full picture even when the stage window is closed.
+    let full: CanvasImageSource | null = surface;
+    if (this.output && !surface) {
+      if (!this.offscreen) {
+        const canvas = new OffscreenCanvas(STAGE_WIDTH, STAGE_HEIGHT);
+        const ctx = canvas.getContext('2d') as OffscreenCanvasRenderingContext2D;
+        this.offscreen = { canvas, compositor: new StageCompositor(ctx, STAGE_WIDTH, STAGE_HEIGHT) };
+      }
+      this.offscreen.compositor.render(state, feed, t);
+      full = this.offscreen.canvas;
+    } else if (!this.output) {
+      this.offscreen = null;
+    }
+    if (this.output && full) this.output(full);
 
     if (this.frames % 2 === 0) {
       const { raw, inset } = this.previews;
@@ -62,8 +80,8 @@ export class StageLoop {
       if (raw && rctx) drawRawPreview(rctx, raw.width, raw.height, feed);
       const ictx = inset?.getContext('2d');
       if (inset && ictx) {
-        if (surface) {
-          ictx.drawImage(surface, 0, 0, inset.width, inset.height);
+        if (full) {
+          ictx.drawImage(full, 0, 0, inset.width, inset.height);
         } else {
           // Virtual Stage window closed: still show what it would send.
           if (this.insetCompositor?.width !== inset.width) {

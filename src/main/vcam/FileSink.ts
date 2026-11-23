@@ -1,4 +1,10 @@
-import { writeFileSync } from 'node:fs';
+import { renameSync, writeFileSync } from 'node:fs';
+
+/** Write-then-rename, so a reader never sees a half-written file. */
+function atomicWrite(file: string, data: string | Uint8Array): void {
+  writeFileSync(`${file}.tmp`, data);
+  renameSync(`${file}.tmp`, file);
+}
 import type { VirtualCameraSink } from './sink';
 
 /**
@@ -16,7 +22,7 @@ export class FileSink implements VirtualCameraSink {
   constructor(private readonly file: string) {}
 
   private flush(): void {
-    writeFileSync(`${this.file}.json`, JSON.stringify({ ...this.stats, frames: this.frames }));
+    atomicWrite(`${this.file}.json`, JSON.stringify({ ...this.stats, frames: this.frames }));
   }
 
   async start(width: number, height: number): Promise<{ device: string; label: string }> {
@@ -29,16 +35,16 @@ export class FileSink implements VirtualCameraSink {
 
   writeFrame(frame: Uint8Array): void {
     if (!this.open || frame.byteLength !== this.size) return;
-    writeFileSync(this.file, frame);
+    atomicWrite(this.file, frame);
     this.frames++;
-    if (this.frames % 15 === 0) this.flush();
+    if (this.frames % 5 === 0) this.flush();
   }
 
   async stop(lastFrame?: Uint8Array): Promise<void> {
     if (!this.open) return;
     this.open = false;
     if (lastFrame && lastFrame.byteLength === this.size) {
-      writeFileSync(this.file, lastFrame);
+      atomicWrite(this.file, lastFrame);
       this.stats.lastWasPausedFrame = true;
     }
     this.stats.stopped++;

@@ -138,5 +138,5 @@ Progress tracker for [PLAN.md](PLAN.md). One task = one commit; tick the box in 
 
 **Phase 14 — Native virtual camera ("Stand-In Camera") → v1.5.0** (session branch `claude/upbeat-wozniak-rslrk1`)
 - [x] T69 Main process: V4L2 output through koffi ioctls (like OBS's v4l2-output), loopback device discovery from sysfs, one-time persistent setup via pkexec (fixed script), FileSink for e2e, IPC and paused frame on quit
-- [ ] T70 Renderer: WebGL2/JS YUYV conversion of the Virtual Stage, Stand-In Camera default on Linux with setup prompt, OBS and screen share as alternatives on every platform, settings and consent
+- [x] T70 Renderer: WebGL2/JS YUYV conversion of the Virtual Stage, Stand-In Camera default on Linux with setup prompt, OBS and screen share as alternatives on every platform, settings and consent
 - [ ] T71 Docs, version 1.5.0 and tag
