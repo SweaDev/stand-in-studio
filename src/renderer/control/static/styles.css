@@ -2306,3 +2306,11 @@ input[type='file']::file-selector-button:hover {
 .thumb-change:hover:not([disabled]) {
   background: rgba(22, 20, 26, 0.9);
 }
+/* In the narrow settings column the card's button goes under the text. */
+.settings .save-card {
+  grid-template-columns: auto 1fr;
+}
+.settings .save-card-actions {
+  grid-column: 2;
+  flex-direction: row;
+}
