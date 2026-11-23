@@ -1,4 +1,4 @@
-import type { DeepPartial, Settings } from '../../../shared/settings';
+import { type DeepPartial, type Settings, UI_OPTION_KEYS, type UiOptions } from '../../../shared/settings';
 import { INTENTS_GUIDE } from '../../../shared/signalCatalog';
 import { type Component, h } from '../dom';
 import { icon } from '../icons';
@@ -17,8 +17,32 @@ export class AdvancedPanel implements Component {
   readonly el: HTMLElement;
   private readonly save: ReturnType<typeof toggle>;
   private readonly dev: ReturnType<typeof toggle>;
+  private readonly ui = new Map<keyof UiOptions, ReturnType<typeof toggle>>();
 
   constructor(s: Settings, a: AdvancedActions) {
+    const UI_LABELS: Record<keyof UiOptions, [string, string]> = {
+      overrides: [
+        'Override buttons',
+        'Pin opacity, Raise hand, Back soon and Cycle mode next to Hide me. Their keyboard shortcuts always work.',
+      ],
+      intents: ['Intent list and builder', 'Reorder, switch, tune and edit the intents in the Auto tab.'],
+      tuning: [
+        'Calibration and intent tuning',
+        'Calibration progress, Recalibrate and “Tune intents to you”.',
+      ],
+      meetingSetup: [
+        'Ways to send the stage',
+        'Stand-In Camera, OBS steps, the test pattern and screen sharing, under the preview.',
+      ],
+      presets: ['Meeting presets', 'Save and apply named presets in the Stage tab.'],
+    };
+    for (const k of UI_OPTION_KEYS) {
+      const [label, hint] = UI_LABELS[k];
+      this.ui.set(
+        k,
+        toggle(label, `ui-${k}`, s.ui[k], (v) => a.update({ ui: { [k]: v } }), hint),
+      );
+    }
     this.save = toggle('Save learned intent data on this computer', 'save-tuning', s.auto.saveTuning, (v) =>
       a.update({ auto: { saveTuning: v } }),
     );
@@ -30,6 +54,16 @@ export class AdvancedPanel implements Component {
     this.el = h(
       'div',
       { class: 'advanced-panel' },
+      group(
+        'Interface',
+        'group-interface',
+        h(
+          'p',
+          { class: 'hint' },
+          'The main window shows the essentials: the dial, modes, live preview, Hide me and the status bar. Choose what else to show.',
+        ),
+        ...[...this.ui.values()].map((t) => t.el),
+      ),
       a.createIntent &&
         group(
           'Custom intents',
@@ -99,6 +133,7 @@ export class AdvancedPanel implements Component {
   }
 
   sync(s: Settings): void {
+    for (const [k, t] of this.ui) t.set(s.ui[k]);
     this.save.set(s.auto.saveTuning);
     this.dev.set(s.advanced.developerMode);
   }

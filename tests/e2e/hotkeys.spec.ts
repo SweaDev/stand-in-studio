@@ -1,10 +1,11 @@
 import { expect, test } from '@playwright/test';
-import { launchApp, passConsent } from './helpers';
+import { launchApp, passConsent, showAllUi } from './helpers';
 
 test('hotkey commands from main toggle overrides; Hide me wins at once', async () => {
   const { app, control } = await launchApp();
   try {
     await passConsent(control);
+    await showAllUi(control);
     await control.locator('.mode-switch').getByRole('radio', { name: 'Camera' }).click();
     const feed = () => control.evaluate(() => (window as any).__standin.engine.state?.feedOpacity ?? -1);
     await expect.poll(feed).toBe(1);

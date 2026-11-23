@@ -1,5 +1,5 @@
 import { expect, type Page, test } from '@playwright/test';
-import { launchApp, openTab, passConsent } from './helpers';
+import { launchApp, openTab, passConsent, showAllUi } from './helpers';
 
 const saved = (control: Page) => control.evaluate(() => (window as any).studio.getSettings());
 
@@ -7,6 +7,7 @@ test('Auto tab shows the active intent and lets you change, reorder and disable 
   const { app, control } = await launchApp();
   try {
     await passConsent(control);
+    await showAllUi(control);
     await expect(control.locator('#tab-auto')).toHaveAttribute('aria-selected', 'true');
     // Demo: listening quietly → "Listening to others", highlighted in the list.
     await expect(control.locator('#current-intent')).toHaveText('Listening to others', { timeout: 15_000 });
@@ -54,6 +55,7 @@ test('tuning an intent records for 6 s and stays in memory unless saving is on',
   const { app, control } = await launchApp();
   try {
     await passConsent(control);
+    await showAllUi(control);
     await control.locator('#intent-listening .tune-btn').click();
     await expect(control.locator('#intent-listening .tune-btn')).toHaveText('Recording…');
     await expect(control.locator('#intent-listening')).toContainText('Tuned · matched', { timeout: 10_000 });

@@ -69,3 +69,12 @@ export function testClip(seconds = 4): string {
   }
   return file;
 }
+
+/** Shows every optional part of the main window (Advanced → Interface). */
+export async function showAllUi(control: Page): Promise<void> {
+  await control.evaluate(() =>
+    (window as any).__standin.app.updateSettings({
+      ui: { overrides: true, intents: true, tuning: true, meetingSetup: true, presets: true },
+    }),
+  );
+}

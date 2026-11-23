@@ -44,6 +44,12 @@ export class OverrideBar implements Component {
     }
   }
 
+  /** Compact: only Hide me is shown (the other overrides keep their hotkeys). */
+  setCompact(compact: boolean): void {
+    for (const [name, b] of this.buttons) if (name !== 'hideMe') b.hidden = compact;
+    this.el.classList.toggle('is-compact', compact);
+  }
+
   set(flags: OverrideFlags): void {
     for (const [name, flag] of Object.entries(FLAG) as [CommandName, keyof OverrideFlags][]) {
       const b = this.buttons.get(name);

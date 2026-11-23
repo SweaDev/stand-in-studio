@@ -280,6 +280,7 @@ export class ControlApp {
     this.panel?.sync(this.settings);
     this.presets?.sync(this.settings);
     this.advanced?.sync(this.settings);
+    this.applyUi();
     this.devlog?.setEnabled(this.settings.advanced.developerMode);
     if (patch.auto?.intents) this.intentList?.sync(this.settings.auto.intents, this.engine.intentTuning);
     // Re-requests metrics only when cardio need changes (Comfort shield or a body-signal intent).
@@ -615,6 +616,26 @@ export class ControlApp {
     document.querySelector('.app-header')?.append(bar.el);
     this.statusBar = bar;
     return bar;
+  }
+
+  /** Optional parts of the main window, shown per Advanced → Interface. */
+  private uiParts: {
+    overrides: OverrideBar;
+    intents: HTMLElement;
+    tuning: HTMLElement[];
+    meetingSetup: HTMLElement;
+    presets: HTMLElement;
+  } | null = null;
+
+  private applyUi(): void {
+    const p = this.uiParts;
+    if (!p) return;
+    const ui = this.settings.ui;
+    p.overrides.setCompact(!ui.overrides);
+    p.intents.hidden = !ui.intents;
+    for (const el of p.tuning) el.hidden = !ui.tuning;
+    p.meetingSetup.hidden = !ui.meetingSetup;
+    p.presets.hidden = !ui.presets;
   }
 
   /** Runs a command from a hotkey or a button (Command pattern). */
@@ -1208,7 +1229,10 @@ export class ControlApp {
       const open = this.host.isOpen;
       if (open === stageOpen) return;
       stageOpen = open;
-      stageBtn.textContent = open ? 'Close Virtual Stage Window' : 'Open Virtual Stage Window';
+      stageBtn.replaceChildren(
+        icon('monitor', 16),
+        open ? 'Close Virtual Stage Window' : 'Open Virtual Stage Window',
+      );
     });
     this.onFrame((s) => {
       dial.set(s.feedOpacity, MODE_LABELS[s.mode]);
@@ -1257,7 +1281,11 @@ export class ControlApp {
     this.intentList.sync(this.settings.auto.intents, this.engine.intentTuning);
     this.advanced = new AdvancedPanel(this.settings, {
       update: (p) => void this.updateSettings(p),
-      createIntent: () => builder.open({ kind: 'create' }),
+      createIntent: () => {
+        // Building an intent shows the intent list it lands in.
+        if (!this.settings.ui.intents) void this.updateSettings({ ui: { intents: true } });
+        builder.open({ kind: 'create' });
+      },
       forgetTuning: () => {
         this.engine.clearTuning();
         this.intentList?.sync(this.settings.auto.intents, this.engine.intentTuning);
@@ -1401,5 +1429,13 @@ export class ControlApp {
       builder.el,
       this.saveDialog.el,
     );
+    this.uiParts = {
+      overrides,
+      intents: this.main.querySelector<HTMLElement>('#group-intents') as HTMLElement,
+      tuning: [calibration.el, guided.el],
+      meetingSetup: obs.el,
+      presets: this.presets.el,
+    };
+    this.applyUi();
   }
 }
