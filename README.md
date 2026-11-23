@@ -9,7 +9,7 @@ Stand-In Studio is a desktop camera for video calls with one control: a **presen
 
 In **Auto**, the app moves the dial for you. You appear when you speak, and the character covers for you when you look away, eat, step out or need a moment.
 
-It is built on the [Presage SmartSpectra SDK](https://smartspectra.presagetech.com/docs/nodejs) (`@smartspectra/node-sdk`) and Electron. It reaches Zoom, Google Meet, Teams or any meeting app through **OBS Virtual Camera**.
+It is built on the [Presage SmartSpectra SDK](https://smartspectra.presagetech.com/docs/nodejs) (`@smartspectra/node-sdk`) and Electron. It reaches Zoom, Google Meet, Teams or any meeting app as a webcam: the built-in **Stand-In Camera** on Linux (no OBS needed), or **OBS Virtual Camera** or a screen share on any platform.
 
 ![The four characters](docs/media/characters.png)
 
@@ -25,7 +25,7 @@ It is built on the [Presage SmartSpectra SDK](https://smartspectra.presagetech.c
 - [Requirements](#requirements)
 - [Install and run](#install-and-run)
 - [Getting a Presage API key](#getting-a-presage-api-key)
-- [Sending the stage to your meeting (OBS)](#sending-the-stage-to-your-meeting-obs)
+- [Sending the stage to your meeting](#sending-the-stage-to-your-meeting)
 - [Using the app](#using-the-app)
 - [Privacy and consent](#privacy-and-consent)
 - [Testing](#testing)
@@ -96,8 +96,9 @@ Body signals (pulse, breathing rate) can only **lower** the target. An intent th
 | OS | **Linux x64/arm64** (glibc ≥ 2.35, e.g. Ubuntu 22.04+), **Windows x64**, **macOS Apple Silicon**. These are the platforms supported by `@smartspectra/node-sdk`. |
 | Node.js | ≥ 20 (developed on Node 22) |
 | GPU / Vulkan | The SDK's expression models need **Vulkan**. Desktop GPUs ship drivers. On a headless Linux box or a VM, install Mesa's CPU driver: `sudo apt install mesa-vulkan-drivers` |
-| Camera | Any physical webcam. Virtual cameras (OBS, v4l2loopback and others) are deliberately ignored. |
-| OBS Studio | To send the stage to meeting apps (optional: screen sharing works too) |
+| Camera | Any physical webcam. Virtual cameras (OBS, v4l2loopback, the app's own Stand-In Camera and others) are deliberately ignored as input. |
+| Linux: v4l2loopback | For the built-in **Stand-In Camera** (`sudo apt install v4l2loopback-dkms v4l2loopback-utils`). The app does the rest once, with your password. |
+| OBS Studio | Optional. The way to send the stage on Windows and macOS, and an alternative on Linux; screen sharing works too |
 | Presage API key | Needed for live signals. Demo mode works without one. |
 
 > **Tested on:** Ubuntu 24.04 LTS (x86_64; the closest available environment to Ubuntu 26.04), Node 22, Electron 45, with the Chromium fake camera fed a public-domain test clip. Windows and macOS share the same code but were **not** tested. See [IMPLEMENTATION_NOTES.md](IMPLEMENTATION_NOTES.md).
@@ -134,27 +135,45 @@ Force Demo mode even when a key is set with `STANDIN_DEMO=1 npm start`.
 
 The key is held only in the Electron main process, in memory. It is never written to disk and never reaches the page. It is injected into the SDK's IPC bridge in main; see [`src/main/sdkKeyInjection.ts`](src/main/sdkKeyInjection.ts).
 
-## Sending the stage to your meeting (OBS)
-Stand-In Studio opens a frameless 1280×720 window titled **"Stand-In Virtual Stage"**. This is the picture the meeting sees.
-- It has no title bar, so the OBS capture stays clean. Open and close it with **Open/Close Virtual Stage Window** in the control window.
-- The control window's large preview shows your **raw input** (camera, recorded clip or demo video).
-- The small **Virtual Stage** inset in its corner shows what the meeting gets; click it to open the window.
-- *Before 1.4 the window was called "Stand-In Stage"; pick it again in OBS.*
+## Sending the stage to your meeting
+The **Virtual Stage** is the picture the meeting sees: 1280×720 at 30 fps.
+- The control window's large preview shows your **raw input**: camera, recorded clip or demo video.
+- The small **Virtual Stage** inset in its corner shows what the meeting gets. Click it to open the frameless **"Stand-In Virtual Stage"** window; **Open/Close Virtual Stage Window** toggles it.
 
-The app shows the same checklist:
+There are three ways to send it, all listed in the app under *Send the stage to your meeting*.
 
-1. **OBS Studio → add a source:**
+### 1. Stand-In Camera (Linux, built in, the default)
+A virtual webcam called **Stand-In Camera**: pick it in Meet, Zoom or Teams like any camera. It works even while the Virtual Stage window is closed.
+- **Install v4l2loopback once:**
+  - Ubuntu or Debian: `sudo apt install v4l2loopback-dkms v4l2loopback-utils`
+  - Fedora: `sudo dnf install v4l2loopback kmod-v4l2loopback`
+  - Arch: `sudo pacman -S v4l2loopback-dkms v4l2loopback-utils`
+
+  With Secure Boot on, the installer asks you to enrol a signing key on the next reboot.
+- **Press "Set up camera" once.** Your system asks for your password (pkexec), and the app then:
+  - loads v4l2loopback at every start-up;
+  - creates **Stand-In Camera** and **OBS Virtual Camera** devices, so OBS keeps working too;
+  - leaves any v4l2loopback options you already have untouched.
+
+  The setup is a short fixed script, [`src/main/vcam/setupScript.ts`](src/main/vcam/setupScript.ts). It never prompts again, even after a reboot.
+- **On/off:** the camera is on by default and starts by itself once a device exists. Turning it off, or quitting, leaves meeting apps on a "Stand-In paused" picture rather than a frozen frame.
+- **How it works:** it is the same technique as OBS's own Linux virtual camera. The stage is converted to YUYV on the GPU (WebGL2) and written to the v4l2loopback device.
+
+### 2. OBS Studio (any platform)
    - Windows: *Window Capture*
    - macOS: *macOS Screen Capture*, method Window Capture
    - Linux X11: *Window Capture (Xcomposite)*
    - Linux Wayland: *Screen Capture (PipeWire)*
 
-   Pick "Stand-In Virtual Stage" and fit it to the canvas (Ctrl+F).
+   Pick "Stand-In Virtual Stage" and fit it to the canvas (Ctrl+F). The window has no title bar, so the capture stays clean. *Before 1.4 it was called "Stand-In Stage"; pick it again.*
 2. **Start Virtual Camera** in OBS.
    - On Linux this needs the v4l2loopback module: `sudo apt install v4l2loopback-dkms`.
 3. In **Zoom / Meet / Teams**, choose **OBS Virtual Camera**. The meeting never touches your real webcam, so there is no camera conflict.
 
-Use **Show test pattern** to confirm the meeting sees the stage. It shows colour bars, a moving dot and the time. Without OBS, share the "Stand-In Virtual Stage" window as a screen share.
+### 3. Screen share (any platform)
+Share the "Stand-In Virtual Stage" window as a screen share in the meeting.
+
+Use **Show test pattern** to confirm the meeting sees the stage. It shows colour bars, a moving dot and the time.
 
 ## Using the app
 1. **Consent:** the consent screen explains exactly what is read, sent and stored. The camera starts only after **Start with my camera**.
@@ -221,7 +240,7 @@ A permanent **"DEMO – simulated signals"** badge stays in the control window. 
   - face landmarks, blinking, talking, expressions and chest breathing;
   - **pulse and breathing rate only while the Comfort shield or a body-signal intent is on**, and used only to *lower* the dial.
 - **Telemetry off:** the SDK runs with `enableTelemetry: false`. See Presage's [Telemetry and Privacy](https://smartspectra.presagetech.com/docs/telemetry-and-privacy) page.
-- **No numbers, no labels:** no physiological number is shown on the stage or sent anywhere, and the app never labels feelings. The only output is the composed picture, which goes through OBS, under your control.
+- **No numbers, no labels:** no physiological number is shown on the stage or sent anywhere, and the app never labels feelings. The only output is the composed picture, sent through the Stand-In Camera, OBS or a screen share, under your control.
 - **Honest residual risk:** others might notice your feed fading and wonder why. Fades have many everyday causes, and the Comfort shield is off by default.
 - **Not medical:** no medical or wellness claims, and no diagnosis.
 

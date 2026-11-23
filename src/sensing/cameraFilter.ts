@@ -19,6 +19,8 @@ const VIRTUAL = [
   /splitcam/i,
   /nvidia broadcast/i,
   /camo/i,
+  // Our own virtual camera (anchored: a fake camera's file path may contain "stand-in").
+  /^stand-in camera\b/i,
 ];
 
 export function isVirtualCamera(label: string): boolean {

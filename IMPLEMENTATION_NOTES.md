@@ -89,6 +89,7 @@ git push origin --tags
 | v1.3.0 | (the T65 commit, same branch) | Release 1.3.0: Recorded input, saved-telemetry demos and offline replay |
 | v1.3.1 | (the T66 commit, same branch) | Release 1.3.1: single-file demo bundles |
 | v1.4.0 | (the T68 commit, same branch) | Release 1.4.0: live input preview and the Virtual Stage window |
+| v1.5.0 | (the T71 commit, same branch) | Release 1.5.0: the native Stand-In Camera on Linux |
 
 ## Deviations from PLAN.md
 - **T05, fake camera format:** the plan called for a `.y4m` file, but 60 s of 960×540 y4m is about 1 GB. Chromium's `--use-file-for-fake-video-capture` also accepts **`.mjpeg`** (51 MB here), so the fake camera uses `test-assets/face.mjpeg`. The SDK file probe uses `face.mp4`.
@@ -112,3 +113,16 @@ git push origin --tags
 - **T66, test demo delivery:** the first hand-off of Clip 2 reached the user without the MP4; only `SOURCE.txt` and the telemetry JSON arrived, so the pair could not be imported. The demo was resent as the MP4 alone and as `nasa-epps-interview-45s.standin-demo.zip`. It is also kept in the git-ignored `shared-demos/` folder of the working copy. The delivered zip was imported through the real UI (no API key): 2,562 frames, the same intent sequence as the live run, and 0 SDK sessions. To stop a clip and its telemetry from being separated again, Export now also writes a single-file bundle.
 - **Phase 13, stage window frame (user decision):** the user first asked for Electron's default close button. OBS window capture can include a native title bar, especially on Linux/Wayland, so the user chose to keep the **Virtual Stage frameless**. The control window's button toggles between *Open* and *Close Virtual Stage Window* and follows the window's real state, including closes from the window manager.
 - **Phase 13, rename:** the stage window title changed from "Stand-In Stage" to "Stand-In Virtual Stage". OBS matches windows by title, so existing OBS setups must re-pick it; the OBS checklist says so.
+- **Phase 14, native virtual camera (Linux only):** this follows OBS's Linux virtual camera (`plugins/linux-v4l2/v4l2-output.c`).
+  - **How OBS does it:** it checks `/proc/modules`, and if needed runs `pkexec modprobe v4l2loopback exclusive_caps=1 card_label=…`, which prompts at every boot. It then picks the first output-capable `/dev/video*` and sets `VIDIOC_S_FMT` YUYV and `VIDIOC_S_PARM` fps, with a `STREAMON` workaround for v4l2loopback 0.12–0.13. Frames go out with `write()`.
+  - **What the user chose instead:** a **one-time persistent** setup. The file `/etc/modules-load.d` loads the module at boot, and `/etc/modprobe.d` defines two devices, "Stand-In Camera" and "OBS Virtual Camera". The second file is written only if no other file sets v4l2loopback options. If OBS already loaded the module, `v4l2loopback-ctl add` adds the Stand-In device.
+  - **How it is built:** ioctls go through koffi, which the SmartSpectra SDK already ships and which is now a pinned direct dependency. `open` and `write` use Node `fs`, so the main loop never blocks. Devices are found from sysfs (`/sys/devices/virtual/video4linux/*/name`), so real webcams are never opened.
+  - **Windows and macOS:** a signed media-source driver (Windows) and an Apple-signed Camera Extension (macOS) are needed, and neither can be built or signed here. Those platforms keep OBS and screen sharing.
+- **Phase 14, what could not be tested here:** this container has no `/dev/video*` and cannot load kernel modules, so the real device path (pkexec, modprobe, the ioctls on a real v4l2loopback device) was **not** run. What *was* tested:
+  - the ioctl numbers and struct layouts against the kernel definitions;
+  - a real koffi `ioctl` call (ENOTTY on a plain file);
+  - the device choice and frame dropping against a fake driver, and the setup outcomes;
+  - end to end through the e2e `FileSink` (`STANDIN_FAKE_VCAM`): 30 frames/s of 1,843,200 bytes, the paused frame on stop, and Hide me changing the output;
+  - the WebGL2 shader under software GL (`STANDIN_SWIFTSHADER=1`, e2e only): it matches the JS reference within 2 levels and keeps the orientation.
+  - Conversion time in this GPU-less container: about 21 ms per frame (software WebGL2) and 25 ms (JS), with the stage holding 30 fps.
+- **Phase 14, feedback-loop fix:** the input camera filter did not recognise "Stand-In Camera", so the app could have captured its own output. It is now excluded with an anchored pattern (`/^stand-in camera\b/i`), so a fake-camera file path containing "stand-in" (see T38) still passes.

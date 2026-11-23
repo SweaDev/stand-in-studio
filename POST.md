@@ -29,7 +29,7 @@ In **Auto**, the app moves the dial for you, based on **intents** it reads from 
 
 You choose what the character does for each intent, and you can build your own.
 
-The stage reaches Zoom, Meet or Teams through **OBS Virtual Camera**, from a frameless window called **Stand-In Virtual Stage**.
+The stage reaches Zoom, Meet or Teams as a webcam. On Linux it is the built-in **Stand-In Camera**: no OBS needed, and a one-time setup with your password. On every platform, **OBS Virtual Camera** or a screen share of the **Stand-In Virtual Stage** window also work.
 
 ![The four characters](https://raw.githubusercontent.com/SweaDev/stand-in-studio/main/docs/media/characters.png)
 
@@ -71,7 +71,7 @@ The control window's big preview shows your **raw input**: camera, recorded clip
 
 {% github SweaDev/stand-in-studio %}
 
-Setup, OBS instructions, hotkeys and tests are in the README. The essentials:
+Setup, camera and OBS instructions, hotkeys and tests are in the README. The essentials:
 
 ```bash
 npm ci
@@ -159,7 +159,7 @@ The first screen is a plain-language **consent screen**, and the camera starts o
 
 - **What the meeting receives:**
   - **Character mode** sends only the drawn character to the meeting.
-  - **Camera, Blend and Auto** send **your real video**, at the opacity shown on the dial, through OBS.
+  - **Camera, Blend and Auto** send **your real video**, at the opacity shown on the dial, as a camera (the Stand-In Camera or OBS) or a screen share.
 - **What is read, and why:**
   - face landmarks (head pose, eye gaze, mouth opening), blinking, talking, expressions, chest breathing, and whether a face (or more than one) is in view;
   - these move the character and, through the Auto intents, the dial, nothing else.
@@ -177,7 +177,7 @@ The first screen is a plain-language **consent screen**, and the camera starts o
   - They save the clip and its face signals (pulse and breathing only if you tick them) to a demo library folder on your computer, never uploaded.
   - You can delete demos in the app.
 - **Developer mode's decision log** is on screen only: never saved, printed or shown on the stage.
-- **No numbers anywhere:** no physiological number is shown on the stage or sent anywhere. The only output is the composed picture, which goes through OBS, under your control.
+- **No numbers anywhere:** no physiological number is shown on the stage or sent anywhere. The only output is the composed picture, sent as a camera or a screen share, under your control.
 - **No labels:** the app never labels feelings ("you seem stressed"). It mirrors visible movement and moves the dial.
 
 **Processing and telemetry:**

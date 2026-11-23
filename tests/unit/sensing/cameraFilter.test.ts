@@ -28,3 +28,11 @@ describe('cameraFilter', () => {
     expect(pickCamera(devices.slice(0, 3), null)).toBeNull();
   });
 });
+
+describe('the app never captures its own virtual camera', () => {
+  it('treats "Stand-In Camera" as virtual, but not a fake-camera path that merely contains stand-in', () => {
+    expect(isVirtualCamera('Stand-In Camera')).toBe(true);
+    expect(isVirtualCamera('Stand-In Camera (/dev/video40)')).toBe(true);
+    expect(isVirtualCamera('/home/u/stand-in-studio/test-assets/face.mjpeg')).toBe(false);
+  });
+});

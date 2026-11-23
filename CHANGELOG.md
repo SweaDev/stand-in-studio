@@ -2,6 +2,15 @@
 
 All notable changes to Stand-In Studio. Versions follow the phases in [PLAN.md](PLAN.md).
 
+## 1.5.0 — 2026-11-23
+- **Stand-In Camera (Linux): no OBS needed.** The Virtual Stage appears in Meet, Zoom or Teams as a webcam called "Stand-In Camera".
+  - It is the default on Linux and keeps working while the Virtual Stage window is closed.
+  - The stage is converted to YUYV on the GPU (WebGL2, with a JS fallback) and written to a v4l2loopback device, the way OBS's own virtual camera does.
+- **One-time setup:** one password prompt (pkexec) makes the camera persistent. v4l2loopback loads at boot, with a "Stand-In Camera" and an "OBS Virtual Camera" device, so OBS keeps working. Existing v4l2loopback options are left alone. If v4l2loopback is missing, the app shows the install commands.
+- **One place for every option:** *Send the stage to your meeting* offers the Stand-In Camera (Linux), OBS Studio and screen sharing on every platform. The OBS steps fold away while the Stand-In Camera is live.
+- **Clean stop:** turning the camera off, or quitting, leaves meeting apps on a "Stand-In paused" picture.
+- **Fix:** the app never picks its own Stand-In Camera as its input camera.
+
 ## 1.4.0 — 2026-11-22
 - **Live input preview:** the control window's big preview shows the raw input (camera, recorded clip or demo video), labelled by source. Before, it repeated the stage.
 - **Virtual Stage inset:** a small inset in the preview's corner shows the processed output, even while the window is closed. Click it to open the window.

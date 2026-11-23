@@ -15,7 +15,7 @@
 | **Modes** | Character · Camera · Blend · Auto |
 | **Live signals** | Chest breathing waveform, blinking, face landmarks (head pose → nods/shakes; mouth openness), talking, expressions, validation status |
 | **Cardio (pulse, breathing rate)** | Requested **only** when the opt-in *Comfort shield* is on, and used only to *lower* how much of you is shown |
-| **Platform** | Desktop app (Electron and `@smartspectra/node-sdk`) on Windows or macOS. It reaches Zoom, Google Meet, Teams or any meeting app through **OBS Virtual Camera** |
+| **Platform** | Desktop app (Electron and `@smartspectra/node-sdk`) on Linux, Windows or macOS. It reaches Zoom, Google Meet, Teams or any meeting app as a webcam: the built-in **Stand-In Camera** on Linux, or **OBS Virtual Camera** or a screen share on any platform |
 
 ---
 
@@ -149,7 +149,7 @@ Intents are checked **top to bottom, and the first match wins**. The full refere
 
 - **Consent first.** The camera starts only after a plain-language consent screen. That screen states clearly:
   - **Character mode** sends only the drawn character to the meeting.
-  - **Camera, Blend and Auto** send **your real video**, at the opacity shown on the dial, to the meeting through OBS.
+  - **Camera, Blend and Auto** send **your real video**, at the opacity shown on the dial, to the meeting through the Stand-In Camera, OBS or a screen share. Each sends exactly what the Virtual Stage shows.
   - What is read from the camera, and why.
   - That cardio signals (pulse, breathing rate) are requested **only** if the Comfort shield, or a custom intent that uses them, is switched on.
   - That nothing is recorded unless you choose to save a demo, and that the camera can be stopped at any time.
@@ -167,7 +167,7 @@ Intents are checked **top to bottom, and the first match wins**. The full refere
 - **No analysis in Camera mode.** About 1.5 s after you switch to Camera mode, the SDK is stopped: no frames are sent to it. It resumes as soon as you leave Camera mode, and Auto holds its level until the first data arrives. If the camera starts while in Camera mode, the SDK is configured but never started.
 - **Minimal requests.** The SDK is asked only for what the current settings need: the face signals and chest breathing, plus pulse and breathing rate only with the Comfort shield or a body-signal intent on.
 - **Telemetry off.** Presage telemetry is off (`enableTelemetry: false`). Link to Presage's Telemetry and Privacy page.
-- **No numbers anywhere.** No physiological number is ever shown on the stage or sent anywhere. The only output is the composed picture, which goes through OBS, and you control OBS.
+- **No numbers anywhere.** No physiological number is ever shown on the stage or sent anywhere. The only output is the composed picture, sent as a camera or a screen share, under your control.
 - **No labels.** Stand-In Studio never labels feelings ("you seem stressed"). It mirrors visible movement and moves the dial.
 - **Honest residual risk.** Others might notice your feed fading and wonder why. Fades have many everyday causes (listening, looking away, eating, stepping out), and the Comfort shield is off by default. The consent screen says this plainly.
 - **API key.** It stays in the main process (from an environment variable, or pasted and kept in memory only). It is never in the renderer or on disk.
@@ -177,10 +177,17 @@ Intents are checked **top to bottom, and the first match wins**. The full refere
 
 1. Stand-In Studio **owns the physical webcam**. It opens the camera once with `getUserMedia` (1280×720, 30 fps) and gives that **same stream** to the SDK with `sdk.useMediaStream(stream)`. Several challenge submissions use this pattern, so there's one camera stream for both sensing and the feed.
 2. A separate **Stage window** (1280×720, no window chrome) composes the background, feed, character and badges at 30 fps.
-3. **OBS Studio:** a *Window Capture* of "Stand-In Virtual Stage", then *Start Virtual Camera*. The window is frameless, so the capture has no title bar. The control window opens and closes it with **Open/Close Virtual Stage Window**.
-4. In Zoom, Meet or Teams, choose **OBS Virtual Camera**. The meeting app never touches the real webcam, so there is no camera contention.
+3. The stage is sent to the meeting in one of three ways, offered together in the app under *Send the stage to your meeting*:
+   - **Stand-In Camera** (Linux, the default): a native virtual webcam.
+     - The stage is converted to YUYV on the GPU and written to a v4l2loopback output device, as OBS's own Linux virtual camera does.
+     - A one-time setup through pkexec (the user's password, once) makes the device persistent. It has two devices, "Stand-In Camera" and "OBS Virtual Camera", so OBS keeps working.
+     - If v4l2loopback is missing, the app shows the install commands.
+     - Stopping or quitting leaves a "Stand-In paused" frame.
+   - **OBS Studio** (any platform): a *Window Capture* of the frameless "Stand-In Virtual Stage" window, then *Start Virtual Camera*. An in-app checklist guides you through it.
+   - **Screen share** of the "Stand-In Virtual Stage" window (any platform).
+4. In Zoom, Meet or Teams, choose **Stand-In Camera** (or **OBS Virtual Camera**). The meeting app never touches the real webcam, so there is no camera contention. The app never uses a virtual camera, including its own, as its input.
 
-An in-app **3-step checklist** walks through steps 3–4, with a *Test pattern* button so you can confirm the meeting sees the stage. Without OBS, the fallback is sharing the Stage window as a screen share.
+A *Test pattern* button confirms that the meeting sees the stage. Native virtual cameras for Windows (a signed media source) and macOS (a signed Camera Extension) are future work.
 
 ## 8. Demo mode
 
@@ -212,7 +219,7 @@ Without an API key (or to save trial credits), **Demo mode** replaces the SDK wi
 - per-meeting presets ("stand-up: Auto, listening 30%").
 
 **Stretch:**
-- a native virtual camera (no OBS);
+- native virtual cameras on Windows and macOS (Linux has one);
 - gesture reactions (a long nod sends 👍 through the meeting app's reaction shortcut);
 - a character editor and team packs.
 
