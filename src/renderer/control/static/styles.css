@@ -1879,7 +1879,7 @@ input[type='file']::file-selector-button:hover {
 }
 
 /* ------------------------------------------------------------------ input switcher (Camera tab) */
-.segmented {
+.source-switch {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 4px;
@@ -1889,7 +1889,7 @@ input[type='file']::file-selector-button:hover {
   border: 1px solid var(--line);
   margin-bottom: var(--s3);
 }
-.segmented button {
+.source-switch button {
   border-color: transparent;
   background: transparent;
   color: var(--muted);
@@ -1897,7 +1897,7 @@ input[type='file']::file-selector-button:hover {
   padding: 8px 10px;
   transition: none;
 }
-.segmented button[aria-pressed='true'] {
+.source-switch button[aria-pressed='true'] {
   background: var(--accent);
   border-color: var(--accent);
   color: var(--on-accent);

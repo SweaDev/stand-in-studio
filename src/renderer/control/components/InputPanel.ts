@@ -69,7 +69,12 @@ export class InputPanel implements Component {
     this.demoPick.addEventListener('change', () => {
       if (kind === 'demo') this.pickDemo();
     });
-    const group = h('div', { class: 'segmented', id: 'input-source', role: 'group', 'aria-label': 'Input' });
+    const group = h('div', {
+      class: 'source-switch',
+      id: 'input-source',
+      role: 'group',
+      'aria-label': 'Input',
+    });
     for (const k of KINDS) {
       const disabled = k.kind === 'camera' && !opts.apiKey;
       const b = h(
