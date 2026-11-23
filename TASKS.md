@@ -158,3 +158,4 @@ Progress tracker for [PLAN.md](PLAN.md). One task = one commit; tick the box in 
 - [x] T84 Face-following character (Blend and Auto): sized from the face on screen against each character's measured body (100% covers the face, can be reduced), opacity mirrors the dial with a cap, position offsets; opt-in lip-reading zoom in Auto (face at 100% and zoomed while you talk, character to a corner); presence counts a face rated poor as present
 - [x] T85 Demo video re-recorded for face-following and lip-reading (no new API use; the live shots come from the first take)
 - [x] T83 POST.md rewritten (face-following, lip-reading zoom, the 1.4–1.6 features) with new screenshots from the user's clip; version 1.7.0 and tag
+- [x] T86 Demo narration with Gemini text-to-speech in the user's replicated voice: `narrate-demo-video.mjs` (one call per turn, fitted to each section, captions from the real audio) and `compose-demo-video.mjs --narration` (music ducked under the voice)

@@ -157,4 +157,10 @@ git push origin --tags
 
 - **T85, demo video re-take:** take 3 (`record-demo-video.mjs --skip-live 1`) added the face-follow slider scene and the lip-reading scene, and used **no API** (ledger unchanged at 590.3 s). The composer takes shot times relative to the scene marks and uses the four live shots from the first take (`--raw-live`). The side-by-side shots of a control-window region next to the Virtual Stage are a new shot type. Native hover tooltips are now stripped during capture. Output: 178.0 s.
 - **T83, media from the user's clip:** `scripts/capture-media.mjs --demo <bundle> --clip <video>` re-takes these shots on the saved demo, offline: start screen, control window, Camera tab, tour, Auto states, every character on the face, lip-reading zoom, builder, decision log and the recorded-clip view. The recorded-clip view uses the e2e fake SDK, so there is no Presage contact. The characters grid and the scripted-meeting recording stay on the simulated person. The user approved showing their face in the repo and the post.
+- **T86, narration (Gemini TTS):** this uses the Interactions API (`POST /v1beta/interactions`, model `gemini-3.8-flash-tts`) with the user's replicated voice `voice_30qo3wqreno3` in `generation_config.speech_config`. The key comes only from the environment's network secret; the scripts never read it.
+  - **Key restriction:** the user's key was first IP-restricted and Google refused it from this session (`API_KEY_IP_ADDRESS_BLOCKED`). The user removed the IP rule.
+  - **Turns:** 16 turns, timed to the video's sections. Two were too long for their sections and were shortened, and one was re-asked with a "slightly faster" style, then sped up 2.8%.
+  - **Requests:** about 20 TTS calls in total. Tier 1 allows 10 a minute, so the script waits when told to.
+  - **Levels:** each turn is normalised to −18 LUFS. The mix ducks the music under the voice with a side-chain compressor: speech is about −16 LUFS, and the music in pauses about −22 LUFS.
+  - **Captions:** split by sentence and timed from the real audio lengths.
 

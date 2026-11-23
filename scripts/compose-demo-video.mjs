@@ -4,14 +4,19 @@
 // subtitles (plus an SRT) and the music from make-music.mjs.
 //
 //   node scripts/compose-demo-video.mjs --raw <dir> --clip <video> --music <wav> --out <dir>
-//                                       [--raw-live <dir>]
+//                                       [--raw-live <dir>] [--narration <dir> [--reuse 1]]
+//
+// --narration takes the output folder of narrate-demo-video.mjs (narration.wav and
+// captions.json) and writes stand-in-studio-demo-narrated.mp4: the same picture, captions
+// that match the voice, and the music ducked under it. --reuse 1 keeps shots already
+// rendered in <out>/work.
 //
 // Shot times are relative to the scene marks in timeline.json (see record-demo-video.mjs).
 // The live-analysis shots (live: true) use absolute times in --raw-live, an earlier take
 // that included the live scene (default: --raw).
 import { chromium } from '@playwright/test';
 import { execFileSync } from 'node:child_process';
-import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 
 const opts = {};
@@ -263,6 +268,7 @@ const framed = (src, r, mask, extraIn = '') =>
 
 function renderShot(s, i) {
   const out = join(WORK, `shot-${String(i).padStart(2, '0')}-${s.id}.mp4`);
+  if (opts.reuse === '1' && existsSync(out)) return out;
   const speed = s.speed ?? 1;
   const pts = speed === 1 ? '' : `setpts=PTS/${speed},`;
   let inputs;
@@ -429,17 +435,41 @@ for (let i = 1; i < SHOTS.length; i++) {
   len += SHOTS[i].dur - d;
 }
 const audioIn = files.length;
-const music = `[${audioIn}:a]highpass=f=30,atrim=0:${TOTAL.toFixed(2)},afade=t=in:d=1.5,afade=t=out:st=${(TOTAL - 5).toFixed(2)}:d=5,loudnorm=I=-16:TP=-1.5:LRA=9[a]`;
+const music = `[${audioIn}:a]highpass=f=30,atrim=0:${TOTAL.toFixed(2)},afade=t=in:d=1.5,afade=t=out:st=${(TOTAL - 5).toFixed(2)}:d=5,loudnorm=I=-16:TP=-1.5:LRA=9,aresample=48000[a]`;
 const fontsdir = '/usr/share/fonts/opentype/inter';
-for (const [name, ass] of [
-  ['stand-in-studio-demo.mp4', 'full.ass'],
-  ['stand-in-studio-demo-clean.mp4', 'clean.ass'],
-]) {
-  const graph = `${xf.join(';')};[${last}]subtitles=${join(WORK, ass)}:fontsdir=${fontsdir},fade=t=out:st=${(TOTAL - 1).toFixed(2)}:d=1[v];${music}`;
+const outputs = [
+  { name: 'stand-in-studio-demo.mp4', ass: 'full.ass', audio: music, extra: [] },
+  { name: 'stand-in-studio-demo-clean.mp4', ass: 'clean.ass', audio: music, extra: [] },
+];
+if (opts.narration) {
+  // Captions that match the voice, plus the Auto lower thirds.
+  const dir = resolve(opts.narration);
+  const captions = JSON.parse(readFileSync(join(dir, 'captions.json'), 'utf8'));
+  const lines = captions.map((c) => `Dialogue: 0,${ts(c.from)},${ts(c.to)},Sub,,0,0,0,,${esc(c.text)}`);
+  writeFileSync(join(WORK, 'narrated.ass'), assHead + [...lowerLines, ...lines].join('\n') + '\n');
+  // Music lower overall, and ducked further under the voice (side-chain), then the mix
+  // normalised to -16 LUFS.
+  const T = TOTAL.toFixed(2);
+  const ducked =
+    `[${audioIn}:a]highpass=f=30,atrim=0:${T},afade=t=in:d=1.5,afade=t=out:st=${(TOTAL - 5).toFixed(2)}:d=5,volume=-14dB[m];` +
+    `[${audioIn + 1}:a]atrim=0:${T},asplit=2[v1][v2];` +
+    `[m][v2]sidechaincompress=threshold=0.015:ratio=8:attack=20:release=500[md];` +
+    `[md][v1]amix=inputs=2:normalize=0:duration=first,loudnorm=I=-16:TP=-1.5:LRA=11,aresample=48000[a]`;
+  outputs.length = 0;
+  outputs.push({
+    name: 'stand-in-studio-demo-narrated.mp4',
+    ass: 'narrated.ass',
+    audio: ducked,
+    extra: ['-i', join(dir, 'narration.wav')],
+  });
+}
+for (const o of outputs) {
+  const graph = `${xf.join(';')};[${last}]subtitles=${join(WORK, o.ass)}:fontsdir=${fontsdir},fade=t=out:st=${(TOTAL - 1).toFixed(2)}:d=1[v];${o.audio}`;
   ff([
     ...files.flatMap((f) => ['-i', f]),
     '-i',
     resolve(opts.music),
+    ...o.extra,
     '-filter_complex',
     graph,
     '-map',
@@ -464,7 +494,7 @@ for (const [name, ass] of [
     '+faststart',
     '-t',
     TOTAL.toFixed(2),
-    join(OUT, name),
+    join(OUT, o.name),
   ]);
 }
 writeFileSync(
