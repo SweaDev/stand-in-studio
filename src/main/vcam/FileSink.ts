@@ -30,7 +30,7 @@ export class FileSink implements VirtualCameraSink {
     this.size = width * height * 2;
     this.stats = { ...this.stats, started: this.stats.started + 1, width, height, lastWasPausedFrame: false };
     this.flush();
-    return { device: this.file, label: 'Stand-In Camera (test file)' };
+    return { device: this.file, label: 'Stand-In Camera' };
   }
 
   writeFrame(frame: Uint8Array): void {

@@ -140,3 +140,12 @@ git push origin --tags
   - **Optimised:** audio dropped and re-encoded (`libx264 -crf 26 -preset slow -tune film`, faststart), 15.0 MB → 9.3 MB, with no crop, since the face stays in frame. The result is `meeting-scene.mp4`, sha256 `054d9db3…ce8c9d`.
   - **Live run:** `scripts/live-recorded.mjs … --name "Meeting scene" --reserve 130` took **103.2 s** of Presage time (ledger total 537.6 s of 900 s). It saved 4,613 telemetry frames (face signals only). The offline replay agreed with the live intents on 97% of 275 samples, with the same sequence: listening, talking in the meeting, talking to someone off to the side, turned away. The replay used 0 SDK sessions.
   - **Bundle:** `meeting-scene.standin-demo.zip` (26.1 MB, sha256 `ed30aa39…4710df`). Imported into a fresh profile with no API key, it replays offline. It was handed to the user; it lives in the git-ignored `shared-demos/` and is never committed.
+- **T82, the demo video (not in the repo):** three new scripts.
+  - `scripts/record-demo-video.mjs`: runs Xvfb at 3520×1080 with the app at a 1.25 device scale, and captures the control window and the Virtual Stage with two `ffmpeg x11grab` streams. It drives the UI with an injected cursor overlay (eased motion, click ripples, keycap badges) and writes scene marks plus the intent and opacity over time.
+  - `scripts/make-music.mjs`: an original ambient track synthesised in Node (pads, Karplus–Strong plucks, sub, shaker, Schroeder reverb).
+  - `scripts/compose-demo-video.mjs`: renders HTML cards and masks, composes framed shots, picture-in-picture and a side-by-side, cross-fades them, burns ASS subtitles with Auto lower thirds, and mixes the music at −16 LUFS.
+  - **Output:** 180.2 s at 1920×1080, 30 fps.
+- **T82, live use:** the first run was meant as a fake-SDK rehearsal, but the edit adding `--dry` had not applied, so it ran for real. Its live scene used **52.7 s** of Presage time (ledger 590.3 s of 900 s), within the 60 s reserved for that scene. That take was good, so it is the one used, and no other live run was made.
+  - A "camera frame rate dropped too low" banner appeared mid-scene while two 1080p captures were encoding on 4 cores. The composer crops to the dialog, the Save card and the Presage readout there.
+  - Native hover tooltips appear in a few frames.
+- **T82, Stand-In Camera label:** the e2e `FileSink` now reports the label "Stand-In Camera", matching the real device, so recordings don't show "(test file)".
