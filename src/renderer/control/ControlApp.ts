@@ -43,6 +43,7 @@ import { TransportBar } from './recorded/TransportBar';
 import { SaveDemoDialog } from './recorded/SaveDemoDialog';
 import { ClipRecorder, MAX_RECORDING_MS } from './recorded/ClipRecorder';
 import { DemoLibraryPanel } from './recorded/DemoLibraryPanel';
+import { SaveDemoCard } from './recorded/SaveDemoCard';
 import { VirtualCameraFeed } from './vcam/VirtualCameraFeed';
 import { VirtualCameraPanel } from './vcam/VirtualCameraPanel';
 import type { VcamStatus } from '../../shared/vcam';
@@ -734,7 +735,7 @@ export class ControlApp {
     this.engine.resetSignals();
     this.telemetry = rec;
     this.transport?.lock(true);
-    this.setTelemetryStatus('Saving telemetry: the clip plays once from the start…', true);
+    this.saveCard?.run('Saving telemetry: the clip plays once from the start…', 0);
     try {
       await clip.play();
       await new Promise<void>((resolve) => {
@@ -771,15 +772,15 @@ export class ControlApp {
         video: await clip.bytes(),
         ext: clip.ext,
       });
-      this.setTelemetryStatus(
-        `Saved “${saved.name}” (${formatDuration(saved.durationMs)}, ${saved.frames} frames) to your demo library. Pick it under Demo mode on the start screen.`,
-        false,
+      this.saveCard?.finish(
+        `Saved “${saved.name}” (${formatDuration(saved.durationMs)}, ${saved.frames} frames) to your demo library.`,
         'ok',
+        saved.id,
       );
       void this.updateSettings({ recorded: { lastDemo: saved.id } });
       this.demoLibraryChanged();
     } catch (err) {
-      this.setTelemetryStatus(`Telemetry not saved: ${(err as Error).message}`, false, 'error');
+      this.saveCard?.finish(`Telemetry not saved: ${(err as Error).message}`, 'error');
     } finally {
       if (this.telemetry === rec) this.telemetry = null;
       clip.loop = wasLooping;
@@ -822,7 +823,7 @@ export class ControlApp {
     try {
       clip = new ClipRecorder(stream);
     } catch (err) {
-      this.setRecordStatus(`Recording is not available: ${(err as Error).message}`, 'error');
+      this.recordCard?.finish(`Recording is not available: ${(err as Error).message}`, 'error');
       return;
     }
     const startedAt = this.clock.now();
@@ -853,15 +854,16 @@ export class ControlApp {
         video: new Uint8Array(await blob.arrayBuffer()),
         ext: 'webm',
       });
-      this.setRecordStatus(
+      this.recordCard?.finish(
         `Saved “${saved.name}” (${formatDuration(saved.durationMs)}, ${saved.frames} frames) to your demo library.`,
         'ok',
+        saved.id,
       );
       void this.updateSettings({ recorded: { lastDemo: saved.id } });
       this.demoLibraryChanged();
     } catch (err) {
       void clip.stop().catch(() => undefined);
-      this.setRecordStatus(`Demo not saved: ${(err as Error).message}`, 'error');
+      this.recordCard?.finish(`Demo not saved: ${(err as Error).message}`, 'error');
     } finally {
       clearTimeout(limit);
       if (this.telemetry === rec) this.telemetry = null;
@@ -870,19 +872,24 @@ export class ControlApp {
     }
   }
 
-  private recordStatus: HTMLElement | null = null;
-
-  private setRecordStatus(text: string, tone: 'ok' | 'error' | '' = ''): void {
-    if (!this.recordStatus) return;
-    this.recordStatus.textContent = text;
-    this.recordStatus.className = `telemetry-status${tone ? ` is-${tone}` : ''}`;
-  }
+  private recordCard: SaveDemoCard | null = null;
 
   /** Camera tab: record a demo clip with its telemetry. */
   private recordGroup(): HTMLElement {
-    const btn = h('button', { type: 'button', id: 'record-demo', onclick: () => void this.recordDemo() });
-    this.recordStatus = h('p', { class: 'telemetry-status', id: 'record-status', role: 'status' });
-    let wasRecording: boolean | null = null;
+    const card = new SaveDemoCard({
+      ids: { start: 'record-demo', cancel: 'record-cancel', status: 'record-status', card: 'record-card' },
+      icon: 'camera',
+      title: 'Record a demo',
+      blurb:
+        'Records your camera with the signals Presage reads from it. Saved demos replay offline with no API use, so you can tune intents on the same footage again and again.',
+      action: 'Record a demo…',
+      runningAction: 'Stop and save',
+      onStart: () => void this.recordDemo(),
+      onCancel: () => this.recording?.stop(),
+      onPlay: (id) => void this.playDemo(id),
+    });
+    this.recordCard = card;
+    let wasRecording = false;
     this.onFrame(() => {
       const r = this.recording;
       if (r) {
@@ -895,30 +902,17 @@ export class ControlApp {
           );
           r.stop();
         }
-        this.setRecordStatus(
+        card.run(
           `Recording · ${formatDuration(this.clock.now() - r.startedAt)} · ${this.telemetry?.count ?? 0} frames`,
+          (this.clock.now() - r.startedAt) / MAX_RECORDING_MS,
         );
+      } else if (wasRecording) {
+        card.idle();
       }
-      if (wasRecording === (r !== null)) return;
       wasRecording = r !== null;
-      btn.replaceChildren(
-        r ? h('span', { class: 'recording-dot', 'aria-hidden': 'true' }) : icon('record', 16),
-        r ? 'Stop and save' : 'Record a demo…',
-      );
-      btn.classList.toggle('danger', r !== null);
+      card.setEnabled(!this.cameraOff);
     });
-    return h(
-      'div',
-      { class: 'group', id: 'group-record-demo' },
-      h('h3', {}, 'Record a demo'),
-      h(
-        'p',
-        { class: 'hint' },
-        'Records your camera together with the signals Presage reads from it. Saved demos replay offline (no API use) from the start screen, so you can test and tune intents on the same footage again and again.',
-      ),
-      btn,
-      this.recordStatus,
-    );
+    return h('div', { class: 'group', id: 'group-record-demo' }, card.el);
   }
 
   /** Cancels a telemetry save in progress. */
@@ -926,15 +920,8 @@ export class ControlApp {
     this.telemetry?.abort('Saving was cancelled.');
   }
 
-  private telemetryStatus: HTMLElement | null = null;
-  private telemetryCancel: HTMLButtonElement | null = null;
-
-  private setTelemetryStatus(text: string, busy: boolean, tone: 'ok' | 'error' | '' = ''): void {
-    if (!this.telemetryStatus) return;
-    this.telemetryStatus.textContent = text;
-    this.telemetryStatus.className = `telemetry-status${tone ? ` is-${tone}` : ''}`;
-    if (this.telemetryCancel) this.telemetryCancel.hidden = !busy;
-  }
+  /** Save-as-demo card under a recorded clip's transport. */
+  private saveCard: SaveDemoCard | null = null;
 
   /** Hook for the Advanced demo-library panel (refreshes its list). */
   private demoLibraryChanged: () => void = () => undefined;
@@ -1111,48 +1098,50 @@ export class ControlApp {
     return 'camera';
   }
 
-  /** Transport for a recorded clip, plus Save telemetry when Presage analyses it. */
+  /** Transport for a recorded clip, plus the Save-as-demo card (or why it is unavailable). */
   private buildTransport(clip: RecordedFeed): TransportBar {
-    const extra: HTMLElement[] = [];
-    if (this.presage) {
-      const save = h(
-        'button',
-        {
-          type: 'button',
-          class: 'btn-small',
-          id: 'save-telemetry',
-          onclick: () => void this.saveClipTelemetry(),
-        },
-        icon('record', 14),
-        'Save telemetry…',
+    const bar = new TransportBar(clip);
+    this.saveCard = null;
+    if (this.replay) return bar;
+    if (!this.presage) {
+      bar.el.append(
+        h(
+          'p',
+          { class: 'hint save-card-note', id: 'save-card-note' },
+          icon('info', 14),
+          'To save this clip as a demo, add a Presage API key in the Camera tab.',
+        ),
       );
-      this.onFrame(() => {
-        const busy = this.telemetry !== null;
-        if (save.disabled !== busy) save.disabled = busy;
-        if (busy && this.telemetry) {
-          const rec = this.telemetry;
-          this.setTelemetryStatus(
-            `Saving telemetry · ${formatDuration(rec.progressMs)} / ${formatDuration(clip.durationMs)} · ${rec.count} frames`,
-            true,
-          );
-        }
-      });
-      this.telemetryCancel = h(
-        'button',
-        {
-          type: 'button',
-          class: 'btn-small',
-          id: 'cancel-telemetry',
-          hidden: true,
-          onclick: () => this.cancelClipTelemetry(),
-        },
-        'Cancel',
-      );
-      extra.push(save, this.telemetryCancel);
+      return bar;
     }
-    const bar = new TransportBar(clip, extra);
-    this.telemetryStatus = h('p', { class: 'telemetry-status', id: 'telemetry-status', role: 'status' });
-    bar.el.append(this.telemetryStatus);
+    const card = new SaveDemoCard({
+      ids: {
+        start: 'save-telemetry',
+        cancel: 'cancel-telemetry',
+        status: 'telemetry-status',
+        card: 'save-card',
+      },
+      icon: 'film',
+      title: 'Save this clip as a demo',
+      blurb:
+        'Plays the clip once from the start while Presage analyses it, then keeps the clip and its signals on this computer. The demo replays offline with no API use, for tuning intents.',
+      action: 'Save as demo…',
+      runningAction: null,
+      onStart: () => void this.saveClipTelemetry(),
+      onCancel: () => this.cancelClipTelemetry(),
+      onPlay: (id) => void this.playDemo(id),
+    });
+    this.saveCard = card;
+    this.onFrame(() => {
+      const rec = this.telemetry;
+      if (rec && !this.recording) {
+        card.run(
+          `Saving · ${formatDuration(rec.progressMs)} / ${formatDuration(clip.durationMs)} · ${rec.count} frames`,
+          clip.durationMs > 0 ? rec.progressMs / clip.durationMs : null,
+        );
+      }
+    });
+    bar.el.append(card.el);
     return bar;
   }
 

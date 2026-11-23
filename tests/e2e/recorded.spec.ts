@@ -78,6 +78,7 @@ test('without an API key a recorded clip only plays through', async () => {
     await control.setInputFiles('#consent-clip-file', testClip(4));
     await expect(control.locator('#clip-play')).toBeVisible({ timeout: 15_000 });
     await expect(control.locator('#save-telemetry')).toHaveCount(0);
+    await expect(control.locator('#save-card-note')).toContainText('add a Presage API key');
     await expect(control.locator('#sensing-status')).toContainText('without analysis');
   } finally {
     await app.close();
@@ -94,10 +95,24 @@ test('"Save its telemetry as a demo" on the start screen asks first, then saves 
     await expect(control.locator('#save-demo')).toBeVisible({ timeout: 15_000 });
     await control.fill('#demo-name', 'From the start screen');
     await control.click('#demo-save-confirm');
+    // While it saves: REC, a progress bar and Cancel.
+    await expect(control.locator('#save-card .rec-badge')).toBeVisible();
+    await expect(control.locator('#save-card .progress')).toBeVisible();
+    await expect(control.locator('#cancel-telemetry')).toBeVisible();
+    await expect(control.locator('#save-telemetry')).toBeHidden();
+    await expect
+      .poll(async () => Number(await control.locator('#save-card .progress').getAttribute('aria-valuenow')))
+      .toBeGreaterThan(20);
     await expect(control.locator('#telemetry-status')).toContainText('Saved “From the start screen”', {
       timeout: 20_000,
     });
+    await expect(control.locator('#save-card .rec-badge')).toBeHidden();
     expect(readdirSync(join(profile, 'demos'))).toHaveLength(1);
+    // Play it now: replays the saved demo in place, offline.
+    await control.click('#save-card-play');
+    await expect(control.locator('#pill-source')).toHaveText('Saved demo · From the start screen', {
+      timeout: 15_000,
+    });
   } finally {
     await app.close();
   }

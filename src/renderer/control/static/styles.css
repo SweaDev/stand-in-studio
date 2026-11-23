@@ -1976,3 +1976,120 @@ input[type='file']::file-selector-button:hover {
   text-align: center;
   color: var(--muted);
 }
+
+/* ------------------------------------------------------------------ save-as-demo card */
+.save-card {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: var(--s3);
+  align-items: start;
+  margin-top: var(--s3);
+  padding: var(--s3) var(--s4);
+  border-radius: var(--r-md);
+  border: 1px solid rgba(242, 166, 90, 0.4);
+  background: linear-gradient(135deg, var(--accent-soft), transparent 70%), var(--surface-2);
+}
+.save-card.is-running {
+  border-color: rgba(255, 138, 122, 0.55);
+  background: linear-gradient(135deg, var(--danger-soft), transparent 70%), var(--surface-2);
+}
+.save-card-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  display: grid;
+  place-items: center;
+  background: var(--surface-3);
+  color: var(--accent);
+}
+.save-card-body {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.save-card-head {
+  display: flex;
+  align-items: center;
+  gap: var(--s2);
+}
+.save-card-blurb {
+  margin: 0;
+  color: var(--muted);
+  font-size: var(--fs-sm);
+}
+.save-card-status {
+  display: flex;
+  align-items: center;
+  gap: var(--s2);
+  flex-wrap: wrap;
+}
+.save-card-actions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s2);
+}
+.save-card-actions button {
+  white-space: nowrap;
+}
+@media (max-width: 640px) {
+  .save-card {
+    grid-template-columns: auto 1fr;
+  }
+  .save-card-actions {
+    grid-column: 1 / -1;
+    flex-direction: row;
+  }
+}
+.rec-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 0 8px;
+  border-radius: var(--r-pill);
+  background: var(--danger-soft);
+  border: 1px solid rgba(255, 138, 122, 0.5);
+  color: var(--danger);
+  font-size: var(--fs-xs);
+  font-weight: 800;
+  letter-spacing: 0.06em;
+}
+.rec-badge .recording-dot {
+  width: 8px;
+  height: 8px;
+  animation: rec-blink 1.2s steps(2, start) infinite;
+}
+@keyframes rec-blink {
+  to {
+    visibility: hidden;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .rec-badge .recording-dot {
+    animation: none;
+  }
+}
+.progress {
+  height: 6px;
+  border-radius: var(--r-pill);
+  background: var(--surface-3);
+  overflow: hidden;
+}
+.progress-fill {
+  height: 100%;
+  width: 0;
+  background: var(--danger);
+  border-radius: inherit;
+  transition: width 200ms linear;
+}
+.save-card-note {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+#group-record-demo .save-card {
+  margin-top: 0;
+}
+.save-card.is-running .save-card-blurb {
+  display: none;
+}
