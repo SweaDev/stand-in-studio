@@ -51,24 +51,55 @@ const ACCENT = '#f2a65a';
 // ---- Shots (times are seconds in the raw recordings). Fades are into the shot.
 const SHOTS = [
   { id: 'title', type: 'card', card: 'title', dur: 6.5, fade: 0 },
-  { id: 'problem', type: 'problem', dur: 11, fade: 0.6 },
-  { id: 'start', type: 'ctrl', mark: 'start', at: 0.15, dur: 14, fade: 0.6 },
+  { id: 'problem', type: 'problem', dur: 10, fade: 0.6 },
+  { id: 'start', type: 'ctrl', mark: 'start', at: 0.15, dur: 12.5, fade: 0.6 },
   {
     id: 'status',
     type: 'ctrl',
     mark: 'workspace',
     at: 0.3,
-    dur: 5.5,
+    dur: 5,
     crop: { x: 960, y: MENU, w: 960, h: 523 },
     fade: 0.6,
   },
-  { id: 'workspace', type: 'ctrl', mark: 'workspace', at: 5.8, dur: 11.5, fade: 0.35 },
-  { id: 'auto', type: 'sbs', mark: 'auto', at: 0.05, dur: 46, fade: 0.6 },
-  { id: 'controls', type: 'ctrl', mark: 'controls', at: 0.35, dur: 16.7, pip: true, fade: 0.6 },
-  { id: 'characters', type: 'stage', mark: 'characters', at: 0.4, dur: 16.5, fade: 0.6 },
-  { id: 'interface', type: 'ctrl', mark: 'intents', at: 0.45, dur: 8, speed: 2, fade: 0.6 },
-  { id: 'builder', type: 'ctrl', mark: 'intents', at: 23.45, dur: 8, speed: 2.5, fade: 0.35 },
-  { id: 'live', type: 'ctrl', live: true, start: 187, dur: 6, fade: 0.6 },
+  { id: 'workspace', type: 'ctrl', mark: 'workspace', at: 5.8, dur: 10, fade: 0.35 },
+  {
+    id: 'auto',
+    type: 'sbs',
+    mark: 'auto',
+    at: 0.05,
+    dur: 41,
+    fade: 0.6,
+    title: 'Auto mode, on my recorded clip',
+    left: ['Your camera', '· raw input'],
+  },
+  { id: 'controls', type: 'ctrl', mark: 'controls', at: 0.35, dur: 13.5, pip: true, fade: 0.6 },
+  { id: 'characters', type: 'stage', mark: 'characters', at: 3.0, dur: 13, fade: 0.6 },
+  {
+    id: 'anchor',
+    type: 'sbs2',
+    mark: 'anchor',
+    at: 0.8,
+    dur: 12,
+    crop: { x: 930, y: 220, w: 990, h: 557 },
+    fade: 0.35,
+    title: 'Sized from your face on screen',
+    left: ['Stage tab', '· Follow my face'],
+  },
+  {
+    id: 'lip',
+    type: 'sbs2',
+    mark: 'lip',
+    at: 5,
+    dur: 13.5,
+    crop: { x: 1200, y: 500, w: 720, h: 405 },
+    fade: 0.6,
+    title: 'Accessibility: lip-reading zoom',
+    left: ['Stage tab', '· Accessibility'],
+  },
+  { id: 'interface', type: 'ctrl', mark: 'intents', at: 0.45, dur: 5.5, speed: 2, fade: 0.6 },
+  { id: 'builder', type: 'ctrl', mark: 'intents', at: 23.45, dur: 5.5, speed: 2.5, fade: 0.35 },
+  { id: 'live', type: 'ctrl', live: true, start: 187, dur: 5, fade: 0.6 },
   {
     id: 'consent',
     type: 'ctrl',
@@ -96,8 +127,8 @@ const SHOTS = [
     crop: { x: 1040, y: 560, w: 880, h: 480 },
     fade: 0.35,
   },
-  { id: 'send', type: 'ctrl', mark: 'send', at: 0, dur: 6, fade: 0.6 },
-  { id: 'help', type: 'ctrl', mark: 'send', at: 11, dur: 9.6, speed: 1.25, fade: 0.35 },
+  { id: 'send', type: 'ctrl', mark: 'send', at: 0, dur: 5, fade: 0.6 },
+  { id: 'help', type: 'ctrl', mark: 'send', at: 11, dur: 6, speed: 1.25, fade: 0.35 },
   { id: 'closing', type: 'card', card: 'closing', dur: 8, fade: 0.6 },
 ];
 for (const s of SHOTS) if (s.mark) s.start = +(markAt(s.mark) + s.at).toFixed(2);
@@ -105,50 +136,54 @@ for (const s of SHOTS) if (s.mark) s.start = +(markAt(s.mark) + s.at).toFixed(2)
 // Subtitles per shot: [from, to, text] in seconds from the shot's start.
 const SUBS = {
   problem: [
-    [0.5, 5.0, 'Video calls ask us to be on camera, and watched, for hours.'],
-    [5.2, 10.6, 'Turn the camera off, and every nod and smile is lost.'],
+    [0.5, 4.6, 'Video calls ask us to be on camera, and watched, for hours.'],
+    [4.8, 9.6, 'Turn the camera off, and every nod and smile is lost.'],
   ],
   start: [
-    [0.3, 4.6, 'Stand-In Studio adds a dial between camera on and camera off.'],
-    [4.8, 9.0, 'The start screen says plainly what is read, sent and stored.'],
-    [9.2, 13.7, 'Here I replay a saved demo: my own clip, with the signals Presage read from it.'],
+    [0.3, 4.2, 'Stand-In Studio adds a dial between camera on and camera off.'],
+    [4.4, 8.2, 'The start screen says plainly what is read, sent and stored.'],
+    [8.4, 12.2, 'Here I replay a saved demo: my own clip, with the signals Presage read from it.'],
   ],
-  status: [[0.2, 5.3, 'The status bar shows the input, what Presage reads, and the Stand-In Camera.']],
+  status: [[0.2, 4.8, 'The status bar shows the input, what Presage reads, and the Stand-In Camera.']],
   workspace: [
-    [0.2, 5.6, 'The big preview is the raw input. The inset is what the meeting sees.'],
-    [5.8, 11.3, 'The dial shows how much of you is visible, right now.'],
+    [0.2, 5.0, 'The big preview is the raw input. The inset is what the meeting sees.'],
+    [5.2, 9.8, 'The dial shows how much of you is visible, right now.'],
   ],
   auto: [
-    [0.4, 6.4, 'Auto mode moves the dial for you, from what Presage sees.'],
-    [6.8, 12.8, 'Listening quietly: a soft blend under the paper lantern.'],
-    [13.4, 21.6, 'Turning to talk to someone off camera: the lantern covers me.'],
-    [23.6, 30.6, 'Talking to the meeting: Stand-In reveals me, after a short hold.'],
-    [31.2, 38.2, 'Body signals can only lower how much of me is shown, never raise it.'],
-    [38.8, 45.6, 'Every intent is mine to change, reorder or tune.'],
+    [0.4, 6.0, 'Auto mode moves the dial for you, from what Presage sees.'],
+    [6.4, 12.6, 'Listening: the lantern sits over my face, its opacity mirroring the dial.'],
+    [13.2, 21.4, 'Turning to talk to someone off camera: the lantern covers me completely.'],
+    [22.6, 29.4, 'Talking to the meeting: Stand-In reveals me, after a short hold.'],
+    [29.8, 35.4, 'Body signals can only lower how much of me is shown, never raise it.'],
+    [35.8, 40.6, 'Every intent is mine to change, reorder or tune.'],
   ],
   controls: [
-    [0.3, 4.6, 'Hide me covers you instantly, with one click…'],
-    [4.8, 8.8, '…or a global hotkey that works while your meeting app has focus.'],
-    [9.2, 16.4, 'Or pick a mode yourself: Character, Camera, Blend or Auto.'],
+    [0.3, 4.2, 'Hide me covers you instantly, with one click…'],
+    [4.4, 8.2, '…or a global hotkey that works while your meeting app has focus.'],
+    [8.5, 13.2, 'Or pick a mode yourself: Character, Camera, Blend or Auto.'],
   ],
   characters: [
-    [0.3, 8.0, 'Hand-drawn characters mirror your nods, blinks, breathing and smiles.'],
-    [8.3, 16.2, 'A houseplant, a cat, a cloud, or the paper lantern: pick the one that feels like you.'],
+    [0.3, 6.2, 'Hand-drawn characters mirror your nods, blinks, breathing and smiles.'],
+    [6.5, 12.6, 'Each one follows your face, using the face position Presage reads.'],
   ],
-  interface: [
-    [0.3, 7.8, 'Advanced → Interface keeps the window tidy: show the intent list when you need it.'],
+  anchor: [
+    [0.3, 6.0, 'Its size comes from your face on screen: 100% covers it, and you can go smaller.'],
+    [6.2, 11.6, 'Nudge it up, down or sideways, and cap its opacity over your face.'],
   ],
-  builder: [
-    [0.2, 7.8, 'The intent builder turns Presage signals into your own rules, like “Checking my phone”.'],
+  lip: [
+    [0.3, 6.4, 'New accessibility option: lip-reading zoom, off by default.'],
+    [6.7, 13.2, 'While I talk, Auto shows my face at 100%, zoomed in, so people can read my lips.'],
   ],
-  live: [[0.2, 5.8, 'With an API key, a video file is analysed live by Presage, just like a webcam.']],
+  interface: [[0.3, 5.2, 'Advanced → Interface shows the intent list when you need it.']],
+  builder: [[0.2, 5.2, 'The intent builder turns Presage signals into your own rules.']],
+  live: [[0.2, 4.8, 'With an API key, a video file is analysed live by Presage, just like a webcam.']],
   consent: [[0.2, 4.8, 'Saving a demo asks first, every time. Pulse and breathing stay off by default.']],
   saving: [[0.2, 4.8, 'The clip plays once while its signals are saved on this computer.']],
   presageOff: [[0.2, 4.8, 'Presage can be turned off at any moment: then nothing is analysed.']],
-  send: [[0.2, 5.8, 'On Linux, the Stand-In Camera shows up in Meet, Zoom or Teams. OBS works everywhere.']],
+  send: [[0.2, 4.8, 'On Linux, the Stand-In Camera shows up in Meet, Zoom or Teams. OBS works everywhere.']],
   help: [
-    [0.2, 4.6, 'Help lists every shortcut, and a one-minute tour shows the way around.'],
-    [4.8, 9.4, 'Frames are processed on this computer. Numbers never leave it.'],
+    [0.2, 2.9, 'Help lists every shortcut, with a one-minute tour.'],
+    [3.1, 5.8, 'Frames are processed on this computer. Numbers never leave it.'],
   ],
 };
 
@@ -184,12 +219,15 @@ const ASSETS = {
   'closing.png': `<body style="${BG};display:grid;place-items:center"><div style="display:flex;flex-direction:column;align-items:center;gap:34px;text-align:center">${MARK(96)}<div style="font-size:62px;font-weight:800;line-height:1.2;max-width:1400px">Your body can only make Stand-In<br>show <span style="color:${ACCENT}">less</span> of you, never more.</div><div style="font-size:34px;color:#bdb4a7">Numbers never leave your computer.</div><div style="margin-top:30px;font-size:34px;font-weight:700;color:${ACCENT}">github.com/SweaDev/stand-in-studio</div><div style="font-size:22px;color:#a69eae">Stand-In Studio · Presage SmartSpectra SDK Challenge · Music: original, generated in code</div></div></body>`,
   'bg-frame.png': `<body style="${BG}">${shadow(F, 18)}</body>`,
   'bg-stage.png': `<body style="${BG}">${shadow(SF, 18)}</body>`,
-  'bg-sbs.png': `<body style="${BG}"><div style="position:absolute;left:0;right:0;top:110px;text-align:center;font-size:44px;font-weight:800">Auto mode, on my recorded clip</div>${shadow(P, 16)}${shadow(P2, 16)}${label(P.x, P.y - 52, 'Your camera', '· raw input')}${label(P2.x, P2.y - 52, 'What the meeting sees', '· Virtual Stage')}</body>`,
   'bg-problem.png': `<body style="${BG}"><div style="position:absolute;left:0;right:0;top:110px;text-align:center;font-size:44px;font-weight:800">Video calls today: all or nothing</div>${box(P, 'border-radius:16px;background:#0c0b0e;box-shadow:0 30px 80px rgba(0,0,0,.65),0 0 0 1px rgba(255,255,255,.08);display:grid;place-items:center')}<svg style="position:absolute;left:${P.x + P.w / 2 - 60}px;top:${P.y + P.h / 2 - 80}px" width="120" height="120" viewBox="0 0 24 24" fill="none" stroke="#4f4858" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3l18 18M9 5h6l2 2h4v10M21 19H3V7h3M10 10.5a3 3 0 0 0 4 4"/></svg>${shadow(P2, 16)}</body>`,
   'ov-problem.png': `<body style="background:transparent">${label(P.x, P.y + P.h + 24, 'Camera off', '· every nod and smile lost')}${label(P2.x, P2.y + P2.h + 24, 'Camera on', '· watched, for hours')}</body>`,
   'ov-pip-stage.png': `<body style="background:transparent">${ring(PIP, 14, 'Virtual Stage · what the meeting sees')}</body>`,
   'ov-pip-control.png': `<body style="background:transparent">${ring(PIPC, 14, 'Control window')}</body>`,
 };
+for (const s of SHOTS)
+  if (s.type === 'sbs' || s.type === 'sbs2')
+    ASSETS[`bg-sbs-${s.id}.png`] =
+      `<body style="${BG}"><div style="position:absolute;left:0;right:0;top:110px;text-align:center;font-size:44px;font-weight:800">${s.title}</div>${shadow(P, 16)}${shadow(P2, 16)}${label(P.x, P.y - 52, s.left[0], s.left[1])}${label(P2.x, P2.y - 52, 'What the meeting sees', '· Virtual Stage')}</body>`;
 const MASKS = {
   'mask-frame.png': [F.w, F.h, 18],
   'mask-stage.png': [SF.w, SF.h, 18],
@@ -272,13 +310,24 @@ function renderShot(s, i) {
     const near = timeline.samples.filter((x) => x.t >= s.start && x.ms >= 0)[0];
     const clipStart = near.ms / 1000 - (near.t - s.start);
     inputs = [
-      ...img('bg-sbs.png'),
+      ...img(`bg-sbs-${s.id}.png`),
       ...clipAt(CLIP, clipStart, s.dur),
       ...img('mask-panel.png'),
       ...clipAt(STAGE, s.start, s.dur),
       ...img('mask-panel.png'),
     ];
     graph = `${framed(1, P, 2)};[0][a1]overlay=${P.x}:${P.y}[b];${framed(3, P2, 4)};[b][a3]overlay=${P2.x}:${P2.y}[v]`;
+  } else if (s.type === 'sbs2') {
+    // A region of the control window (left) beside the Virtual Stage (right).
+    const c = s.crop;
+    inputs = [
+      ...img(`bg-sbs-${s.id}.png`),
+      ...clipAt(CTRL, s.start, s.dur),
+      ...img('mask-panel.png'),
+      ...clipAt(STAGE, s.start, s.dur),
+      ...img('mask-panel.png'),
+    ];
+    graph = `${framed(1, P, 2, `crop=${c.w}:${c.h}:${c.x}:${c.y},`)};[0][a1]overlay=${P.x}:${P.y}[b];${framed(3, P2, 4)};[b][a3]overlay=${P2.x}:${P2.y}[v]`;
   }
   ff([...inputs, '-filter_complex', graph, '-map', '[v]', '-t', String(s.dur), ...ENC, out]);
   return out;

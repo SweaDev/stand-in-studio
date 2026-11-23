@@ -146,6 +146,15 @@ const click = async (sel, ms) => {
   await page.mouse.up();
   await sleep(350);
 };
+/** Drags a range input's thumb from one fraction of its track to another. */
+const drag = async (sel, from, to2, ms = 900) => {
+  const b = await box(sel);
+  const x = (f) => b.x + 8 + (b.width - 16) * f;
+  await glide(x(from), b.y + b.height / 2, 500);
+  await page.mouse.down();
+  await glide(x(to2), b.y + b.height / 2, ms);
+  await page.mouse.up();
+};
 /** Shows a press without a native click (e.g. a button that would open a system dialog). */
 const press = async (sel) => {
   await to(sel);
@@ -301,9 +310,36 @@ try {
   await sleep(700);
   for (const name of ['Houseplant', 'Cat', 'Cloud', 'Paper lantern']) {
     await click(`#panel-stage label:has-text("${name}")`, 600);
-    await sleep(2300);
+    await sleep(2100);
   }
   mark('characters-end');
+
+  // S7b · over the face: size and position, from the face on screen.
+  mark('anchor');
+  await to('#face-follow', 700);
+  await sleep(900);
+  await drag('#face-size', 1, 0.55, 1200);
+  await sleep(1500);
+  await drag('#face-offset-y', 0.5, 0.3, 900);
+  await sleep(1400);
+  await drag('#face-offset-y', 0.3, 0.5, 700);
+  await drag('#face-size', 0.55, 1, 1000);
+  await sleep(1200);
+  mark('anchor-end');
+
+  // S7c · accessibility: the lip-reading zoom while I talk.
+  mark('lip');
+  await page.evaluate(() => document.querySelector('#lip-reading')?.scrollIntoView({ block: 'center' }));
+  await sleep(400);
+  await click('#lip-reading', 800);
+  await page.evaluate(() => window.__standin.app.clip.seek(46_500));
+  await sleep(12_500);
+  await click('#lip-reading', 500);
+  await sleep(1500);
+  mark('lip-end');
+  await page.evaluate(() => {
+    for (const el of document.querySelectorAll('*')) if (el.scrollTop) el.scrollTop = 0;
+  });
 
   // S8 · intents: show the list (Advanced → Interface), then the builder.
   mark('intents');
