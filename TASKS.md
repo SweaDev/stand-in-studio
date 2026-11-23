@@ -151,3 +151,8 @@ Progress tracker for [PLAN.md](PLAN.md). One task = one commit; tick the box in 
 - [x] T78 Minimal default UI with Advanced → Interface toggles, and a visual polish pass
 - [x] T79 Help tab (getting started, modes, shortcuts, privacy) and an interactive first-run tour
 - [x] T80 Docs, media, version 1.6.0 and tag
+
+**Phase 16 — Submission media from the user's clip → v1.6.1** (session branch `claude/upbeat-wozniak-rslrk1`; the clip, bundle and video stay outside the repo)
+- [x] T81 The user's meeting clip analysed live once (budget-guarded), saved as a demo, checked offline, and exported as a single-file bundle for the user; `live-recorded.mjs` takes `--name`, `--reserve` and `--label` and exports through the UI
+- [ ] T82 Demo-video tooling (scripted capture with a visible cursor, generated music, post-production with cards and subtitles) and the 3-minute video, handed to the user
+- [ ] T83 POST.md rewritten with the 1.4–1.6 features and new screenshots from the user's clip; version 1.6.1 and tag

@@ -3,12 +3,17 @@
 // intents Auto chose live with those it chose from the saved telemetry. Prints counts and
 // intent ids only, never signal values.
 //
-//   node scripts/live-recorded.mjs <clip.mp4|webm> [outDir]
+//   node scripts/live-recorded.mjs <clip.mp4|webm> [outDir] [--name "Demo name"]
+//                                  [--reserve seconds] [--label "ledger label"]
 //
-// Budget-guarded (scripts/presage-budget.mjs): at most 90 s are reserved. The clip, the
-// demo library and the exported files stay outside the repo.
+// With outDir, the saved demo is exported there through Advanced → Demo library: the
+// single-file <name>.standin-demo.zip plus the loose video and telemetry.
+//
+// Budget-guarded (scripts/presage-budget.mjs): --reserve seconds (default 90) are reserved
+// before the SDK starts. The clip, the demo library and the exported files stay outside
+// the repo.
 import { _electron as electron } from '@playwright/test';
-import { cpSync, existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync } from 'node:fs';
+import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { basename, dirname, join } from 'node:path';
 import { createRequire } from 'node:module';
@@ -17,8 +22,16 @@ import { readLedger, reserve, settle, usedSeconds } from './presage-budget.mjs';
 
 const require = createRequire(import.meta.url);
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
-const [clip, outDir] = process.argv.slice(2);
-if (!clip || !existsSync(clip)) throw new Error('usage: live-recorded.mjs <clip> [outDir]');
+const positional = [];
+const opts = { reserve: '90', label: 'T65 live recorded clip + telemetry save', name: '' };
+for (let i = 2; i < process.argv.length; i++) {
+  const a = process.argv[i];
+  if (a.startsWith('--')) opts[a.slice(2)] = process.argv[++i];
+  else positional.push(a);
+}
+const [clip, outDir] = positional;
+if (!clip || !existsSync(clip)) throw new Error('usage: live-recorded.mjs <clip> [outDir] [--name n]');
+const demoName = opts.name || basename(clip).replace(/\.[^.]+$/, '');
 if (!process.env.PRESAGE_API_KEY) throw new Error('PRESAGE_API_KEY is not set');
 const profile = mkdtempSync(join(tmpdir(), 'standin-live-rec-'));
 const launch = (env) =>
@@ -38,7 +51,7 @@ const sample = (page) =>
   });
 
 const result = { checks: {}, info: {} };
-const runId = reserve('T65 live recorded clip + telemetry save', 90);
+const runId = reserve(opts.label, Number(opts.reserve));
 let startedAt = null;
 let live = [];
 let app = await launch({});
@@ -55,9 +68,10 @@ try {
     await page.waitForTimeout(500);
   }
   await page.click('#save-telemetry');
-  await page.fill('#demo-name', basename(clip).replace(/\.[^.]+$/, ''));
+  await page.fill('#demo-name', demoName);
   await page.click('#demo-save-confirm');
-  const deadline = Date.now() + 75_000;
+  const clipMs = await page.evaluate(() => window.__standin.app.clip?.durationMs ?? 60_000);
+  const deadline = Date.now() + clipMs + 15_000;
   while (Date.now() < deadline) {
     const status = await page.textContent('#telemetry-status');
     if (/^(Saved|Telemetry not saved)/.test(status ?? '')) break;
@@ -95,25 +109,20 @@ if (id) {
   result.checks['no body signals saved by default'] = !t.frames.some(
     (f) => f.pulseRate || f.breathingRate || f.breathingTrace,
   );
-  if (outDir) {
-    mkdirSync(outDir, { recursive: true });
-    const v = readdirSync(join(lib, id)).find((f) => f.startsWith('video.'));
-    const base = basename(clip).replace(/\.[^.]+$/, '');
-    cpSync(join(lib, id, v), join(outDir, `${base}.${v.split('.').pop()}`));
-    cpSync(join(lib, id, 'telemetry.json'), join(outDir, `${base}.telemetry.json`));
-  }
 }
 
 // Next launch, no API key: replay the saved demo offline.
 let replay = [];
-app = await launch({ PRESAGE_API_KEY: '', STANDIN_FAKE_SDK: '1' });
+if (outDir) mkdirSync(outDir, { recursive: true });
+app = await launch({ PRESAGE_API_KEY: '', STANDIN_FAKE_SDK: '1', STANDIN_E2E_PICK_DIR: outDir ?? '' });
 try {
   const page = await app.firstWindow();
   await page.waitForSelector('#consent-demo-pick', { timeout: 10_000 });
   await page.click('#consent-demo');
   await page.waitForSelector('#clip-play', { timeout: 15_000 });
   let last = -1;
-  const deadline = Date.now() + 60_000;
+  const clipMs = await page.evaluate(() => window.__standin.app.clip?.durationMs ?? 60_000);
+  const deadline = Date.now() + clipMs + 15_000;
   while (Date.now() < deadline) {
     const s = await sample(page);
     if (s.ms + 1000 < last) break; // looped: one pass done
@@ -124,6 +133,17 @@ try {
   result.checks['replay used no SDK session'] =
     (await page.evaluate(() => window.__standin.app.fakeSdk.created)) === 0;
   result.info.replayFramesEmitted = await page.evaluate(() => window.__standin.app.replay?.emitted ?? 0);
+  if (outDir) {
+    // Export through the real UI: the single-file bundle plus loose copies.
+    await page.click('#tab-advanced');
+    await page.locator('.demo-export').first().click();
+    await page.waitForFunction(
+      () => /Exported/.test(document.querySelector('#demo-library-status')?.textContent ?? ''),
+      null,
+      { timeout: 30_000 },
+    );
+    result.info.exported = readdirSync(outDir);
+  }
 } finally {
   await app.close();
 }
