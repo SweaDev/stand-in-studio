@@ -177,7 +177,12 @@ Share the "Stand-In Virtual Stage" window as a screen share in the meeting.
 Use **Show test pattern** to confirm the meeting sees the stage. It shows colour bars, a moving dot and the time.
 
 ## Using the app
-1. **Consent:** the consent screen explains exactly what is read, sent and stored. The camera starts only after **Start with my camera**.
+1. **Start screen:** five key points say what is read, sent and stored, with every detail under *All privacy details*. Then pick how to start:
+   - **Your camera** (with a camera picker when you have more than one). The camera starts only after **Start with my camera**.
+   - **A video file**, optionally ticking *Save its telemetry as a demo*.
+   - **Demo mode**: the simulated person, or one of your saved demos.
+
+   On first run, a small card offers a one-minute **tour** of the main window. Take it again any time from **Help**.
 2. **Calibration (15 s):**
    - sit so your face and upper chest are in view;
    - look at the screen as you normally would;
@@ -194,12 +199,20 @@ Use **Show test pattern** to confirm the meeting sees the stage. It shows colour
    - turn on *Reduced motion* or *High contrast* if you like.
 5. **Presets:** save your mode and levels as a meeting preset, such as "Stand-up: Auto, listening 30%".
 
+### The main window
+- **Status bar** (top right): what feeds the stage, whether your **camera** is on, what **Presage** is reading (for example *Presage · Integrated Webcam* or *Presage · talk.webm*), and the **Stand-In Camera**.
+  - Click **Camera** to turn it off: the webcam is released, Presage stops, and the meeting sees only your character until you turn it back on.
+  - Click **Presage** to stop or resume analysis while the camera keeps running. Auto holds its level meanwhile.
+- **Camera tab:** switch the input between **Camera**, **Video file** and **Demo** (simulated or a saved demo) in place, without going back to the start screen. It also has the camera and resolution, what Presage is reading with its on/off switch, *Record a demo*, the API key and *Back to start screen*. *Change input* on the preview opens it.
+- **Essentials by default:** the dial, modes, live preview, *Hide me*, the status bar, calibration and the ways to send the stage. **Advanced → Interface** adds the other override buttons (Pin, Raise hand, Back soon, Cycle mode), the intent list and builder, and can hide calibration, the send-to-meeting section or presets. Every hotkey works whatever is shown.
+- **Help tab** (or <kbd>F1</kbd> / <kbd>?</kbd>): getting started, the modes, every keyboard shortcut, how to send the stage, privacy in brief, and **Take the tour**.
+
 ### Recorded videos and saved demos
 Recorded clips are a way to test and tune intents on the same footage again and again.
-- **Use a recorded video…** (start screen) plays an MP4, WebM, MOV, MKV or OGV file in place of the camera. All four modes work on it: Camera passes it through, and Character, Blend and Auto follow it. With an API key, Presage analyses the clip exactly as it would your webcam.
-- **Save telemetry…** (under the clip) plays the clip once from the start and saves the clip together with the signals Presage returned for it.
+- **A video file** (start screen, or **Camera tab → Video file**) plays an MP4, WebM, MOV, MKV or OGV file in place of the camera. All four modes work on it: Camera passes it through, and Character, Blend and Auto follow it. With an API key, Presage analyses the clip exactly as it would your webcam.
+- **Save this clip as a demo** (the card under the clip's controls, or *Save its telemetry as a demo* on the start screen) plays the clip once from the start and saves the clip together with the signals Presage returned for it. The card shows REC and a progress bar while it saves, then *Play it now*.
 - **Record a demo…** (Camera tab) records your webcam together with its live telemetry.
-- **Saved demos replay offline.** Pick one under *Demo* on the start screen, or press *Play* in Advanced → Demo library. The saved telemetry drives the engine in step with the video, so no API key or credits are used, and Auto decides exactly as it did live.
+- **Saved demos replay offline.** Pick one under *Demo mode* on the start screen or in **Camera tab → Demo**, or press *Play* in Advanced → Demo library. The saved telemetry drives the engine in step with the video, so no API key or credits are used, and Auto decides exactly as it did live.
 - **Where demos are kept:** the **Demo library** folder, `demos/` inside the app's user-data folder by default. You can choose another folder in Advanced. Because it is outside the app, saved demos survive rebuilds and reinstalls. Demos are never part of this repository.
 - **Sharing:** **Export** in Advanced → Demo library writes three files:
   - `<name>.standin-demo.zip`, one file to share, which holds the video, `telemetry.json` and `meta.json`;
@@ -226,12 +239,13 @@ Recorded clips are a way to test and tune intents on the same footage again and 
 - <kbd>E</kbd> eat · <kbd>L</kbd> look away · <kbd>O</kbd> talk to someone off to the side · <kbd>A</kbd> step away · <kbd>P</kbd> raise the Comfort-shield trigger
 - **Play scripted meeting** runs a 60-second loop showing Auto end to end.
 
-A permanent **"DEMO – simulated signals"** badge stays in the control window. It never appears on the stage.
+The status bar shows **Simulated demo** (or **Saved demo · name**) in the control window. It never appears on the stage.
 
 ## Privacy and consent
 - **Camera mode uses no API:** in Camera mode the Presage SDK is paused (after a 1.5 s debounce, so cycling modes doesn't stop and restart it), and nothing is analysed. It resumes when you leave Camera mode.
 - **On-device:** frames are processed on this computer by the SmartSpectra SDK. Stand-In Studio records and stores **nothing** unless you ask: no video, images, audio, landmarks or signal values.
-- **Saved demos are opt-in:** *Save telemetry* and *Record a demo* ask first, with a privacy notice. They then save the clip and its face signals (plus pulse and breathing only if ticked) in your demo library folder on this computer. Nothing is uploaded, and you can delete demos in Advanced → Demo library. Replaying a saved demo uses no API.
+- **Camera and Presage switches:** the status bar turns the camera off (privacy shutter: the webcam is released and only the character is shown) or stops Presage analysis, at any time.
+- **Saved demos are opt-in:** *Save as demo* and *Record a demo* ask first, with a privacy notice. They then save the clip and its face signals (plus pulse and breathing only if ticked) in your demo library folder on this computer. Nothing is uploaded, and you can delete demos in Advanced → Demo library. Replaying a saved demo uses no API.
 - **What is saved:** only character, mode and intent settings (names, conditions, actions, order), in `settings.json` in the app's user-data folder.
   - The settings schema drops anything else, including keys and numbers.
   - Calibration and intent tuning live in memory and are discarded on quit.

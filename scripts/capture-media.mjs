@@ -1,6 +1,6 @@
 // Captures README/POST media in Demo mode (no camera, no API key, no real person):
 // screenshots of the control window, a 2×2 character grid, Auto states, the intent
-// builder, the developer decision log, the recorded-clip view and a short recording of the
+// builder, the developer decision log, a step of the tour, the recorded-clip view and a short recording of the
 // scripted meeting. The recorded-clip view plays a clip of Demo mode's simulated sample feed
 // (made here, never kept) with the e2e fake SDK, so no Presage contact and no real person.
 //
@@ -31,6 +31,8 @@ await control.waitForTimeout(500);
 await control.screenshot({ path: join(out, 'consent.png') });
 await control.click('#consent-demo');
 await control.waitForTimeout(4500);
+// The default (essentials) window, plus the intent list the post describes.
+await control.evaluate(() => window.__standin.app.updateSettings({ ui: { intents: true } }));
 
 const tile = async (name, w = 640, h = 360) => {
   const url = await control.evaluate(([a, b]) => window.__standin.tile(a, b), [w, h]);
@@ -112,6 +114,13 @@ await toTop(control);
 await control.waitForTimeout(300);
 await control.screenshot({ path: join(out, 'control.png') });
 
+// The interactive tour, on its status-bar step.
+await control.evaluate(() => window.__standin.app.startTour());
+await control.waitForTimeout(600);
+await control.screenshot({ path: join(out, 'tour.png') });
+await control.keyboard.press('Escape');
+await toTop(control);
+
 // Intent builder (Advanced → Create custom intent) with a half-built intent.
 await control.click('#tab-advanced');
 await control.click('#create-intent');
@@ -164,7 +173,7 @@ if (videoPath) {
     join(out, 'stage-frame.png'),
   );
 }
-// Recorded-clip view: Live input preview, Virtual Stage inset, transport and Save telemetry.
+// Recorded-clip view: Live input preview, Virtual Stage inset, transport and the Save-as-demo card.
 const app2 = await electron.launch({
   executablePath: require('electron'),
   args: [root, '--no-sandbox', `--user-data-dir=${join(tmp, 'profile2')}`],

@@ -127,3 +127,11 @@ git push origin --tags
   - the WebGL2 shader under software GL (`STANDIN_SWIFTSHADER=1`, e2e only): it matches the JS reference within 2 levels and keeps the orientation.
   - Conversion time in this GPU-less container: about 21 ms per frame (software WebGL2) and 25 ms (JS), with the stage holding 30 fps.
 - **Phase 14, feedback-loop fix:** the input camera filter did not recognise "Stand-In Camera", so the app could have captured its own output. It is now excluded with an anchored pattern (`/^stand-in camera\b/i`), so a fake-camera file path containing "stand-in" (see T38) still passes.
+- **Phase 15, user decisions:**
+  - Turning the camera off from the main window is a **privacy shutter**: you stay in the workspace, and the stage shows only the character.
+  - Hidden by default (Advanced → Interface): the extra override buttons and the intent list. Calibration and the ways to send the stage stay visible.
+  - The tour is **offered** on first run (Start or Not now), not started automatically.
+  - Telemetry can be saved from a start-screen checkbox **and** from the card under the clip.
+- **Phase 15, camera off vs Hide me:** the shutter is a separate engine override (`cameraOff`). Hide me keeps its own state, and turning the camera back on restores what Hide me and the mode would show. Turning Presage off pauses the SDK at once, without the 1.5 s Camera-mode debounce, and any telemetry save or recording in progress is stopped, so no saved telemetry has a gap.
+- **Phase 15, switching input in place:** this reuses the existing restart path (`doRestart(next)`, as *Play* in the demo library already did). Consent was given at launch, and the selected settings tab is kept. A video file or a saved demo never creates an SDK session for the camera, and a replay creates none at all.
+- **Phase 15, e2e:** the first-run tour is not offered under the e2e harness unless `STANDIN_E2E_TOUR=1`, so the other specs are unaffected. Specs that use the hidden-by-default parts turn them on with `showAllUi()`. Fixed a race in `camera.spec.ts`, which read the test hook before the app had finished starting. No Presage live seconds were used (fake SDK throughout).

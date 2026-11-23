@@ -147,7 +147,7 @@ Intents are checked **top to bottom, and the first match wins**. The full refere
 
 **The rule:** *"Your body can only make Stand-In show less of you, never more. Numbers never leave your computer."*
 
-- **Consent first.** The camera starts only after a plain-language consent screen. That screen states clearly:
+- **Consent first.** The camera starts only after a plain-language consent screen. It leads with five short key points and keeps every detail one click away. That screen states clearly:
   - **Character mode** sends only the drawn character to the meeting.
   - **Camera, Blend and Auto** send **your real video**, at the opacity shown on the dial, to the meeting through the Stand-In Camera, OBS or a screen share. Each sends exactly what the Virtual Stage shows.
   - What is read from the camera, and why.
@@ -189,9 +189,15 @@ Intents are checked **top to bottom, and the first match wins**. The full refere
 
 A *Test pattern* button confirms that the meeting sees the stage. Native virtual cameras for Windows (a signed media source) and macOS (a signed Camera Extension) are future work.
 
+### 7a. Control window
+- **Status bar:** the input, whether the camera is on, what Presage is reading, and the Stand-In Camera. The camera pill is a privacy shutter (the webcam is released and only the character is shown); the Presage pill stops or resumes analysis.
+- **Camera tab:** switch the input (camera, video file, simulated or saved demo) in place, pick the camera, and see what Presage reads.
+- **Essentials by default:** dial, modes, preview, Hide me, status bar, calibration and ways to send the stage. Advanced → Interface shows or hides the rest; hotkeys always work.
+- **Help:** a Help tab (F1 or ?) with usage and every shortcut, and a short interactive tour offered once on first run and re-runnable from Help.
+
 ## 8. Demo mode
 
-Without an API key (or to save trial credits), **Demo mode** replaces the SDK with simulated signals. A permanent "DEMO – simulated signals" badge appears in the app window, never on the stage.
+Without an API key (or to save trial credits), **Demo mode** replaces the SDK with simulated signals. The status bar shows "Simulated demo" (or the saved demo's name) in the app window, never on the stage.
 - **Keyboard:** N nod · S shake · T hold to talk · B blink · H smile · E eat · L look away · A step away · P raise the Comfort-shield trigger.
 - **Scripted meeting loop:** a 60-second sequence of listening, nodding, talking, looking away and stepping out. It shows Auto mode end to end, with a looping sample video standing in for the camera feed.
 

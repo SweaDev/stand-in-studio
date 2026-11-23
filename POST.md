@@ -52,20 +52,25 @@ A 30-second screen recording of the built-in **scripted meeting** (Demo mode) is
 - stepping out ("back soon");
 - a wake-up stretch.
 
-![The control window: presence dial and modes, the live input with a Virtual Stage inset, overrides, and the Auto tab with the active intent and the intent list](https://raw.githubusercontent.com/SweaDev/stand-in-studio/main/docs/media/control.png)
+![The control window: status bar, presence dial and modes, the live input with a Virtual Stage inset, Hide me, and the Auto tab with the active intent and the intent list](https://raw.githubusercontent.com/SweaDev/stand-in-studio/main/docs/media/control.png)
 
 The control window's big preview shows your **raw input**: camera, recorded clip or demo video. A small **Virtual Stage** inset in its corner shows exactly what the meeting receives.
+- **Always clear what is on:** a status bar shows the input, whether the camera is on and what Presage is reading. One click turns the camera off (only your character is shown) or stops Presage.
+- **Tidy by default:** the main window shows the essentials; *Advanced → Interface* adds the rest. The Camera tab switches between camera, video file and demos in place.
+- **Help built in:** a Help tab with every shortcut, and a one-minute interactive tour offered on first run.
+
+![The first step of the interactive tour: the status bar shows the input, the camera and what Presage is reading](https://raw.githubusercontent.com/SweaDev/stand-in-studio/main/docs/media/tour.png)
 
 **Try it without a camera or API key:** run `npm start`, then choose *Try Demo mode*. Use the keys <kbd>N</kbd> nod · <kbd>S</kbd> shake · hold <kbd>T</kbd> to talk · <kbd>H</kbd> smile · <kbd>E</kbd> eat · <kbd>L</kbd> look away · <kbd>A</kbd> step away, or press **Play scripted meeting**.
 
-**Recorded videos and saved demos.** You can also choose *Use a recorded video…*, which plays a video file in place of the camera.
+**Recorded videos and saved demos.** You can also choose *A video file*, which plays in place of the camera.
 - **Analysed like a webcam:** with an API key, Presage analyses the clip exactly as it would your camera.
-- **Save telemetry:** stores the clip together with the signals Presage returned for it.
+- **Save as demo:** stores the clip together with the signals Presage returned for it.
 - **Replay offline:** on later runs the saved demo appears under *Demo*. The saved signals drive the app in step with the video, with no API key and no credits, and Auto makes the same decisions every time. That makes it a repeatable test bench for tuning intents.
 - **Record from the app:** you can also record a demo straight from your webcam.
 - **Share as one file:** a demo exports as a single `.standin-demo.zip`.
 
-![A recorded clip as the live input, with the Virtual Stage inset, playback controls and Save telemetry](https://raw.githubusercontent.com/SweaDev/stand-in-studio/main/docs/media/recorded.png)
+![A recorded clip as the live input, with the Virtual Stage inset, playback controls and the Save-as-demo card](https://raw.githubusercontent.com/SweaDev/stand-in-studio/main/docs/media/recorded.png)
 
 ## Code
 
@@ -155,7 +160,7 @@ I'm entering **both**:
 
 ## Consent and Data Handling
 
-The first screen is a plain-language **consent screen**, and the camera starts only after you click *Start with my camera*. It says:
+The first screen is a plain-language **consent screen**, and the camera starts only after you click *Start with my camera*. Five key points come first, with every detail one click away. It says:
 
 - **What the meeting receives:**
   - **Character mode** sends only the drawn character to the meeting.
@@ -173,9 +178,10 @@ The first screen is a plain-language **consent screen**, and the camera starts o
   - Opt-in only, behind a privacy warning: the thresholds learned from intent tuning. Turning the option off deletes them.
 - **Nothing is recorded unless you ask:** no video, images, audio, landmarks or signal values are stored by default. Calibration and tuning live in memory and are discarded on quit.
 - **Saved demos, only when you ask:**
-  - *Save telemetry* and *Record a demo* show a privacy notice every time.
+  - *Save as demo* and *Record a demo* show a privacy notice every time.
   - They save the clip and its face signals (pulse and breathing only if you tick them) to a demo library folder on your computer, never uploaded.
   - You can delete demos in the app.
+- **Off switches:** the status bar turns the camera off (the webcam is released) or stops Presage analysis at any time.
 - **Developer mode's decision log** is on screen only: never saved, printed or shown on the stage.
 - **No numbers anywhere:** no physiological number is shown on the stage or sent anywhere. The only output is the composed picture, sent as a camera or a screen share, under your control.
 - **No labels:** the app never labels feelings ("you seem stressed"). It mirrors visible movement and moves the dial.

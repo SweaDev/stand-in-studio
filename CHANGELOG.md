@@ -2,6 +2,16 @@
 
 All notable changes to Stand-In Studio. Versions follow the phases in [PLAN.md](PLAN.md).
 
+## 1.6.0 — 2026-11-23
+- **Status bar:** pills at the top show the input, whether the camera is on, what Presage is reading (camera name or video file) and the Stand-In Camera.
+  - **Camera off** is a privacy shutter. The webcam is released, Presage stops, and the meeting sees only your character until you turn it back on. Hide me is left untouched.
+  - **Presage off** stops analysis at once while the camera keeps running. Auto holds its level.
+- **Camera tab controls the input:** switch between Camera, Video file and Demo (simulated or a saved demo) in place, without going back to the start screen. It also has the camera and resolution, a readout of what Presage reads with its on/off switch, and *Back to start screen*. *Change input* on the preview opens it.
+- **Tidy start screen:** five key points, with every privacy detail under *All privacy details*. Then three cards: your camera (with a picker when there are several), a video file (with *Save its telemetry as a demo*), and Demo mode.
+- **Saving a demo is obvious:** a *Save this clip as a demo* card under the clip, with REC, a progress bar, Cancel and *Play it now*. *Record a demo* uses the same card.
+- **Essentials by default:** the main window shows the dial, modes, preview, Hide me, status bar, calibration and ways to send the stage. **Advanced → Interface** shows the other override buttons and the intent list, or hides calibration, the send-to-meeting section and presets. Hotkeys always work.
+- **Help tab and tour:** getting started, the modes, every shortcut, sending to the meeting and privacy in brief. **F1** or **?** opens it. A one-minute interactive tour is offered once on first run and can be taken again from Help.
+
 ## 1.5.1 — 2026-11-23
 - Confirmed and tested: recorded videos and saved-demo replays go out through the Stand-In Camera like the webcam does. When you switch to a replay, the camera restarts on the new source by itself. A paused clip holds its picture while frames keep flowing, so meetings never see the camera drop.
 

@@ -78,8 +78,8 @@ In Camera mode the Presage SDK is paused, so Auto has no signals and every inten
 ## Recorded demos
 
 To tune intents on repeatable footage:
-1. Open a recorded video (**Use a recorded video…** on the start screen) and press **Save telemetry…**, or record one with **Camera → Record a demo…**.
-2. Replay the demo from **Demo** on the start screen or **Advanced → Demo library → Play**. The saved signals drive Auto in step with the video, so every replay makes the same decisions with no API use. Turn on **Developer mode** to read the decision log while it plays.
+1. Open a recorded video (**A video file** on the start screen, or **Camera tab → Video file**) and press **Save as demo…** under it, or record one with **Camera tab → Record a demo…**.
+2. Replay the demo from **Demo mode** on the start screen, **Camera tab → Demo**, or **Advanced → Demo library → Play**. The saved signals drive Auto in step with the video, so every replay makes the same decisions with no API use. Turn on **Developer mode** to read the decision log while it plays.
 3. Change an intent, then replay and compare. Scrubbing or looping the clip clears the signal history, just as a resuming SDK does.
 
 A replay also goes out through the Stand-In Camera, so a tuning session can be shown live in a meeting.

@@ -150,4 +150,4 @@ Progress tracker for [PLAN.md](PLAN.md). One task = one commit; tick the box in 
 - [x] T77 Obvious telemetry saving: a Save-as-demo card with progress, REC indicator and "Play it now"
 - [x] T78 Minimal default UI with Advanced → Interface toggles, and a visual polish pass
 - [x] T79 Help tab (getting started, modes, shortcuts, privacy) and an interactive first-run tour
-- [ ] T80 Docs, media, version 1.6.0 and tag
+- [x] T80 Docs, media, version 1.6.0 and tag
