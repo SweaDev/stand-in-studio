@@ -45,6 +45,7 @@ function bootstrap(): void {
     e2e: process.env.STANDIN_E2E === '1',
     forceDemo: process.env.STANDIN_DEMO === '1',
     fakeSdk: process.env.STANDIN_E2E === '1' && process.env.STANDIN_FAKE_SDK === '1',
+    tour: process.env.STANDIN_E2E !== '1' || process.env.STANDIN_E2E_TOUR === '1',
   };
   let control: BrowserWindow | null = null;
   let store: SettingsStore | null = null;

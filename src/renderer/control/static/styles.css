@@ -2107,3 +2107,202 @@ input[type='file']::file-selector-button:hover {
   padding: 6px 12px;
   font-size: var(--fs-sm);
 }
+
+/* ------------------------------------------------------------------ Help tab */
+.help-hero {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s3);
+  padding: var(--s3) var(--s4);
+  margin-bottom: var(--s4);
+  border-radius: var(--r-md);
+  border: 1px solid rgba(242, 166, 90, 0.4);
+  background: linear-gradient(135deg, var(--accent-soft), transparent 70%), var(--surface-2);
+}
+.help-hero p {
+  margin: 2px 0 0;
+  color: var(--muted);
+  font-size: var(--fs-sm);
+}
+.help-hero button {
+  white-space: nowrap;
+}
+.help-section {
+  margin-bottom: var(--s4);
+}
+.help-steps {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  gap: var(--s3);
+  counter-reset: step;
+}
+.help-steps li {
+  display: flex;
+  gap: var(--s3);
+  align-items: flex-start;
+}
+.help-steps p,
+.help-section > p {
+  margin: 2px 0 0;
+  color: var(--muted);
+  font-size: var(--fs-sm);
+}
+.help-step-icon {
+  flex: none;
+  width: 32px;
+  height: 32px;
+  border-radius: 9px;
+  display: grid;
+  place-items: center;
+  background: var(--surface-3);
+  color: var(--accent);
+}
+.help-modes {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 6px var(--s3);
+  margin: 0;
+  font-size: var(--fs-sm);
+}
+.help-modes dt {
+  font-weight: 700;
+}
+.help-modes dd {
+  margin: 0;
+  color: var(--muted);
+}
+.keys-table {
+  border-collapse: collapse;
+  width: 100%;
+  font-size: var(--fs-sm);
+  margin-bottom: var(--s2);
+}
+.keys-table td {
+  padding: 5px 0;
+  border-bottom: 1px solid var(--line);
+}
+.keys-table td:first-child {
+  width: 40%;
+  padding-right: var(--s3);
+}
+.help-list {
+  margin: 0;
+  padding-left: 18px;
+  color: var(--muted);
+  font-size: var(--fs-sm);
+}
+.help-list li {
+  margin-bottom: 4px;
+}
+#help-version {
+  margin-top: var(--s3);
+}
+
+/* ------------------------------------------------------------------ tour */
+.tour {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+}
+.tour-block {
+  position: absolute;
+  inset: 0;
+}
+.tour-spot {
+  position: fixed;
+  border-radius: var(--r-md);
+  box-shadow:
+    0 0 0 2px var(--accent),
+    0 0 0 9999px rgba(10, 8, 14, 0.72);
+  pointer-events: none;
+  transition:
+    left 220ms var(--ease),
+    top 220ms var(--ease),
+    width 220ms var(--ease),
+    height 220ms var(--ease);
+}
+.tour-pop {
+  position: fixed;
+  padding: var(--s4);
+  border-radius: var(--r-lg);
+  background: var(--surface);
+  border: 1px solid var(--line-strong);
+  box-shadow: var(--shadow-2);
+  transition:
+    left 220ms var(--ease),
+    top 220ms var(--ease);
+}
+.tour-pop h2 {
+  font-size: var(--fs-lg);
+  margin: var(--s1) 0 var(--s2);
+}
+.tour-pop p {
+  color: var(--muted);
+  font-size: var(--fs-sm);
+  margin-bottom: var(--s3);
+}
+.tour-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.tour-count {
+  font-size: var(--fs-xs);
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+.tour-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--s2);
+}
+@media (prefers-reduced-motion: reduce) {
+  .tour-spot,
+  .tour-pop {
+    transition: none;
+  }
+}
+.tour-offer {
+  position: fixed;
+  right: var(--s5);
+  bottom: var(--s5);
+  z-index: 900;
+  display: flex;
+  gap: var(--s3);
+  max-width: 380px;
+  padding: var(--s4);
+  border-radius: var(--r-lg);
+  background: var(--surface);
+  border: 1px solid rgba(242, 166, 90, 0.5);
+  box-shadow: var(--shadow-2);
+}
+.tour-offer p {
+  margin: 2px 0 var(--s3);
+  color: var(--muted);
+  font-size: var(--fs-sm);
+}
+.tour-offer-icon {
+  color: var(--accent);
+  margin-top: 2px;
+}
+.thumb-change {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 1;
+  padding: 4px 10px;
+  font-size: var(--fs-xs);
+  font-weight: 600;
+  border-radius: var(--r-pill);
+  background: rgba(22, 20, 26, 0.72);
+  border-color: rgba(255, 255, 255, 0.18);
+  backdrop-filter: blur(4px);
+}
+.thumb-change:hover:not([disabled]) {
+  background: rgba(22, 20, 26, 0.9);
+}

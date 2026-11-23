@@ -64,6 +64,8 @@ export interface AppInfo {
   forceDemo: boolean;
   /** E2E only: use a fake SDK in the renderer (STANDIN_E2E=1 and STANDIN_FAKE_SDK=1). */
   fakeSdk: boolean;
+  /** Offer the first-run tour (always, except under e2e unless STANDIN_E2E_TOUR=1). */
+  tour: boolean;
 }
 
 /** Whether a Presage API key is available in the main process. Never the key itself. */
@@ -110,6 +112,7 @@ export const EXTERNAL_LINKS = Object.freeze({
   presageKey: 'https://physiology.presagetech.com/auth/login',
   obs: 'https://obsproject.com/download',
   v4l2loopback: 'https://github.com/umlaeute/v4l2loopback',
+  guide: 'https://github.com/SweaDev/stand-in-studio#readme',
 });
 
 /** Every page the app may open: fixed links plus the signal documentation. */

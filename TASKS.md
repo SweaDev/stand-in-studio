@@ -149,5 +149,5 @@ Progress tracker for [PLAN.md](PLAN.md). One task = one commit; tick the box in 
 - [x] T76 Tidy start screen: five key points with the full privacy details folded, three source cards, camera picker, "save telemetry" option for a video
 - [x] T77 Obvious telemetry saving: a Save-as-demo card with progress, REC indicator and "Play it now"
 - [x] T78 Minimal default UI with Advanced → Interface toggles, and a visual polish pass
-- [ ] T79 Help tab (getting started, modes, shortcuts, privacy) and an interactive first-run tour
+- [x] T79 Help tab (getting started, modes, shortcuts, privacy) and an interactive first-run tour
 - [ ] T80 Docs, media, version 1.6.0 and tag

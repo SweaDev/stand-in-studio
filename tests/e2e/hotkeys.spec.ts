@@ -30,7 +30,8 @@ test('hotkey commands from main toggle overrides; Hide me wins at once', async (
     await send('nonsense');
 
     await control.click('#show-help');
-    await expect(control.getByRole('dialog', { name: 'Keyboard shortcuts' })).toBeVisible();
+    await expect(control.locator('#tab-help')).toHaveAttribute('aria-selected', 'true');
+    await expect(control.locator('#hotkey-help')).toBeVisible();
     await expect(control.locator('#hotkey-help')).toContainText('Ctrl+Alt+H');
     await expect(control.locator('#hotkey-help')).toContainText('hold to talk');
   } finally {

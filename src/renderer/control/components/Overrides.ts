@@ -59,58 +59,16 @@ export class OverrideBar implements Component {
   }
 }
 
-/** Dialog listing every shortcut, including Demo-mode keys. */
-export class HotkeyHelp implements Component {
-  readonly el: HTMLDialogElement;
-
-  constructor(platform: string, demo: boolean) {
-    const rows = Object.values(COMMANDS).map((c) =>
-      h(
-        'tr',
-        {},
-        h('td', {}, h('kbd', {}, displayAccelerator(HOTKEYS[c.name], platform))),
-        h('td', {}, c.label),
-      ),
-    );
-    const demoKeys: [string, string][] = [
-      ['N', 'nod'],
-      ['S', 'shake'],
-      ['T', 'hold to talk'],
-      ['B', 'blink'],
-      ['H', 'smile'],
-      ['E', 'eat'],
-      ['L', 'look away'],
-      ['O', 'talk to someone off to the side'],
-      ['A', 'step away'],
-      ['P', 'raise the Comfort-shield trigger'],
-    ];
-    this.el = h(
-      'dialog',
-      { id: 'hotkey-help', 'aria-labelledby': 'hotkey-title' },
-      h('h2', { id: 'hotkey-title' }, 'Keyboard shortcuts'),
-      h('p', { class: 'hint' }, 'Global: these work even while your meeting app has focus.'),
-      h('table', {}, h('tbody', {}, rows)),
-      demo
-        ? h(
-            'div',
-            {},
-            h('h3', {}, 'Demo mode keys (this window)'),
-            h(
-              'table',
-              {},
-              h(
-                'tbody',
-                {},
-                demoKeys.map(([k, l]) => h('tr', {}, h('td', {}, h('kbd', {}, k)), h('td', {}, l))),
-              ),
-            ),
-          )
-        : null,
-      h('form', { method: 'dialog' }, h('button', { type: 'submit', class: 'primary' }, 'Close')),
-    );
-  }
-
-  open(): void {
-    this.el.showModal();
-  }
-}
+/** Demo mode's keys (control window only): each acts out one situation. */
+export const DEMO_KEYS: readonly (readonly [string, string])[] = [
+  ['N', 'nod'],
+  ['S', 'shake'],
+  ['T', 'hold to talk'],
+  ['B', 'blink'],
+  ['H', 'smile'],
+  ['E', 'eat'],
+  ['L', 'look away'],
+  ['O', 'talk to someone off to the side'],
+  ['A', 'step away'],
+  ['P', 'raise the Comfort-shield trigger'],
+];

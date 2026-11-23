@@ -9,7 +9,9 @@ import type { Mode, StageState } from '../../shared/types';
 import { ConsentScreen, type ConsentChoice } from './components/ConsentScreen';
 import { MODE_LABELS, ModeSwitch } from './components/ModeSwitch';
 import { ModePanel } from './components/ModePanel';
-import { HotkeyHelp, OverrideBar } from './components/Overrides';
+import { OverrideBar } from './components/Overrides';
+import { HelpPanel } from './components/HelpPanel';
+import { Tour } from './components/Tour';
 import { ObsChecklist } from './components/ObsChecklist';
 import { ApiKeyPanel } from './components/ApiKeyPanel';
 import { StatusBanner } from './components/StatusBanner';
@@ -131,6 +133,16 @@ export class ControlApp {
       this.intentList?.sync(this.settings.auto.intents, this.engine.intentTuning);
       if (this.settings.auto.saveTuning)
         void this.updateSettings({ intentTuning: { ...this.engine.intentTuning } });
+    });
+    // F1 or ? opens Help (not while typing).
+    window.addEventListener('keydown', (e) => {
+      if (this.main.hidden || this.tour?.isOpen) return;
+      const t = e.target as HTMLElement | null;
+      const typing = t && (t.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName));
+      if (e.key === 'F1' || (e.key === '?' && !typing)) {
+        e.preventDefault();
+        this.openHelp();
+      }
     });
     // Main is quitting: stop the SDK from this side too, so no frames race the teardown.
     this.api.onQuitting(() => {
@@ -348,6 +360,7 @@ export class ControlApp {
 
   private async doRestart(next?: ConsentChoice): Promise<void> {
     this.reopenTab = next ? (this.tabs?.selected ?? null) : null;
+    this.tour?.end(false);
     await this.stopVcam().catch(() => undefined);
     this.vcamPanel = null;
     if (this.pauseTimer) clearTimeout(this.pauseTimer);
@@ -419,6 +432,7 @@ export class ControlApp {
     // Chosen on the start screen: save the clip's telemetry (the privacy notice still comes first).
     if (typeof choice === 'object' && choice.kind === 'clip' && choice.saveTelemetry && this.presage)
       void this.saveClipTelemetry();
+    else this.offerTour();
   }
 
   // ---------------------------------------------------------------- Stand-In Camera
@@ -616,6 +630,108 @@ export class ControlApp {
     document.querySelector('.app-header')?.append(bar.el);
     this.statusBar = bar;
     return bar;
+  }
+
+  // ---------------------------------------------------------------- Help and tour
+
+  private tour: Tour | null = null;
+
+  /** Opens the Help tab. */
+  openHelp(): void {
+    this.tabs?.select('help', true);
+    this.tabs?.el.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+  }
+
+  /** The interactive tour of the main window (skips what Interface options hide). */
+  startTour(): void {
+    document.getElementById('tour-offer')?.remove();
+    if (!this.settings.onboarding.tourOffered)
+      void this.updateSettings({ onboarding: { tourOffered: true } });
+    this.tour?.end(false);
+    const q = (sel: string) => () => document.querySelector<HTMLElement>(sel);
+    const tab = (id: string) => () => this.tabs?.select(id);
+    this.tour = new Tour(
+      [
+        {
+          target: q('.status-bar'),
+          title: 'Your status at a glance',
+          body: 'What feeds the stage, whether your camera is on, and what Presage is reading. Click the camera or Presage to turn it off and on.',
+        },
+        {
+          target: q('.thumb-frame'),
+          title: 'Live input and Virtual Stage',
+          body: 'The big picture is your raw input. The small inset is what your meeting sees: the Virtual Stage. Click it to open the Virtual Stage window.',
+        },
+        {
+          target: q('.controls'),
+          title: 'How much of you shows',
+          body: 'Turn the dial or pick a mode. Auto moves the dial for you, from what you are doing.',
+        },
+        {
+          target: q('#cmd-hideMe'),
+          title: 'Hide me, any time',
+          body: 'Shows only your character, instantly. The shortcut works even while your meeting app has focus.',
+        },
+        {
+          target: q('.obs'),
+          title: 'Send the stage to your meeting',
+          body: 'Use the Stand-In Camera (Linux), OBS Virtual Camera, or share the Virtual Stage window. The test pattern checks the meeting sees it.',
+        },
+        {
+          target: q('#group-input'),
+          before: tab('camera'),
+          title: 'Change the input',
+          body: 'Switch between your camera, a video file and demos without leaving the workspace, pick a camera, and save demos.',
+        },
+        {
+          target: q('#group-interface'),
+          before: tab('advanced'),
+          title: 'Show more when you want it',
+          body: 'The main window shows the essentials. Interface options add the other override buttons, the intent list and more.',
+        },
+        {
+          target: q('#tab-help'),
+          before: tab('help'),
+          title: 'Help is always here',
+          body: 'Usage, every keyboard shortcut (F1 or ? opens this tab) and this tour again.',
+        },
+      ],
+      () => {
+        this.tour = null;
+      },
+    );
+    this.tour.start();
+  }
+
+  /** First run: offers the tour once (Start or Not now). */
+  private offerTour(): void {
+    if (!this.api.info.tour || this.settings.onboarding.tourOffered) return;
+    const done = () => {
+      card.remove();
+      void this.updateSettings({ onboarding: { tourOffered: true } });
+    };
+    const card: HTMLElement = h(
+      'aside',
+      { class: 'tour-offer', id: 'tour-offer', role: 'dialog', 'aria-labelledby': 'tour-offer-title' },
+      h('span', { class: 'tour-offer-icon', 'aria-hidden': 'true' }, icon('sparkle', 20)),
+      h(
+        'div',
+        {},
+        h('strong', { id: 'tour-offer-title' }, 'New here? Take a 1-minute tour'),
+        h('p', {}, 'See where everything is. You can take it again any time from Help.'),
+        h(
+          'div',
+          { class: 'row' },
+          h(
+            'button',
+            { type: 'button', class: 'primary', id: 'tour-offer-start', onclick: () => this.startTour() },
+            'Start the tour',
+          ),
+          h('button', { type: 'button', id: 'tour-offer-skip', onclick: done }, 'Not now'),
+        ),
+      ),
+    );
+    this.main.append(card);
   }
 
   /** Optional parts of the main window, shown per Advanced → Interface. */
@@ -1179,7 +1295,10 @@ export class ControlApp {
     );
     this.onFrame(() => calibration.update(this.engine.calibrationStatus(), this.presage?.lastHint ?? ''));
     const overrides = new OverrideBar(this.api.info.platform, (c) => this.runCommand(c));
-    const help = new HotkeyHelp(this.api.info.platform, this.demo !== null);
+    const help = new HelpPanel(
+      { platform: this.api.info.platform, version: this.api.info.version, demo: this.demo !== null },
+      { startTour: () => this.startTour(), openExternal: (u) => void this.api.openExternal(u) },
+    );
     const obs = new ObsChecklist(
       this.api.info.platform,
       (u) => void this.api.openExternal(u),
@@ -1361,6 +1480,7 @@ export class ControlApp {
           ],
         },
         { id: 'advanced', label: 'Advanced', content: [this.advanced.el, library.el] },
+        { id: 'help', label: 'Help', content: [help.el] },
       ],
       this.reopenTab ?? 'auto',
     );
@@ -1388,6 +1508,21 @@ export class ControlApp {
             'button',
             {
               type: 'button',
+              id: 'change-input',
+              class: 'thumb-change',
+              title: 'Change the input (Camera tab)',
+              onclick: () => {
+                this.tabs?.select('camera', true);
+                this.tabs?.el.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+              },
+            },
+            icon('video', 14),
+            'Change input',
+          ),
+          h(
+            'button',
+            {
+              type: 'button',
               class: 'stage-inset',
               id: 'stage-inset-btn',
               title: 'Open the Virtual Stage window',
@@ -1403,25 +1538,16 @@ export class ControlApp {
           { class: 'row toolbar' },
           stageBtn,
           this.demo ? scriptBtn : null,
-          h('button', { type: 'button', id: 'show-help', onclick: () => help.open() }, 'Shortcuts'),
           h(
             'button',
-            {
-              type: 'button',
-              id: 'change-input',
-              onclick: () => {
-                this.tabs?.select('camera', true);
-                this.tabs?.el.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
-              },
-            },
-            icon('video', 16),
-            'Change input',
+            { type: 'button', id: 'show-help', onclick: () => this.openHelp() },
+            icon('help', 16),
+            'Help',
           ),
         ),
         this.transport?.el ?? null,
         caption,
         overrides.el,
-        help.el,
         obs.el,
       ),
       h('section', { class: 'settings card', 'aria-label': 'Settings' }, this.tabs.el),
