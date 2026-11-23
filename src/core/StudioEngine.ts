@@ -381,6 +381,10 @@ export class StudioEngine implements CommandReceiver {
   toggleHide(): void {
     this.overrides.toggleHide();
   }
+  /** Privacy shutter: with the camera off, only the character is shown (like Hide me). */
+  setCameraOff(off: boolean): void {
+    this.overrides.cameraOff = off;
+  }
   togglePin(): void {
     this.overrides.togglePin(this.feed.value(this.clock.now()));
   }
@@ -495,13 +499,14 @@ export class StudioEngine implements CommandReceiver {
       style: { ...this.settings.accessibility },
       testPattern: this.testPattern,
     };
-    const override = this.overrides.hidden
-      ? 'hidden'
-      : this.overrides.backSoon
-        ? 'backSoon'
-        : this.overrides.pinned
-          ? 'pinned'
-          : null;
+    const override =
+      this.overrides.hidden || this.overrides.cameraOff
+        ? 'hidden'
+        : this.overrides.backSoon
+          ? 'backSoon'
+          : this.overrides.pinned
+            ? 'pinned'
+            : null;
     const trace = buildTrace({
       now,
       mode: this.mode,

@@ -8,12 +8,13 @@ const state = (page: Page) =>
     return { feed: s.feedOpacity, speaking: s.badges.speaking, presence: s.pose.presence, mode: s.mode };
   });
 
-test('Demo mode: badge in the control window only, keys drive Auto end to end', async () => {
+test('Demo mode: status in the control window only, keys drive Auto end to end', async () => {
   const { app, control } = await launchApp();
   try {
-    await expect(control.locator('#demo-badge')).toBeHidden();
+    await expect(control.locator('#pill-source')).toHaveCount(0);
     await passConsent(control);
-    await expect(control.locator('#demo-badge')).toHaveText('DEMO – simulated signals');
+    await expect(control.locator('#pill-source')).toHaveText('Simulated demo');
+    await expect(control.locator('#pill-presage')).toHaveText('Simulated signals');
     // The badge must never reach the stage: the stage window holds only the canvas.
     await expect.poll(() => app.windows().length).toBe(2);
     const stageHtml = await control.evaluate(

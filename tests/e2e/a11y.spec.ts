@@ -54,7 +54,7 @@ test('no camera: a clear message and a way into Demo mode', async () => {
       timeout: 15_000,
     });
     await control.click('#status-action');
-    await expect(control.locator('#demo-badge')).toBeVisible();
+    await expect(control.locator('#pill-source')).toHaveText('Simulated demo');
   } finally {
     await app.close();
   }

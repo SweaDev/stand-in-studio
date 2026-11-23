@@ -25,6 +25,23 @@ const PATHS = {
   check: 'M5 12l5 5 9-10',
   sparkle: 'M12 3l2 6 6 2-6 2-2 6-2-6-6-2 6-2z',
   terminal: 'M4 5h16v14H4zM7 9l3 3-3 3M12 15h5',
+  camera: 'M3 7h4l2-2h6l2 2h4v12H3zM12 10a3 3 0 1 0 0 6 3 3 0 0 0 0-6z',
+  cameraOff: 'M3 3l18 18M9 5h6l2 2h4v10M21 19H3V7h3M10 10.5a3 3 0 0 0 4 4',
+  video: 'M3 6h12v12H3zM15 10l6-3v10l-6-3',
+  film: 'M4 4h16v16H4zM8 4v16M16 4v16M4 8h4M4 12h4M4 16h4M16 8h4M16 12h4M16 16h4',
+  scan: 'M4 8V4h4M16 4h4v4M20 16v4h-4M8 20H4v-4M8 12h8',
+  help: 'M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zM9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.6.3-1 .9-1 1.6V14M12 17h.01',
+  broadcast:
+    'M12 12h.01M8.5 8.5a5 5 0 0 0 0 7M15.5 8.5a5 5 0 0 1 0 7M5.6 5.6a9 9 0 0 0 0 12.8M18.4 5.6a9 9 0 0 1 0 12.8',
+  shield: 'M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z',
+  sliders: 'M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12M20 18h0M14 4v4M8 10v4M16 16v4',
+  user: 'M12 4a4 4 0 1 0 0 8 4 4 0 0 0 0-8zM4 21c0-4 4-6 8-6s8 2 8 6',
+  monitor: 'M3 4h18v12H3zM8 20h8M12 16v4',
+  folder: 'M3 6h6l2 2h10v11H3z',
+  arrowLeft: 'M19 12H5M11 6l-6 6 6 6',
+  arrowRight: 'M5 12h14M13 6l6 6-6 6',
+  keyboard: 'M3 6h18v12H3zM7 10h.01M11 10h.01M15 10h.01M7 14h10',
+  power: 'M12 3v9M6.3 6.3a8 8 0 1 0 11.4 0',
 } as const;
 
 export type IconName = keyof typeof PATHS;

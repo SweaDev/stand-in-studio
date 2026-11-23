@@ -74,6 +74,8 @@ export class Overrides {
   pinnedValue = 0;
   raisedHand = false;
   backSoon = false;
+  /** The camera is switched off (privacy shutter): only the character is shown. */
+  cameraOff = false;
 
   toggleHide(): void {
     this.hidden = !this.hidden;
@@ -106,12 +108,12 @@ export interface FeedDecision {
 
 /**
  * Resolves the active mode plus overrides into feed and character targets. Precedence:
- * Hide me (instant 0%, always wins) → Back soon (fade to 0%) → Pin (frozen value) → mode.
+ * Hide me or camera off (instant 0%, always wins) → Back soon (fade to 0%) → Pin (frozen value) → mode.
  */
 export function resolveStage(mode: Mode, ctx: ModeContext, o: Overrides): FeedDecision {
   const state = modeState(mode);
   const characterTarget = state.characterTarget(ctx);
-  if (o.hidden) return { feedTarget: 0, characterTarget: 1, transition: 'instant' };
+  if (o.hidden || o.cameraOff) return { feedTarget: 0, characterTarget: 1, transition: 'instant' };
   if (o.backSoon) return { feedTarget: 0, characterTarget: 1, transition: 'fade' };
   if (o.pinned) return { feedTarget: o.pinnedValue, characterTarget, transition: 'fade' };
   return { feedTarget: state.feedTarget(ctx), characterTarget, transition: state.transition };

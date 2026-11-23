@@ -313,6 +313,21 @@ describe('StudioEngine (modes and overrides)', () => {
     expect(last(s).characterOpacity).toBe(0);
   });
 
+  it('camera off (privacy shutter) shows only the character, even in Camera mode, without touching Hide me', () => {
+    const { clock, engine } = setup('camera');
+    let s = run(engine, clock, 1000);
+    expect(last(s).feedOpacity).toBe(1);
+    engine.setCameraOff(true);
+    s = run(engine, clock, 34);
+    expect(last(s).feedOpacity).toBe(0);
+    s = run(engine, clock, 600);
+    expect(last(s).characterOpacity).toBe(1);
+    expect(engine.overrideState.hidden).toBe(false);
+    engine.setCameraOff(false);
+    s = run(engine, clock, 600);
+    expect(last(s).feedOpacity).toBe(1);
+  });
+
   it('turning the dial switches to Blend; Hide me wins instantly; Pin freezes', () => {
     const { clock, engine } = setup('camera');
     run(engine, clock, 1000);

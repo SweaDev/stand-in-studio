@@ -58,7 +58,8 @@ test('a recorded clip is analysed like the camera, its telemetry is saved, and i
     await expect(control.locator('#consent-demo-pick')).toContainText('E2E clip');
     await expect(control.locator('#consent-demo-pick')).toHaveValue(/e2e-clip-/);
     await control.click('#consent-demo');
-    await expect(control.locator('#demo-badge')).toContainText('saved recording');
+    await expect(control.locator('#pill-source')).toContainText('Saved demo · E2E clip');
+    await expect(control.locator('#pill-presage')).toHaveText('Replaying telemetry');
     await expect(control.locator('#sensing-status')).toContainText('Replaying saved telemetry');
     await expect
       .poll(() => control.evaluate(() => (window as any).__standin.app.replay?.emitted ?? 0))

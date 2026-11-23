@@ -138,18 +138,99 @@ a {
   color: var(--faint);
   font-size: var(--fs-sm);
 }
-.demo-badge {
+.status-bar {
   margin-left: auto;
-  display: inline-flex;
-  align-items: center;
-  padding: 4px 12px;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: var(--s2);
+}
+.pill {
+  --pc: var(--muted);
+  --pc-soft: var(--surface-2);
+  --pc-line: var(--line);
+  gap: 6px;
+  padding: 5px 12px 5px 10px;
   border-radius: var(--r-pill);
-  background: var(--accent-soft);
-  border: 1px solid var(--accent);
-  color: var(--accent-strong);
-  font-weight: 700;
-  font-size: var(--fs-xs);
-  letter-spacing: 0.04em;
+  border: 1px solid var(--pc-line);
+  background: var(--pc-soft);
+  color: var(--text);
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  max-width: 300px;
+  white-space: nowrap;
+}
+.pill .icon {
+  color: var(--pc);
+}
+.pill-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.pill-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--pc);
+  flex: none;
+}
+.pill[aria-pressed='true'],
+.pill[aria-pressed='false'] {
+  background: var(--pc-soft);
+  border-color: var(--pc-line);
+}
+.pill:hover:not([disabled]) {
+  background: var(--surface-3);
+  border-color: var(--pc);
+}
+.pill[disabled] {
+  opacity: 1;
+  cursor: default;
+}
+.pill[data-tone='live'] {
+  --pc: var(--ok);
+  --pc-soft: var(--ok-soft);
+  --pc-line: rgba(129, 230, 160, 0.4);
+}
+.pill#pill-camera[data-tone='live'] {
+  --pc: #ff6b5e;
+  --pc-soft: rgba(255, 107, 94, 0.14);
+  --pc-line: rgba(255, 107, 94, 0.45);
+}
+.pill[data-tone='on'] {
+  --pc: var(--accent);
+  --pc-soft: var(--accent-soft);
+  --pc-line: rgba(242, 166, 90, 0.45);
+}
+.pill[data-tone='off'],
+.pill[data-tone='muted'] {
+  --pc: var(--faint);
+}
+.pill[data-tone='off'] .pill-text {
+  color: var(--muted);
+}
+.pill[data-tone='warn'] {
+  --pc: var(--warn);
+  --pc-soft: var(--warn-soft);
+  --pc-line: rgba(245, 200, 106, 0.45);
+}
+.pill.is-analysing .pill-dot,
+.pill#pill-camera[data-tone='live'] .pill-dot {
+  animation: pill-pulse 1.6s ease-in-out infinite;
+}
+@keyframes pill-pulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 var(--pc-line);
+  }
+  50% {
+    box-shadow: 0 0 0 4px transparent;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .pill .pill-dot {
+    animation: none !important;
+  }
 }
 
 /* ------------------------------------------------------------------ controls */
@@ -1661,4 +1742,28 @@ input[type='file']::file-selector-button:hover {
   margin-left: 0;
   align-items: center;
   gap: var(--s2);
+}
+
+/* ------------------------------------------------------------------ camera off */
+.camera-off {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--s2);
+  padding: var(--s4);
+  text-align: center;
+  background: var(--surface);
+  color: var(--muted);
+  border-radius: inherit;
+  z-index: 2;
+}
+.camera-off strong {
+  color: var(--text);
+  font-size: var(--fs-lg);
+}
+.camera-off button {
+  margin-top: var(--s2);
 }

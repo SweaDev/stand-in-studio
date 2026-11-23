@@ -44,13 +44,16 @@ export class CurrentIntentCard implements Component {
     );
   }
 
-  update(debug: EngineDebug | null, mode: Mode): void {
+  /** `pausedWhy` explains a pause (defaults to Camera mode). */
+  update(debug: EngineDebug | null, mode: Mode, pausedWhy?: string): void {
     if (!debug) return;
     const t = debug.trace;
     const intent = debug.intent;
     let note: string;
     if (debug.sensing === 'paused')
-      note = 'Presage is paused: Camera mode passes your video straight through, so nothing is analysed.';
+      note =
+        pausedWhy ??
+        'Presage is paused: Camera mode passes your video straight through, so nothing is analysed.';
     else if (debug.sensing === 'warming') note = 'Waiting for signals; Auto holds the current level.';
     else if (mode !== 'auto') note = `Auto is off: ${MODE_NAMES[mode]} mode decides the stage.`;
     else if (t.policy.override === 'hidden') note = 'Hide me is on: the character covers you.';

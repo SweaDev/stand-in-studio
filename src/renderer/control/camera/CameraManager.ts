@@ -66,6 +66,11 @@ export class CameraManager {
     return this.video;
   }
 
+  /** The open camera's name (empty when closed). */
+  get label(): string {
+    return this.stream?.getVideoTracks()[0]?.label ?? '';
+  }
+
   get current(): MediaStream | null {
     return this.stream;
   }

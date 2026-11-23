@@ -50,6 +50,8 @@ import { ReplaySignalSource } from '../../sensing/recorded/ReplaySignalSource';
 import { TelemetryRecorder } from '../../sensing/recorded/TelemetryRecorder';
 import { sanitizeTelemetry } from '../../shared/telemetry';
 import { formatDuration, videoExt } from '../../shared/demos';
+import { StatusBar } from './components/StatusBar';
+import { type InputFacts, type InputSource, describeInput } from '../../shared/inputStatus';
 
 /** Presage SDK version bundled with the app (stamped into saved telemetry). */
 const SDK_VERSION = '3.5.0';
@@ -78,6 +80,13 @@ export class ControlApp {
   readonly saveDialog = new SaveDemoDialog();
   private apiAvailable = false;
   private lastClipMs = 0;
+  /** Privacy shutter: the webcam is released and only the character is shown. */
+  cameraOff = false;
+  /** The user turned Presage analysis off (until turned back on or the input changes). */
+  presageOff = false;
+  /** Name of the open (or last open) camera. */
+  private cameraLabel = '';
+  private statusBar: StatusBar | null = null;
   readonly banner = new StatusBanner();
   private feed: () => FeedSource | null = () => null;
   private readonly frameListeners: ((s: StageState) => void)[] = [];
@@ -151,7 +160,7 @@ export class ControlApp {
   private setBusy(busy: boolean): void {
     this.root.toggleAttribute('aria-busy', busy);
     for (const el of this.root.querySelectorAll<HTMLButtonElement | HTMLSelectElement>(
-      '#stop-camera, #group-camera-device select, #group-camera-device button',
+      '#stop-camera, #pill-camera, #group-camera-device select, #group-camera-device button',
     ))
       el.disabled = busy;
   }
@@ -190,14 +199,24 @@ export class ControlApp {
     const src = this.presage;
     if (!src) return;
     if (this.wantsPause()) {
-      if (src.isPaused || this.pauseTimer) return;
-      this.pauseTimer = setTimeout(() => {
-        this.pauseTimer = undefined;
+      if (src.isPaused) return;
+      const pauseNow = () =>
         void this.serial(async () => {
           if (this.presage !== src || !this.wantsPause() || src.isPaused) return;
           this.engine.setSensing('paused');
           await src.pause();
         });
+      // Turned off by the user: at once. Camera mode: after a debounce (mode cycling).
+      if (this.presageOff) {
+        if (this.pauseTimer) clearTimeout(this.pauseTimer);
+        this.pauseTimer = undefined;
+        pauseNow();
+        return;
+      }
+      if (this.pauseTimer) return;
+      this.pauseTimer = setTimeout(() => {
+        this.pauseTimer = undefined;
+        pauseNow();
       }, ControlApp.PAUSE_DEBOUNCE_MS);
       return;
     }
@@ -212,13 +231,16 @@ export class ControlApp {
     }
   }
 
-  /** The SDK has nothing to do: Camera mode, or a recorded clip that is paused or over. */
+  /** The SDK has nothing to do: turned off, Camera mode, or a recorded clip that is paused or over. */
   private wantsPause(): boolean {
-    return this.engine.currentMode === 'camera' || (this.clip !== null && !this.clip.playing);
+    return (
+      this.presageOff || this.engine.currentMode === 'camera' || (this.clip !== null && !this.clip.playing)
+    );
   }
 
   /** Why the SDK is paused, for the status chip. */
   private pauseReason(): string {
+    if (this.presageOff) return 'Presage off · turned off by you, nothing is analysed';
     if (this.engine.currentMode === 'camera')
       return this.clip
         ? 'Presage paused · the clip passes straight through'
@@ -242,7 +264,7 @@ export class ControlApp {
 
   /** Starts sensing on a new source: paused from the outset when the stage is in Camera mode. */
   private async startSensing(src: PresageSignalSource): Promise<void> {
-    const paused = this.engine.currentMode === 'camera';
+    const paused = this.engine.currentMode === 'camera' || this.presageOff;
     if (paused) this.engine.setSensing('paused');
     await src.start({ paused });
   }
@@ -282,11 +304,6 @@ export class ControlApp {
           h('p', { class: 'tagline' }, 'Decide how much of you each call sees'),
         ),
       ),
-      h(
-        'span',
-        { class: 'demo-badge', id: 'demo-badge', role: 'status', hidden: true },
-        'DEMO – simulated signals',
-      ),
     );
     const consent = new ConsentScreen(
       {
@@ -320,6 +337,10 @@ export class ControlApp {
     if (this.pauseTimer) clearTimeout(this.pauseTimer);
     this.pauseTimer = undefined;
     this.engine.setSensing('live');
+    this.engine.setCameraOff(false);
+    this.cameraOff = false;
+    this.presageOff = false;
+    this.statusBar = null;
     this.loop.stop();
     await this.demo?.stop();
     this.demo = null;
@@ -337,7 +358,6 @@ export class ControlApp {
     this.clip = null;
     this.transport = null;
     this.lastClipMs = 0;
-    (document.getElementById('demo-badge') as HTMLElement | null)?.setAttribute('hidden', '');
     this.banner.hide();
     this.feed = () => null;
     this.host.close();
@@ -364,7 +384,6 @@ export class ControlApp {
       this.feed = () => this.demo?.frame() ?? null;
       await this.demo.start();
       this.demo.bindKeys(window);
-      (document.getElementById('demo-badge') as HTMLElement).hidden = false;
     } else if (!(await this.startCamera())) {
       return;
     }
@@ -461,6 +480,118 @@ export class ControlApp {
     return this.vcamPanel.el;
   }
 
+  // ---------------------------------------------------------------- input status and toggles
+
+  /** What feeds the stage and Presage right now. */
+  private inputSource(): InputSource {
+    if (this.replay) return 'replay';
+    if (this.clip) return 'clip';
+    if (this.demo) return 'demo';
+    return 'camera';
+  }
+
+  /** Facts for the status bar and the Camera tab readout. */
+  inputFacts(): InputFacts {
+    const source = this.inputSource();
+    const status = this.presage?.status ?? null;
+    return {
+      source,
+      name:
+        source === 'replay'
+          ? this.replayName
+          : source === 'clip'
+            ? (this.clip?.name ?? '')
+            : source === 'camera'
+              ? this.cameraLabel
+              : '',
+      shutter: this.cameraOff,
+      presage: status,
+      pause:
+        status !== 'paused'
+          ? null
+          : this.presageOff
+            ? 'user'
+            : this.engine.currentMode === 'camera'
+              ? 'cameraMode'
+              : 'clipPaused',
+      apiKey: this.apiAvailable,
+    };
+  }
+
+  /** Turns Presage analysis off (nothing is sent to it) or back on. */
+  setPresageOff(off: boolean): void {
+    if (off === this.presageOff) return;
+    this.presageOff = off;
+    this.syncSensing();
+  }
+
+  /**
+   * Privacy shutter: turning the camera off releases the webcam and stops Presage, and the
+   * stage shows only the character. Turning it on reopens the same camera.
+   */
+  setCameraOff(off: boolean): Promise<void> {
+    return this.serial(async () => {
+      const cam = this.camera;
+      if (!cam || off === this.cameraOff) return;
+      if (off) {
+        this.telemetry?.abort('The camera was turned off.');
+        this.recording?.stop();
+        if (this.pauseTimer) clearTimeout(this.pauseTimer);
+        this.pauseTimer = undefined;
+        this.cameraOff = true;
+        this.engine.setCameraOff(true);
+        this.engine.setSensing('paused');
+        await this.presage?.stop();
+        this.presage = null;
+        cam.close();
+        return;
+      }
+      let stream: MediaStream;
+      try {
+        stream = await cam.open(this.settings.camera.deviceId, this.settings.camera.profile);
+      } catch (err) {
+        this.banner.show(`Could not turn the camera back on: ${(err as Error).message}`);
+        return;
+      }
+      this.cameraLabel = cam.label;
+      this.cameraOff = false;
+      this.engine.setCameraOff(false);
+      this.engine.setSensing('live');
+      this.presage = this.createPresage(stream);
+      await this.startSensing(this.presage);
+    });
+  }
+
+  /** The header status bar (input, camera, Presage, Stand-In Camera). */
+  private buildStatusBar(): StatusBar {
+    const bar = new StatusBar({
+      showInput: () => {
+        this.tabs?.select('camera', true);
+        this.tabs?.el.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+      },
+      setCameraOff: (o) => void this.setCameraOff(o),
+      setPresageOff: (o) => this.setPresageOff(o),
+      setVcam: (on) => {
+        const st = this.vcamStatus.state;
+        if (st === 'ready' || st === 'live') {
+          this.vcamPanel?.setEnabled(on);
+          void this.updateSettings({ virtualCamera: { enabled: on } }).then(() => this.syncVcam());
+        } else {
+          document.getElementById('vcam')?.scrollIntoView({ block: 'center', behavior: 'smooth' });
+        }
+      },
+    });
+    this.onFrame(() =>
+      bar.update(describeInput(this.inputFacts()), this.camera !== null, {
+        state: this.vcamStatus.state,
+        enabled: this.settings.virtualCamera.enabled,
+      }),
+    );
+    document.querySelector('.app-header')?.append(bar.el);
+    this.statusBar = bar;
+    return bar;
+  }
+
   /** Runs a command from a hotkey or a button (Command pattern). */
   runCommand(name: CommandName): void {
     const receiver: CommandReceiver = {
@@ -537,9 +668,6 @@ export class ControlApp {
       await this.replay.start();
       this.engine.startCalibration();
       await clip.play().catch(() => undefined);
-      const badge = document.getElementById('demo-badge') as HTMLElement;
-      badge.textContent = 'DEMO – saved recording, no API';
-      badge.hidden = false;
       void this.updateSettings({ recorded: { lastDemo: id } });
       return true;
     } catch (err) {
@@ -570,6 +698,7 @@ export class ControlApp {
     if (!choice || this.clip !== clip) return;
     void this.updateSettings({ recorded: { saveBody: choice.includeBody } });
     if (this.engine.currentMode === 'camera') this.setMode('auto');
+    if (this.presageOff) this.setPresageOff(false);
     if (choice.includeBody) await src.setComfortShield(true);
     const rec = new TelemetryRecorder({ mediaTime: () => clip.mediaMs, includeBody: choice.includeBody });
     const wasLooping = clip.loop;
@@ -589,10 +718,12 @@ export class ControlApp {
             !clip.playing ||
             rec.aborted ||
             this.telemetry !== rec ||
-            this.engine.currentMode === 'camera'
+            this.engine.currentMode === 'camera' ||
+            this.presageOff
           ) {
             if (this.engine.currentMode === 'camera')
               rec.abort('Camera mode paused Presage, so the telemetry is incomplete.');
+            if (this.presageOff) rec.abort('Presage was turned off, so the telemetry is incomplete.');
             if (!clip.video.ended && !rec.aborted) rec.abort('Saving was cancelled.');
             resolve();
           } else setTimeout(check, 100);
@@ -657,9 +788,10 @@ export class ControlApp {
       folder: listing?.dir ?? 'your demo library',
       includeBody: this.settings.recorded.saveBody,
     });
-    if (!choice || this.camera !== cam) return;
+    if (!choice || this.camera !== cam || this.cameraOff) return;
     void this.updateSettings({ recorded: { saveBody: choice.includeBody } });
     if (this.engine.currentMode === 'camera') this.setMode('auto');
+    if (this.presageOff) this.setPresageOff(false);
     if (choice.includeBody) await src.setComfortShield(true);
     let clip: ClipRecorder;
     try {
@@ -730,8 +862,12 @@ export class ControlApp {
       const r = this.recording;
       if (r) {
         // Camera mode pauses Presage, which would leave a gap in the telemetry.
-        if (this.engine.currentMode === 'camera') {
-          this.telemetry?.abort('Camera mode paused Presage, so the telemetry is incomplete.');
+        if (this.engine.currentMode === 'camera' || this.presageOff) {
+          this.telemetry?.abort(
+            this.presageOff
+              ? 'Presage was turned off, so the telemetry is incomplete.'
+              : 'Camera mode paused Presage, so the telemetry is incomplete.',
+          );
           r.stop();
         }
         this.setRecordStatus(
@@ -800,6 +936,7 @@ export class ControlApp {
       return false;
     }
     this.camera = cam;
+    this.cameraLabel = cam.label;
     if (cam.deviceId && cam.deviceId !== this.settings.camera.deviceId) {
       void this.updateSettings({ camera: { deviceId: cam.deviceId } });
     }
@@ -860,6 +997,7 @@ export class ControlApp {
     await this.presage?.stop();
     this.presage = null;
     const stream = await this.camera.open(deviceId, profile);
+    this.cameraLabel = this.camera.label;
     await this.updateSettings({ camera: { deviceId: this.camera.deviceId, profile } });
     this.presage = this.createPresage(stream);
     await this.startSensing(this.presage);
@@ -871,6 +1009,29 @@ export class ControlApp {
       ?.list()
       .then((d) => picker.setDevices(d, this.camera?.deviceId ?? null, this.settings.camera.profile));
     return h('div', { class: 'group', id: 'group-camera-device' }, h('h3', {}, 'Camera'), picker.el);
+  }
+
+  /** Covers the raw preview while the camera is off. */
+  private cameraOffOverlay(): HTMLElement | null {
+    if (!this.camera) return null;
+    const on = h(
+      'button',
+      { type: 'button', class: 'primary', id: 'camera-on', onclick: () => void this.setCameraOff(false) },
+      icon('camera', 16),
+      'Turn camera on',
+    );
+    const el = h(
+      'div',
+      { class: 'camera-off', id: 'camera-off', hidden: true },
+      icon('cameraOff', 32),
+      h('strong', {}, 'Camera off'),
+      h('span', {}, 'Your webcam is released. The meeting sees only your character.'),
+      on,
+    );
+    this.onFrame(() => {
+      if (el.hidden === this.cameraOff) el.hidden = !this.cameraOff;
+    });
+    return el;
   }
 
   /** What feeds the stage: shown on the raw preview. */
@@ -928,6 +1089,7 @@ export class ControlApp {
 
   /** Lays out the main workspace. */
   protected buildWorkspace(): void {
+    this.buildStatusBar();
     const dial = new PresenceDial((v) => this.turnDial(v));
     this.presets = new PresetPanel(
       () => this.settings,
@@ -1049,7 +1211,15 @@ export class ControlApp {
     this.demoLibraryChanged = () => void library.refresh();
     const current = new CurrentIntentCard();
     this.onFrame((s) => {
-      current.update(this.engine.debug, s.mode);
+      current.update(
+        this.engine.debug,
+        s.mode,
+        this.cameraOff
+          ? 'The camera is off: only your character is shown, and nothing is analysed.'
+          : this.presageOff
+            ? 'Presage is off: nothing is analysed, and Auto holds the current level.'
+            : undefined,
+      );
       this.intentList?.live(this.engine.debug?.intent.id ?? null, this.engine.tuningActive);
     });
     this.tabs = new SettingsTabs(
@@ -1127,6 +1297,7 @@ export class ControlApp {
           { class: 'thumb-frame' },
           this.thumb,
           h('span', { class: 'thumb-label' }, `Live input · ${this.sourceLabel()}`),
+          this.cameraOffOverlay(),
           h(
             'button',
             {
