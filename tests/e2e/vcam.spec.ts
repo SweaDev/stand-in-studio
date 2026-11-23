@@ -1,8 +1,8 @@
 import { expect, test } from '@playwright/test';
-import { existsSync, mkdtempSync, readFileSync } from 'node:fs';
+import { existsSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { launchApp, passConsent } from './helpers';
+import { launchApp, openTab, passConsent, testClip } from './helpers';
 
 const FRAME = 1280 * 720 * 2;
 const stats = (file: string) =>
@@ -99,6 +99,81 @@ test('without v4l2loopback the app shows how to install it, and OBS and screen s
     }
     await expect(control.locator('#obs-option')).toBeVisible();
     await expect(control.locator('.obs')).toContainText('OBS Virtual Camera');
+  } finally {
+    await electron.close();
+  }
+});
+
+const sample = (b: Buffer) => b.subarray(FRAME / 2 - 20_000, FRAME / 2 + 20_000);
+
+test('a recorded video file goes out through the Stand-In Camera, and pausing the clip freezes the picture', async () => {
+  const file = join(mkdtempSync(join(tmpdir(), 'standin-vcam-')), 'frames.yuyv');
+  const { app: electron, control } = await launchApp({ STANDIN_FAKE_VCAM: file });
+  try {
+    await control.setInputFiles('#consent-clip-file', testClip(10));
+    await expect(control.locator('#clip-play')).toBeVisible({ timeout: 15_000 });
+    await expect(control.locator('#vcam-status')).toContainText('Live', { timeout: 10_000 });
+    await control.locator('.mode-switch').getByRole('radio', { name: 'Camera' }).click();
+    await control.waitForTimeout(1_500);
+
+    // The moving test clip reaches the camera: consecutive frames differ.
+    const s0 = stats(file).frames;
+    const a = readFileSync(file);
+    await control.waitForTimeout(1_000);
+    const b = readFileSync(file);
+    expect(meanDiff(sample(a), sample(b))).toBeGreaterThan(1);
+    await control.waitForTimeout(2_000);
+    expect((stats(file).frames - s0) / 3).toBeGreaterThan(20);
+
+    // Paused clip: frames keep flowing (meetings never see a dropped camera), picture holds still.
+    await control.click('#clip-play');
+    await expect(control.locator('#clip-play')).toHaveAttribute('aria-label', 'Play');
+    await control.waitForTimeout(800);
+    const p0 = stats(file).frames;
+    const c = readFileSync(file);
+    await control.waitForTimeout(1_000);
+    expect(meanDiff(sample(c), sample(readFileSync(file)))).toBeLessThan(0.5);
+    expect(stats(file).frames).toBeGreaterThan(p0 + 15);
+  } finally {
+    await electron.close();
+  }
+});
+
+test('a saved demo replays through the Stand-In Camera, with no Presage session', async () => {
+  const work = mkdtempSync(join(tmpdir(), 'standin-vcam-demo-'));
+  const file = join(work, 'frames.yuyv');
+  const telemetry = join(work, 'clip.telemetry.json');
+  writeFileSync(
+    telemetry,
+    JSON.stringify({
+      format: 'standin-telemetry',
+      version: 1,
+      includesBody: false,
+      video: { file: 'clip.webm', durationMs: 10_000, width: 320, height: 240 },
+      frames: Array.from({ length: 200 }, (_, i) => ({ tMs: i * 50, validation: 'ok', talking: false })),
+    }),
+  );
+  const { app: electron, control } = await launchApp({ STANDIN_FAKE_VCAM: file, STANDIN_FAKE_SDK: '1' });
+  try {
+    await passConsent(control);
+    await expect(control.locator('#vcam-status')).toContainText('Live', { timeout: 10_000 });
+    await openTab(control, 'advanced');
+    await control.setInputFiles('#demo-import-video', testClip(10));
+    await control.setInputFiles('#demo-import-telemetry', telemetry);
+    await control.click('#demo-import');
+    await expect(control.locator('#demo-library-status')).toContainText('Imported');
+    await control.locator('.demo-play').click();
+    await expect(control.locator('#sensing-status')).toContainText('Replaying saved telemetry', {
+      timeout: 15_000,
+    });
+
+    // The camera restarts on the new source by itself, and frames flow from the replay.
+    await expect(control.locator('#vcam-status')).toContainText('Live', { timeout: 10_000 });
+    await expect.poll(() => stats(file).started).toBe(2);
+    const f0 = stats(file).frames;
+    await control.waitForTimeout(2_000);
+    expect(stats(file).frames - f0).toBeGreaterThan(40);
+    expect(await control.evaluate(() => (window as any).__standin.app.fakeSdk.created)).toBe(0);
   } finally {
     await electron.close();
   }

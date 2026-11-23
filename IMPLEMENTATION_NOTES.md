@@ -90,6 +90,7 @@ git push origin --tags
 | v1.3.1 | (the T66 commit, same branch) | Release 1.3.1: single-file demo bundles |
 | v1.4.0 | (the T68 commit, same branch) | Release 1.4.0: live input preview and the Virtual Stage window |
 | v1.5.0 | (the T71 commit, same branch) | Release 1.5.0: the native Stand-In Camera on Linux |
+| v1.5.1 | (the T72 commit, same branch) | Release 1.5.1: Stand-In Camera tests for recorded videos and replays |
 
 ## Deviations from PLAN.md
 - **T05, fake camera format:** the plan called for a `.y4m` file, but 60 s of 960×540 y4m is about 1 GB. Chromium's `--use-file-for-fake-video-capture` also accepts **`.mjpeg`** (51 MB here), so the fake camera uses `test-assets/face.mjpeg`. The SDK file probe uses `face.mp4`.

@@ -140,3 +140,4 @@ Progress tracker for [PLAN.md](PLAN.md). One task = one commit; tick the box in 
 - [x] T69 Main process: V4L2 output through koffi ioctls (like OBS's v4l2-output), loopback device discovery from sysfs, one-time persistent setup via pkexec (fixed script), FileSink for e2e, IPC and paused frame on quit
 - [x] T70 Renderer: WebGL2/JS YUYV conversion of the Virtual Stage, Stand-In Camera default on Linux with setup prompt, OBS and screen share as alternatives on every platform, settings and consent
 - [x] T71 Docs, version 1.5.0 and tag
+- [x] T72 E2E coverage: recorded video files and saved-demo replays through the Stand-In Camera (no code change needed); docs, version 1.5.1 and tag

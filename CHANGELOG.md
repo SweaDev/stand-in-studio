@@ -2,6 +2,9 @@
 
 All notable changes to Stand-In Studio. Versions follow the phases in [PLAN.md](PLAN.md).
 
+## 1.5.1 — 2026-11-23
+- Confirmed and tested: recorded videos and saved-demo replays go out through the Stand-In Camera like the webcam does. When you switch to a replay, the camera restarts on the new source by itself. A paused clip holds its picture while frames keep flowing, so meetings never see the camera drop.
+
 ## 1.5.0 — 2026-11-23
 - **Stand-In Camera (Linux): no OBS needed.** The Virtual Stage appears in Meet, Zoom or Teams as a webcam called "Stand-In Camera".
   - It is the default on Linux and keeps working while the Virtual Stage window is closed.

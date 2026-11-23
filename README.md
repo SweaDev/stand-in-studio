@@ -156,6 +156,7 @@ A virtual webcam called **Stand-In Camera**: pick it in Meet, Zoom or Teams like
   - leaves any v4l2loopback options you already have untouched.
 
   The setup is a short fixed script, [`src/main/vcam/setupScript.ts`](src/main/vcam/setupScript.ts). It never prompts again, even after a reboot.
+- **Any source:** it works with your webcam, a recorded video, a saved demo or the simulated demo. The camera sends whatever the Virtual Stage shows; in Camera mode that is the plain clip.
 - **On/off:** the camera is on by default and starts by itself once a device exists. Turning it off, or quitting, leaves meeting apps on a "Stand-In paused" picture rather than a frozen frame.
 - **How it works:** it is the same technique as OBS's own Linux virtual camera. The stage is converted to YUYV on the GPU (WebGL2) and written to the v4l2loopback device.
 
