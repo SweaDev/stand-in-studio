@@ -46,7 +46,7 @@ All modes produce one picture, the **stage**, which the meeting receives as your
 |---|---|---|
 | **Character** | The character only, on a calm background. Your feed is at 0% | Character and background colour |
 | **Camera** | Your original webcam feed at 100%; the character is hidden. The Presage SDK is **paused**, so nothing is analysed | Optional small character badge in a corner (on/off), shown idle |
-| **Blend** | Your feed at the opacity you choose, with the character overlaid | Opacity slider 0–100% with presets 25 / 50 / 75%. Layout: **Over** (character centred, feed dimmed behind) or **Beside** (character in the lower third, feed above) |
+| **Blend** | Your feed at the opacity you choose, with the character overlaid | Opacity slider 0–100% with presets 25 / 50 / 75%. Layout: **Over** (character over your face, or centred when no face is known, feed dimmed behind) or **Beside** (character in the lower third, feed above) |
 | **Auto** | Your feed at an opacity chosen live by the Auto rules (§5), with the character always present | Your **max** (default 100%), **listening level** (default 40%), and Comfort shield on/off |
 
 **Presence dial.** This is the main control in the app window: a large round dial, with a mode switch beside it. Beside them, a preview of the **raw input** (camera, recorded clip or demo video) carries a small inset of the processed Virtual Stage output.
@@ -80,6 +80,10 @@ Every character also has:
 - a **raised-hand** pose: a leaf, a paw or a lantern tassel;
 - a **reduced-motion** variant: half amplitude, no sparkles;
 - a **high-contrast** variant: thick outlines, flat background.
+
+**Over your face.** In Blend (Over) and Auto the character follows the face, from the SDK's face mesh mapped through the same crop as the feed. *Size* 100% means its solid body (each character's measured body, without thin strings or stems) just covers the face on screen, down to 25%. Offsets move it left, right, up or down in face widths and heights. Its opacity mirrors the dial, capped by *Opacity over face*. At 0% it glides back to the centre.
+
+**Lip-reading zoom (accessibility, opt-in, Auto).** Once Auto has committed to *Reveal me* for talking, the feed goes to 100% (above *Your max*, never above the Comfort shield cap) and the crop eases to the face (about 60% of the height). The character moves to a corner badge, and it zooms back out when you stop.
 
 ## 4. Signals → character behaviour
 

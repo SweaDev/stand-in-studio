@@ -196,7 +196,9 @@ Use **Show test pattern** to confirm the meeting sees the stage. It shows colour
    - **Advanced → Create custom intent** opens the builder. **Advanced → Developer mode** shows the decision log.
 4. **Characters and accessibility:**
    - choose a character and background colour;
-   - turn on *Reduced motion* or *High contrast* if you like.
+   - **Follow my face** (on by default): in Blend and Auto the character sits over your face, using the face position Presage reads. *Size* 100% means its body just covers your face on screen, and you can go down to 25%. You can also nudge it left, right, up or down, and cap its *Opacity over face*. Its opacity mirrors the dial: at 40% you, the character is at 60%;
+   - turn on *Reduced motion* or *High contrast* if you like;
+   - **Lip-reading zoom (Auto)**, off by default: while Auto shows you talking to the meeting, your face is shown at 100% (above *Your max*) and zoomed in, and the character steps aside to a corner. It is for people who read lips.
 5. **Presets:** save your mode and levels as a meeting preset, such as "Stand-up: Auto, listening 30%".
 
 ### The main window

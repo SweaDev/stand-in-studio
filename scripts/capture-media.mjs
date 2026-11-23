@@ -245,9 +245,37 @@ if (cli.demo) {
   const s1 = await tile3('demo-listening');
   await at(38_000, 7_000);
   const s2 = await tile3('demo-turned');
-  await at(49_500, 7_500);
+  await at(46_500, 6_800);
   const s3 = await tile3('demo-talking');
   ff('-i', s1, '-i', s2, '-i', s3, '-filter_complex', 'hstack=inputs=3', join(out, 'auto-states.png'));
+  // Every character over the same moment of the face (Auto, listening: 40% you).
+  await at(20_000, 7_000);
+  await c3.evaluate(() => window.__standin.app.clip.pause());
+  await c3.waitForTimeout(1_200);
+  const onFace = [];
+  for (const id of ['lantern', 'houseplant', 'cat', 'cloud']) {
+    await c3.evaluate((ch) => window.__standin.app.updateSettings({ character: ch }), id);
+    await c3.waitForTimeout(700);
+    onFace.push(await tile3(`face-${id}`));
+  }
+  ff(
+    ...onFace.flatMap((t) => ['-i', t]),
+    '-filter_complex',
+    '[0][1][2][3]xstack=inputs=4:layout=0_0|w0_0|0_h0|w0_h0',
+    join(out, 'on-face.png'),
+  );
+  await c3.evaluate(() => window.__standin.app.updateSettings({ character: 'lantern' }));
+  await c3.evaluate(() => window.__standin.app.clip.play());
+  // Lip-reading zoom (opt-in): talking, face at 100%, the lantern in a corner.
+  await c3.evaluate(() => window.__standin.app.updateSettings({ accessibility: { lipReading: true } }));
+  await at(49_500, 1_000);
+  await c3.waitForFunction(() => window.__standin.engine.state?.zoom === 1, null, { timeout: 20_000 });
+  await c3.waitForTimeout(900);
+  {
+    const url = await c3.evaluate(() => window.__standin.tile(1280, 720));
+    writeFileSync(join(out, 'lip-reading.png'), Buffer.from(url.split(',')[1], 'base64'));
+  }
+  await c3.evaluate(() => window.__standin.app.updateSettings({ accessibility: { lipReading: false } }));
   // Control window, talking in the meeting, with the intent list shown.
   await c3.evaluate(() => window.__standin.app.updateSettings({ ui: { intents: true } }));
   await at(50_000, 6_500);

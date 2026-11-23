@@ -20,55 +20,50 @@ Today the only escape is turning the camera off. A black tile loses every nod an
 Stand-In Studio is a desktop camera with one control, a **presence dial**:
 - At one end is your real webcam.
 - At the other is a hand-drawn character (a **paper lantern, a houseplant, a cat or a cloud**) that carries your nonverbal cues without your face. It breathes when you breathe, blinks when you blink, nods along, talks when you talk, and glows when you smile.
-- In between, your real video fades softly beneath the character.
+- In between, the character **sits over your face** and your real video shows through it. As the dial goes up, the character fades and more of you shows.
+
+The character follows your face using the face mesh Presage returns. Its size comes from **your face on screen**, measured against each character's own drawn body, so at 100% it just covers your face. You can make it smaller, nudge it up, down or sideways, and cap how opaque it gets over your face.
+
+![All four characters over the same moment of my face, at 40% (the character at 60%)](https://raw.githubusercontent.com/SweaDev/stand-in-studio/main/docs/media/on-face.png)
 
 In **Auto**, the app moves the dial for you, based on **intents** it reads from your signals:
 - you **appear when you talk in the meeting**;
 - you **fade to your listening level** while you listen;
-- the character **covers for you** when you talk to someone else in the room, look away, eat, step out or need a moment.
+- the character **covers you** when you talk to someone else in the room, look away, eat, step out or need a moment.
 
 You choose what the character does for each intent, and you can build your own.
 
+![Auto on my recorded clip: listening (40%, the lantern over my face), turned to someone off camera (covered), talking to the meeting (revealed)](https://raw.githubusercontent.com/SweaDev/stand-in-studio/main/docs/media/auto-states.png)
+
+**For people who read lips** there is an accessibility option, off by default: **lip-reading zoom**. While Auto shows you talking to the meeting, your face is shown at 100% (even above your own max) and zoomed in, and the character steps aside to a corner. When you stop talking, it zooms back out.
+
+![Lip-reading zoom: while I talk, my face at 100%, zoomed in, with the lantern in the corner](https://raw.githubusercontent.com/SweaDev/stand-in-studio/main/docs/media/lip-reading.png)
+
 The stage reaches Zoom, Meet or Teams as a webcam. On Linux it is the built-in **Stand-In Camera**: no OBS needed, and a one-time setup with your password. On every platform, **OBS Virtual Camera** or a screen share of the **Stand-In Virtual Stage** window also work.
 
-![The four characters](https://raw.githubusercontent.com/SweaDev/stand-in-studio/main/docs/media/characters.png)
-
-![Auto: listening at 40%, talking in the meeting at 100%, stepped out ("back soon")](https://raw.githubusercontent.com/SweaDev/stand-in-studio/main/docs/media/auto-states.png)
-
-It is meant to be delightful to look at: picture a grid of breathing houseplants and nodding lanterns, with a real face fading in whenever someone speaks. It is also meant to be a thoughtful tool for people who are camera-tired, camera-shy, neurodivergent, sharing a home, eating at their desk, or simply having a hard day.
+It is meant to be delightful to look at: picture a grid of breathing houseplants and nodding lanterns, with a real face fading in whenever someone speaks. It is also meant to be a thoughtful tool for people who are camera-tired, camera-shy, neurodivergent, sharing a home, eating at their desk, hard of hearing, or simply having a hard day.
 
 ## Demo
 
-<!-- TODO before publishing: replace with your recorded demo video (YouTube or similar). -->
-**🎬 Demo video: _[add your video link here]_**
+<!-- TODO before publishing: add the demo video link (YouTube or similar). -->
+**🎬 Demo video: _[link to be added]_**
 
-A 30-second screen recording of the built-in **scripted meeting** (Demo mode) is in the repo at [`docs/media/demo.webm`](https://github.com/SweaDev/stand-in-studio/blob/main/docs/media/demo.webm). It shows Auto end to end:
-- listening;
-- an enthusiastic double nod;
-- talking with a laugh (sparkles);
-- a head shake;
-- looking away;
-- eating at the desk;
-- stepping out ("back soon");
-- a wake-up stretch.
+The video runs the app on a 94-second recording of me in a meeting. It was analysed once, live, by Presage and saved as a demo. Every replay then drives the app from those saved signals, offline, so Auto makes exactly the decisions it made live.
 
-![The control window: status bar, presence dial and modes, the live input with a Virtual Stage inset, Hide me, and the Auto tab with the active intent and the intent list](https://raw.githubusercontent.com/SweaDev/stand-in-studio/main/docs/media/control.png)
+![The control window on my saved demo: status bar, presence dial and modes, the raw input with the Virtual Stage inset, Hide me, and the Auto tab with the active intent and the intent list](https://raw.githubusercontent.com/SweaDev/stand-in-studio/main/docs/media/control.png)
 
-The control window's big preview shows your **raw input**: camera, recorded clip or demo video. A small **Virtual Stage** inset in its corner shows exactly what the meeting receives.
-- **Always clear what is on:** a status bar shows the input, whether the camera is on and what Presage is reading. One click turns the camera off (only your character is shown) or stops Presage.
-- **Tidy by default:** the main window shows the essentials; *Advanced → Interface* adds the rest. The Camera tab switches between camera, video file and demos in place.
+The big preview shows your **raw input**: camera, video file or demo. The small **Virtual Stage** inset shows exactly what the meeting receives.
+- **Always clear what is on:** a status bar shows the input, whether the camera is on and what Presage is reading. One click turns the camera off (the webcam is released and only your character is shown) or stops Presage.
+- **Tidy by default:** the main window shows the essentials, and *Advanced → Interface* adds the rest. The Camera tab switches between camera, video file and demos in place.
 - **Help built in:** a Help tab with every shortcut, and a one-minute interactive tour offered on first run.
 
-![The first step of the interactive tour: the status bar shows the input, the camera and what Presage is reading](https://raw.githubusercontent.com/SweaDev/stand-in-studio/main/docs/media/tour.png)
+**Try it without a camera or API key:** run `npm start`, then choose *Try Demo mode*. Use the keys <kbd>N</kbd> nod · <kbd>S</kbd> shake · hold <kbd>T</kbd> to talk · <kbd>H</kbd> smile · <kbd>E</kbd> eat · <kbd>L</kbd> look away · <kbd>A</kbd> step away, or press **Play scripted meeting**. A 30-second recording of that scripted meeting is at [`docs/media/demo.webm`](https://github.com/SweaDev/stand-in-studio/blob/main/docs/media/demo.webm).
 
-**Try it without a camera or API key:** run `npm start`, then choose *Try Demo mode*. Use the keys <kbd>N</kbd> nod · <kbd>S</kbd> shake · hold <kbd>T</kbd> to talk · <kbd>H</kbd> smile · <kbd>E</kbd> eat · <kbd>L</kbd> look away · <kbd>A</kbd> step away, or press **Play scripted meeting**.
-
-**Recorded videos and saved demos.** You can also choose *A video file*, which plays in place of the camera.
-- **Analysed like a webcam:** with an API key, Presage analyses the clip exactly as it would your camera.
-- **Save as demo:** stores the clip together with the signals Presage returned for it.
-- **Replay offline:** on later runs the saved demo appears under *Demo*. The saved signals drive the app in step with the video, with no API key and no credits, and Auto makes the same decisions every time. That makes it a repeatable test bench for tuning intents.
-- **Record from the app:** you can also record a demo straight from your webcam.
-- **Share as one file:** a demo exports as a single `.standin-demo.zip`.
+**Recorded videos and saved demos** make a repeatable test bench for tuning intents:
+- **Analysed like a webcam:** with an API key, Presage analyses a video file exactly as it would your camera.
+- **Save as demo:** after a privacy notice, the clip plays once and is saved with the signals Presage returned for it.
+- **Replay offline:** the saved signals drive the app in step with the video, with no API key and no credits.
+- **Record from the app, share as one file:** record a demo straight from your webcam, and export it as a single `.standin-demo.zip`.
 
 ![A recorded clip as the live input, with the Virtual Stage inset, playback controls and the Save-as-demo card](https://raw.githubusercontent.com/SweaDev/stand-in-studio/main/docs/media/recorded.png)
 
@@ -96,15 +91,16 @@ Stand-In Studio opens the webcam **once** and gives that same stream to the SDK 
 | Blinking (`face.blinking`), with eye openness from landmarks as backup | Eyes blink | Rising edge, 140 ms blink, 250 ms refractory period |
 | Face landmarks → head pitch and yaw | Nods, shakes, head tilt, **amplified ×3** so a 5° nod reads on a 320×180 tile | Nose tip against the eye midpoint, divided by eye distance and roll-corrected. A nod is a ≥ 0.05 eye-distance dip that returns within 700 ms; two within 1.5 s is an enthusiastic nod |
 | Landmarks → inner-lip gap | Mouth opens and closes | **Only while talking**, so chewing or yawning never looks like speech |
+| Landmarks → **face box** (forehead, chin and cheeks of the mesh) | The character sits over your face, sized so its drawn body covers it; the **lip-reading zoom** frames your face | Mapped through the same crop as the video, smoothed (position ~150 ms, size ~500 ms), and held while analysis is paused |
 | Landmarks → **eye gaze** (iris centres 468 and 473 against the eye corners) | Feeds the *Looking elsewhere* intent | Measured in eye-widths relative to calibration, so it works at any distance from the camera |
 | Talking (`face.talking`) | Mouth animates; a soft **speaking ring** | Tells others who is speaking, even on a muted call |
 | Expressions (HAPPY score) | Warm glow: the candle flares, flowers open, the sun peeks out. A laugh (smile plus talking) adds sparkles | Compared with your resting level. On at rest + 0.25 held for 400 ms; off below rest + 0.15 |
-| Validation status | Presence: "back soon" when away, then a wake-up stretch. **Face in view** and **people in view** (`kMultipleFacesFound`) for intents | Filtered over 1.5 s, because I measured ~30% non-OK codes even on a good, well-lit clip. Codes like "too dark" never hide you on their own |
+| Validation status | Presence: "back soon" only when no face is found for 3 s, then a wake-up stretch. **Face in view** and **people in view** (`kMultipleFacesFound`) for intents | Filtered over 1.5 s, because I measured ~30% non-OK codes even on a good, well-lit clip. A face the SDK rates poor (cropped at the frame edge, too close, dim) still counts as present: my own clip, with my forehead cut off, taught me that |
 
 ### Auto mode: intents and actions
 
 Auto is driven by **intents**. Each intent is a few conditions on Presage-derived signals, paired with an **action** for the character:
-- **Reveal me:** your video at your max, and the character steps aside.
+- **Reveal me:** your video at your max, and the character fades away.
 - **Blend:** your video at your listening level, under the character.
 - **Cover me:** only the character.
 - **Back soon:** only the character, with a "back soon" badge.
@@ -139,12 +135,14 @@ Auto is driven by **intents**. Each intent is a few conditions on Presage-derive
 
 **Camera mode costs nothing.** Camera mode is a plain pass-through, so the Presage SDK is **paused** while you're in it, and nothing is analysed. It resumes the moment you leave, and Auto holds its level until fresh data arrives, so a waking SDK never looks like an empty chair.
 
+**Lip-reading zoom** goes through the same policy: it engages only once Auto has committed to *Reveal me* (after the 2 s hold), and it never goes above the Comfort shield's cap.
+
 The core rule is the **Auto invariant**: *your body can only make Stand-In show less of you, never more.* Only visible, deliberate cues (talking while facing the screen) can raise the opacity, and never above the max you set. An intent that uses a body signal (pulse or breathing rate) can only cover you. Property-based tests (fast-check) check this over thousands of random signal combinations.
 
 The opt-in **Comfort shield** is the only feature that requests cardio metrics (pulse and breathing rate). It learns your baseline over its first 30 seconds. While your pulse runs more than 12 bpm above that baseline, or your breathing rate more than 5/min above it, it caps your video at 15%, and it releases after 20 s back near baseline. It is slow by design, because cardio values are averaged over seconds.
 
 A few things I learned by measuring the SDK instead of guessing (all written up in [`docs/sdk-notes.md`](https://github.com/SweaDev/stand-in-studio/blob/main/docs/sdk-notes.md)):
-- **Landmarks:** 478 MediaPipe Face Mesh points, in pixel coordinates.
+- **Landmarks:** 478 MediaPipe Face Mesh points, in the analysed frame's pixel coordinates, about 20 times a second. That is enough to place a character over the face and to zoom to it; nothing else is needed.
 - **Vulkan:** the expression models need it (`mesa-vulkan-drivers` on a headless Linux box).
 - **Frame rate:** about 30 packets/s at 1280×720, 960×540 and 640×360.
 - **Resolution:** at 640×360 a face that isn't close to the camera is no longer found. So the app captures at 960×540 and steps down only when the SDK reports a sustained low frame rate.
@@ -156,7 +154,7 @@ A few things I learned by measuring the SDK instead of guessing (all written up 
 I'm entering **both**:
 
 - **Most Creative or Delightful Use:** your breath, blinks, nods, words and smiles become a little paper lantern bobbing on its string, a houseplant whose flowers open when you smile, a cat that purrs, and a cloud with the sun peeking out. A gallery of them makes a meeting feel warmer, not emptier.
-- **Best Thoughtful Real-World Use:** the black camera-off tile becomes something kinder. People can stay *present* without being *watched*. The design guarantees that body signals can only reduce exposure, never increase it. You decide what each situation does, and you can test that on a saved recording, offline, as often as you like. It includes reduced-motion and high-contrast styles, a fully keyboard-operable UI checked with axe-core, global hotkeys (*Hide me* always wins), and honest consent.
+- **Best Thoughtful Real-World Use:** the black camera-off tile becomes something kinder. People can stay *present* without being *watched*. The design guarantees that body signals can only reduce exposure, never increase it. You decide what each situation does, and you can test that on a saved recording, offline, as often as you like. For people who read lips, an opt-in zoom shows your face clearly whenever you speak. It also has reduced-motion and high-contrast styles, a fully keyboard-operable UI checked with axe-core, global hotkeys (*Hide me* always wins), and honest consent.
 
 ## Consent and Data Handling
 
@@ -206,4 +204,4 @@ This project was planned and built with **Claude Code**, working task by task fr
 
 ---
 
-*Credits: [Presage SmartSpectra SDK](https://smartspectra.presagetech.com/docs/). Live tests used public-domain clips (a NIOSH interview from Wikimedia Commons and a NASA astronaut interview from the NASA Image and Video Library), downloaded at test time and never committed.*
+*Credits: [Presage SmartSpectra SDK](https://smartspectra.presagetech.com/docs/). The demo video and screenshots use a recording of me. Earlier live tests used public-domain clips (a NIOSH interview from Wikimedia Commons and a NASA astronaut interview from the NASA Image and Video Library), downloaded at test time and never committed. The demo video's music is original, generated in code.*
