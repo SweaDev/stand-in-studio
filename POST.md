@@ -1,7 +1,7 @@
 ---
 title: "Stand-In Studio: I Automated How Much of You Others See in Video Calls, with SmartSpectra!"
-published: false
-tags: devchallenge, presagechallenge, electron, accessibility
+published: true
+tags: devchallenge, presagechallenge, automation, privacy
 cover_image: https://raw.githubusercontent.com/SweaDev/stand-in-studio/main/docs/media/characters.png
 ---
 
@@ -53,8 +53,7 @@ I hope it's fun to look at. Picture a grid of breathing houseplants and nodding 
 
 ## Demo
 
-<!-- TODO before publishing: add the demo video link (YouTube or similar). -->
-**🎬 Demo video: _[link to be added]_**
+{% embed https://youtu.be/5mmWrKS6RpU %}
 
 The video uses a 94-second recording of me in a meeting. Presage analysed it once, live, and I saved it as a demo. Every replay after that drives the app from the saved signals, offline, so Auto makes exactly the same decisions it made live.
 
@@ -83,7 +82,10 @@ The README covers setup, camera and OBS instructions, hotkeys and tests. The sho
 
 ```bash
 npm ci
-PRESAGE_API_KEY=your-key npm start   # or just `npm start` for Demo mode
+PRESAGE_API_KEY=your-key npm start
+# or just `npm start` for Demo mode
+# for some setup, like default Ubuntu, you may need to use nosandbox mode.
+PRESAGE_API_KEY=your-key npm run start:nosandbox
 ```
 
 It's built with Electron 45, TypeScript and `@smartspectra/node-sdk` 3.5.0, using the renderer SDK on the app's own camera stream. I developed and tested it on Ubuntu 24.04. The SDK also supports Windows x64 and Apple-Silicon macOS, and the code targets them, but I haven't tested on those.
@@ -211,4 +213,9 @@ I planned and built this with **Claude Code**, working task by task from a writt
 
 ---
 
-*Credits: [Presage SmartSpectra SDK](https://smartspectra.presagetech.com/docs/). The demo video and screenshots use a recording of me. Earlier live tests used public-domain clips (a NIOSH interview from Wikimedia Commons and a NASA astronaut interview from the NASA Image and Video Library), downloaded at test time and never committed. The demo video's music is original, generated in code.*
+## *Credits*
+
+- [Presage SmartSpectra SDK](https://smartspectra.presagetech.com/docs/).
+- The demo video and screenshots use a recording of me.
+- The demo video's music is original, generated in code with Claude.
+- The narration voice is my own voice, cloned with Gemini API.
