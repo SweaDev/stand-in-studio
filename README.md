@@ -319,4 +319,4 @@ Measured SDK facts (478 MediaPipe landmarks in pixel coordinates, packet rates, 
 - [CHANGELOG.md](CHANGELOG.md)
 
 ## License
-[MIT](LICENSE). The SmartSpectra SDK is © Presage Technologies and is subject to its own license. Test media is downloaded at test time and never committed. The test clip is a public-domain NIOSH video (see IMPLEMENTATION_NOTES.md).
+[MIT](LICENSE). The SmartSpectra SDK is © Presage Technologies and is subject to its own license.
