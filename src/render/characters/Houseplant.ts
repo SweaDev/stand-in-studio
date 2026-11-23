@@ -133,6 +133,7 @@ export const Houseplant: Character = {
   id: 'houseplant',
   name: 'Houseplant',
   handProp: 'leaf',
+  body: { w: 0.52, h: 0.673, dx: -0.006, dy: 0.148 },
   draw({ ctx, cx, cy, size: H, t, pose, style, ink }: DrawArgs) {
     const motion = style.reducedMotion ? 0.5 : 1;
     const away = pose.presence === 'away';

@@ -8,7 +8,7 @@ import {
 } from './intents';
 import { DEMO_ID } from './demos';
 import { CHARACTER_IDS, MODES } from './types';
-import type { BlendLayout, CharacterId, Mode } from './types';
+import type { BlendLayout, CharacterId, FaceAnchor, Mode } from './types';
 
 /** Capture resolutions offered for the physical camera (frame rate is always 30). */
 export type CaptureProfile = '1280x720' | '960x540' | '640x360';
@@ -43,7 +43,10 @@ export interface Settings {
     saveTuning: boolean;
   };
   camera: { badge: boolean; deviceId: string | null; profile: CaptureProfile };
-  accessibility: { reducedMotion: boolean; highContrast: boolean };
+  /** `lipReading`: in Auto, zoom to your face at 100% while you talk (off by default). */
+  accessibility: { reducedMotion: boolean; highContrast: boolean; lipReading: boolean };
+  /** The character over your face in Blend and Auto. */
+  faceAnchor: FaceAnchor;
   presets: MeetingPreset[];
   /** Learned intent thresholds; always empty unless `auto.saveTuning` is on. */
   intentTuning: Record<string, IntentTuning>;
@@ -99,7 +102,8 @@ export const DEFAULT_SETTINGS: Settings = Object.freeze({
   blend: { opacity: 0.5, layout: 'over' },
   auto: { max: 1, listening: 0.4, comfortShield: false, intents: defaultIntents(), saveTuning: false },
   camera: { badge: false, deviceId: null, profile: '960x540' },
-  accessibility: { reducedMotion: false, highContrast: false },
+  accessibility: { reducedMotion: false, highContrast: false, lipReading: false },
+  faceAnchor: { follow: true, size: 1, offsetX: 0, offsetY: 0, opacity: 1 },
   presets: [],
   intentTuning: {},
   advanced: { developerMode: false },
@@ -114,6 +118,9 @@ const MAX_PRESETS = 12;
 
 function num01(v: unknown, fallback: number): number {
   return typeof v === 'number' && Number.isFinite(v) ? Math.min(1, Math.max(0, v)) : fallback;
+}
+function range(v: unknown, lo: number, hi: number, fallback: number): number {
+  return typeof v === 'number' && Number.isFinite(v) ? Math.min(hi, Math.max(lo, v)) : fallback;
 }
 function bool(v: unknown, fallback: boolean): boolean {
   return typeof v === 'boolean' ? v : fallback;
@@ -149,6 +156,7 @@ export function sanitizeSettings(raw: unknown): Settings {
   const auto = obj(r.auto);
   const camera = obj(r.camera);
   const a11y = obj(r.accessibility);
+  const anchor = obj(r.faceAnchor);
   const advanced = obj(r.advanced);
   const recorded = obj(r.recorded);
   const vcam = obj(r.virtualCamera);
@@ -187,6 +195,14 @@ export function sanitizeSettings(raw: unknown): Settings {
     accessibility: {
       reducedMotion: bool(a11y.reducedMotion, d.accessibility.reducedMotion),
       highContrast: bool(a11y.highContrast, d.accessibility.highContrast),
+      lipReading: bool(a11y.lipReading, d.accessibility.lipReading),
+    },
+    faceAnchor: {
+      follow: bool(anchor.follow, d.faceAnchor.follow),
+      size: range(anchor.size, 0.25, 1, d.faceAnchor.size),
+      offsetX: range(anchor.offsetX, -1, 1, d.faceAnchor.offsetX),
+      offsetY: range(anchor.offsetY, -1, 1, d.faceAnchor.offsetY),
+      opacity: num01(anchor.opacity, d.faceAnchor.opacity),
     },
     presets,
     // Switching the opt-in off deletes saved tuning on the next write.

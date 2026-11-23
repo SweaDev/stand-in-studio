@@ -1,5 +1,6 @@
 import type { CharacterId, CharacterPose, StageStyle } from '../../shared/types';
 import type { Ctx2D } from '../sketch';
+import type { Body } from '../characterBody';
 
 /** Colours and line weights for one style variant. */
 export interface Ink {
@@ -32,6 +33,11 @@ export interface Character {
   readonly name: string;
   /** Raised-hand prop, for the UI ("a lantern tassel"). */
   readonly handProp: string;
+  /**
+   * The solid body that covers a face, as fractions of the box size (measured with
+   * measureBody; an e2e test keeps these in step with the drawing).
+   */
+  readonly body: Body;
   draw(args: DrawArgs): void;
 }
 

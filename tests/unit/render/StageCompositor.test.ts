@@ -21,6 +21,9 @@ const base: StageState = {
   pinned: false,
   style: { reducedMotion: false, highContrast: false },
   testPattern: false,
+  face: null,
+  faceAnchor: { follow: true, size: 1, offsetX: 0, offsetY: 0, opacity: 1 },
+  zoom: 0,
 };
 const feed = { image: {} as CanvasImageSource, width: 960, height: 540 };
 

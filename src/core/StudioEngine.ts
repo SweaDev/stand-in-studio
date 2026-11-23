@@ -1,4 +1,5 @@
 import type { Settings } from '../shared/settings';
+import { FaceBoxTracker, faceBoxFrom } from './features/faceBox';
 import type { Mode, SignalFrame, StageState, ValidationState } from '../shared/types';
 import { type IntentDef, type IntentTuning, defaultIntents, usesBodySignals } from '../shared/intents';
 import { ComfortShield } from './auto/ComfortShield';
@@ -81,6 +82,11 @@ export class StudioEngine implements CommandReceiver {
   private calibrationDurationMs: number = C.CALIBRATION_MS;
   private readonly headPose = new HeadPoseSmoother();
   private features: FaceFeatures | null = null;
+  /** Where the face is in the input frame (for the face-following character and zoom). */
+  private readonly faceBoxes = new FaceBoxTracker();
+  /** Lip-reading zoom, 0..1, eased toward its target each tick. */
+  private zoom = 0;
+  private zoomAt = 0;
   private featuresAt = Number.NEGATIVE_INFINITY;
   private readonly breathing = new BreathingNormalizer();
   private readonly blink = new BlinkDetector();
@@ -152,6 +158,10 @@ export class StudioEngine implements CommandReceiver {
       this.expressionsAt = now;
     }
 
+    if (frame.landmarks && frame.validation !== 'noFace') {
+      const box = faceBoxFrom(frame.landmarks);
+      if (box) this.faceBoxes.push(box, now);
+    }
     if (frame.landmarks) {
       const raw = computeFaceFeatures(frame.landmarks);
       if (raw) {
@@ -251,6 +261,7 @@ export class StudioEngine implements CommandReceiver {
     this.expressionsAt = Number.NEGATIVE_INFINITY;
     this.tracker.reset();
     this.presence.reset('present');
+    this.faceBoxes.reset();
   }
 
   get sensingState(): SensingState {
@@ -457,6 +468,30 @@ export class StudioEngine implements CommandReceiver {
       { settings: this.settings, autoTarget: decision.target, autoCharacter: decision.character },
       this.overrides,
     );
+    // Accessibility (opt-in): while Auto has committed to revealing you as you talk, show
+    // your face at 100% (above "Your max", never above the Comfort shield) and zoom to it,
+    // so people can read your lips; the character steps aside to a corner badge.
+    // Paused (a paused clip, Camera mode): hold the last face so the character stays put.
+    const face = live ? this.faceBoxes.value(now) : this.sensing === 'paused' ? this.faceBoxes.last : null;
+    const lipReading =
+      this.settings.accessibility.lipReading &&
+      this.mode === 'auto' &&
+      live &&
+      decision.action === 'reveal' &&
+      presence !== 'away' &&
+      !this.overrides.hidden &&
+      !this.overrides.backSoon &&
+      !this.overrides.pinned &&
+      !this.overrides.cameraOff;
+    if (lipReading) {
+      resolved.feedTarget = shieldCap === null ? 1 : Math.min(1, shieldCap);
+      resolved.characterTarget = 1;
+    }
+    const zoomTarget = lipReading && face ? 1 : 0;
+    const dz = Math.max(0, now - this.zoomAt) / 700;
+    this.zoomAt = now;
+    this.zoom =
+      zoomTarget > this.zoom ? Math.min(zoomTarget, this.zoom + dz) : Math.max(zoomTarget, this.zoom - dz);
     this.feed.setTarget(resolved.feedTarget, resolved.transition, now);
     this.character.setTarget(resolved.characterTarget, 'fade', now);
 
@@ -496,8 +531,14 @@ export class StudioEngine implements CommandReceiver {
       },
       hidden: this.overrides.hidden,
       pinned: this.overrides.pinned,
-      style: { ...this.settings.accessibility },
+      style: {
+        reducedMotion: this.settings.accessibility.reducedMotion,
+        highContrast: this.settings.accessibility.highContrast,
+      },
       testPattern: this.testPattern,
+      face,
+      faceAnchor: { ...this.settings.faceAnchor },
+      zoom: this.zoom,
     };
     const override =
       this.overrides.hidden || this.overrides.cameraOff

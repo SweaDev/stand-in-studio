@@ -2,7 +2,7 @@ import type { StageState } from '../shared/types';
 import { backSoonBadge, handBadgeText, raisedHandBadge, speakingRing } from './badges';
 import { inkFor } from './characters/Character';
 import { characterOrDefault } from './characters/registry';
-import { characterBox, coverCrop, feedBlurPx, feedRect } from './layout';
+import { characterAlpha, characterBox, feedBlurPx, feedCrop, feedRect } from './layout';
 import type { Ctx2D } from './sketch';
 import { drawTestPattern } from './testPattern';
 
@@ -49,7 +49,7 @@ export class StageCompositor {
     // 2. Feed.
     if (feed && s.feedOpacity > 0.001 && feed.width > 0 && feed.height > 0) {
       const dst = feedRect(s, W, H);
-      const src = coverCrop(feed.width, feed.height, dst);
+      const src = feedCrop(s, feed, dst);
       const blur = feedBlurPx(s.feedOpacity, H);
       ctx.save();
       ctx.beginPath();
@@ -62,10 +62,12 @@ export class StageCompositor {
     }
 
     // 3. Character.
-    const box = characterBox(s, W, H);
-    if (s.characterOpacity > 0.001) {
+    const size = feed && feed.width > 0 && feed.height > 0 ? feed : null;
+    const box = characterBox(s, W, H, size);
+    const alpha = characterAlpha(s, size);
+    if (alpha > 0.001) {
       ctx.save();
-      ctx.globalAlpha = s.characterOpacity;
+      ctx.globalAlpha = alpha;
       characterOrDefault(s.character).draw({
         ctx,
         cx: box.cx,
@@ -80,7 +82,7 @@ export class StageCompositor {
     }
 
     // 4. Badges.
-    if (s.badges.speaking && s.characterOpacity > 0.001) {
+    if (s.badges.speaking && alpha > 0.001) {
       speakingRing(ctx, box, t, s.style.highContrast, s.style.reducedMotion);
     }
     if (s.badges.raisedHand) {

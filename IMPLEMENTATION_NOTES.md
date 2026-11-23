@@ -149,3 +149,9 @@ git push origin --tags
   - A "camera frame rate dropped too low" banner appeared mid-scene while two 1080p captures were encoding on 4 cores. The composer crops to the dialog, the Save card and the Presage readout there.
   - Native hover tooltips appear in a few frames.
 - **T82, Stand-In Camera label:** the e2e `FileSink` now reports the label "Stand-In Camera", matching the real device, so recordings don't show "(test file)".
+- **T84, face-following (user request):** Presage's face mesh (478 points, in the analysed frame's pixels, about 20 per second) is enough; no other data is needed.
+  - **Face box:** the face outline (forehead 10, chin 152, cheeks 234/454), or an estimate from the eye distance when the outline is missing (Demo's synthetic face). It is smoothed (position about 150 ms, size about 500 ms) and held while sensing is paused.
+  - **Placement:** the compositor maps the box through the same cover crop as the feed. Size 100% is the face on screen divided by each character's measured solid body (strings, tassels and stems excluded). The body figures are stored per character, and an e2e test re-measures them.
+  - **Opacity:** it mirrors the dial (40% you = 60% character), capped by *Opacity over face*. At 0% the character glides back to the centre, where there is nothing left to cover.
+- **T84, lip-reading zoom (accessibility, off by default):** in Auto, while the policy has committed to *reveal* (so the 2 s raise hold still applies), the feed goes to 100% even above *Your max*, but never above the Comfort shield cap. The crop eases to the face (about 60% of the height), and the character moves to a corner badge.
+

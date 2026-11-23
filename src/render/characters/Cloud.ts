@@ -20,6 +20,7 @@ export const Cloud: Character = {
   id: 'cloud',
   name: 'Cloud',
   handProp: 'puff',
+  body: { w: 0.773, h: 0.525, dx: 0.003, dy: -0.021 },
   draw({ ctx, cx, cy, size: H, t, pose, style, ink }: DrawArgs) {
     const motion = style.reducedMotion ? 0.5 : 1;
     const away = pose.presence === 'away';

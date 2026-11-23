@@ -24,6 +24,35 @@ export function percentSlider(
   };
 }
 
+/** Labelled range input with its own scale and display format. */
+export function rangeSlider(
+  label: string,
+  id: string,
+  opts: { value: number; min: number; max: number; step: number; format: (v: number) => string },
+  onInput: (v: number) => void,
+): { el: HTMLElement; set: (v: number) => void } {
+  const out = h('output', { for: id }, opts.format(opts.value));
+  const input = h('input', {
+    type: 'range',
+    id,
+    min: opts.min,
+    max: opts.max,
+    step: opts.step,
+    value: opts.value,
+  });
+  input.addEventListener('input', () => {
+    out.textContent = opts.format(Number(input.value));
+    onInput(Number(input.value));
+  });
+  return {
+    el: h('div', { class: 'field' }, h('label', { for: id }, label, ' ', out), input),
+    set: (v: number) => {
+      input.value = String(v);
+      out.textContent = opts.format(v);
+    },
+  };
+}
+
 /** Labelled checkbox toggle. */
 export function toggle(
   label: string,

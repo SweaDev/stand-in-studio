@@ -116,6 +116,27 @@ export interface StageStyle {
 }
 
 /** The complete description of one stage frame, produced by the engine and drawn by the compositor. */
+/** Where the face is in the analysed input frame, in its pixels (centre, width, height). */
+export interface FaceBox {
+  cx: number;
+  cy: number;
+  w: number;
+  h: number;
+}
+
+/** How the character sits over your face (Stage tab). */
+export interface FaceAnchor {
+  /** Follow the face in Blend (Over) and Auto. */
+  follow: boolean;
+  /** Character size: 1 = its body just covers the face on screen; down to 0.25. */
+  size: number;
+  /** Offset from the face centre, in face widths (x) and heights (y), −1…1. */
+  offsetX: number;
+  offsetY: number;
+  /** Highest character opacity over the face, 0–1 (it also mirrors the dial). */
+  opacity: number;
+}
+
 export interface StageState {
   mode: Mode;
   /** Displayed feed opacity 0..1 (after smoothing). */
@@ -135,4 +156,9 @@ export interface StageState {
   pinned: boolean;
   style: StageStyle;
   testPattern: boolean;
+  /** The face in the input frame (smoothed), or null when none is known. */
+  face: FaceBox | null;
+  faceAnchor: FaceAnchor;
+  /** Lip-reading zoom on the face, 0 (off) … 1 (full), eased. */
+  zoom: number;
 }

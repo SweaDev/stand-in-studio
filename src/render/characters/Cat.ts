@@ -15,6 +15,7 @@ export const Cat: Character = {
   id: 'cat',
   name: 'Cat',
   handProp: 'paw',
+  body: { w: 0.473, h: 0.823, dx: 0, dy: 0.05 },
   draw({ ctx, cx, cy, size: H, t, pose, style, ink }: DrawArgs) {
     const motion = style.reducedMotion ? 0.5 : 1;
     const seed = (n: number) => boilSeed(n, t, ink.boil);

@@ -5,11 +5,13 @@
 // for scripts/compose-demo-video.mjs.
 //
 //   node scripts/record-demo-video.mjs --demo <bundle.standin-demo.zip> --clip <video> --out <dir>
-//                                      [--live-reserve 60]
+//                                      [--live-reserve 60] [--skip-live 1]
 //
 // Everything replays the saved demo (no API) except one scene, which opens the clip as a
-// video file so Presage analyses it live (budget-guarded, --live-reserve seconds). Needs
-// Xvfb and ffmpeg. The footage stays in <dir>, outside the repo.
+// video file so Presage analyses it live (budget-guarded, --live-reserve seconds).
+// --skip-live 1 leaves that scene out, so the run makes no SDK session at all; the
+// composer can take the live shots from an earlier take. Needs Xvfb and ffmpeg. The
+// footage stays in <dir>, outside the repo.
 import { _electron as electron } from '@playwright/test';
 import { spawn } from 'node:child_process';
 import { mkdirSync, mkdtempSync, writeFileSync } from 'node:fs';
@@ -106,6 +108,11 @@ const CURSOR = `(() => {
   // Stay above modal dialogs (they join the top layer when opened).
   new MutationObserver(() => { try { host.hidePopover(); host.showPopover(); } catch {} })
     .observe(document.body, { subtree: true, attributes: true, attributeFilter: ['open'] });
+  // Native tooltips would pop up as separate windows in the capture: drop them.
+  addEventListener('mouseover', (e) => {
+    for (let el = e.target; el && el.removeAttribute; el = el.parentElement)
+      if (el.hasAttribute('title')) el.removeAttribute('title');
+  }, true);
   window.__demoCursor = host;
 })()`;
 await page.evaluate(CURSOR);
@@ -332,52 +339,54 @@ try {
 
   // S9 · live: the clip as a video file, analysed by Presage (budget-guarded).
   mark('live');
-  await click('#tab-camera', 800);
-  await sleep(600);
-  await press('#input-clip');
-  const runId = reserve('T82 demo video: live analysis scene', Number(opts['live-reserve']));
-  const liveStart = Date.now();
-  try {
-    await page.setInputFiles('#input-clip-file', resolve(opts.clip));
-    await page.waitForFunction(
-      () => /^Presage · /.test(document.querySelector('#pill-presage')?.textContent ?? ''),
-      null,
-      { timeout: 25_000 },
+  if (opts['skip-live'] !== '1') {
+    await click('#tab-camera', 800);
+    await sleep(600);
+    await press('#input-clip');
+    const runId = reserve('T82 demo video: live analysis scene', Number(opts['live-reserve']));
+    const liveStart = Date.now();
+    try {
+      await page.setInputFiles('#input-clip-file', resolve(opts.clip));
+      await page.waitForFunction(
+        () => /^Presage · /.test(document.querySelector('#pill-presage')?.textContent ?? ''),
+        null,
+        { timeout: 25_000 },
+      );
+      await placeStage();
+      await to('#pill-presage', 700);
+      await sleep(1800);
+      await click('#save-telemetry', 800);
+      await page.waitForSelector('#save-demo[open]');
+      await sleep(1500);
+      await to('#demo-include-body', 600);
+      await sleep(900);
+      await click('#demo-save-confirm', 600);
+      await sleep(6500);
+      await click('#cancel-telemetry', 600);
+      await sleep(1200);
+      await click('#pill-presage', 800);
+      await sleep(2000);
+      await click('#pill-presage', 300);
+      await sleep(1500);
+      // Back to the saved demo: no API from here on.
+      await click('#input-demo', 800);
+      await page.waitForFunction(
+        () => document.querySelector('#pill-source')?.textContent === 'Simulated demo',
+      );
+      await placeStage();
+      await sleep(800);
+    } finally {
+      const run = settle(runId, (Date.now() - liveStart) / 1000);
+      console.log(
+        `[presage-budget] ${run.label}: ${run.seconds}s; total ${usedSeconds(readLedger()).toFixed(1)}s`,
+      );
+    }
+    await page.selectOption('#input-demo-pick', { index: 1 });
+    await page.waitForFunction(() =>
+      /^Saved demo/.test(document.querySelector('#pill-source')?.textContent ?? ''),
     );
     await placeStage();
-    await to('#pill-presage', 700);
-    await sleep(1800);
-    await click('#save-telemetry', 800);
-    await page.waitForSelector('#save-demo[open]');
-    await sleep(1500);
-    await to('#demo-include-body', 600);
-    await sleep(900);
-    await click('#demo-save-confirm', 600);
-    await sleep(6500);
-    await click('#cancel-telemetry', 600);
-    await sleep(1200);
-    await click('#pill-presage', 800);
-    await sleep(2000);
-    await click('#pill-presage', 300);
-    await sleep(1500);
-    // Back to the saved demo: no API from here on.
-    await click('#input-demo', 800);
-    await page.waitForFunction(
-      () => document.querySelector('#pill-source')?.textContent === 'Simulated demo',
-    );
-    await placeStage();
-    await sleep(800);
-  } finally {
-    const run = settle(runId, (Date.now() - liveStart) / 1000);
-    console.log(
-      `[presage-budget] ${run.label}: ${run.seconds}s; total ${usedSeconds(readLedger()).toFixed(1)}s`,
-    );
   }
-  await page.selectOption('#input-demo-pick', { index: 1 });
-  await page.waitForFunction(() =>
-    /^Saved demo/.test(document.querySelector('#pill-source')?.textContent ?? ''),
-  );
-  await placeStage();
   mark('live-end');
 
   // S10 · sending to the meeting, and Help.

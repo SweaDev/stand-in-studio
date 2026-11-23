@@ -2,7 +2,7 @@ import { listCharacters } from '../../../render/characters';
 import { BACKGROUNDS, type DeepPartial, type Settings } from '../../../shared/settings';
 import type { BlendLayout, CharacterId } from '../../../shared/types';
 import { type Component, h } from '../dom';
-import { choice, percentSlider, toggle } from './fields';
+import { choice, percentSlider, rangeSlider, toggle } from './fields';
 
 export interface ModePanelActions {
   update(patch: DeepPartial<Settings>): void;
@@ -86,6 +86,64 @@ export class ModePanel implements Component {
         }),
       ),
     );
+    // Over your face (Blend and Auto)
+    const follow = toggle(
+      'Follow my face',
+      'face-follow',
+      s.faceAnchor.follow,
+      (v) => a.update({ faceAnchor: { follow: v } }),
+      'In Blend and Auto the character sits over your face, using the face position Presage reads. Its opacity mirrors the dial.',
+    );
+    const pct = (v: number) => `${Math.round(v * 100)}%`;
+    const signed = (v: number) => `${v > 0 ? '+' : ''}${Math.round(v * 100)}%`;
+    const faceSize = rangeSlider(
+      'Size (100% covers your face)',
+      'face-size',
+      { value: s.faceAnchor.size, min: 0.25, max: 1, step: 0.05, format: pct },
+      (v) => a.update({ faceAnchor: { size: v } }),
+    );
+    const faceOpacity = percentSlider('Opacity over face', 'face-opacity', s.faceAnchor.opacity, (v) =>
+      a.update({ faceAnchor: { opacity: v } }),
+    );
+    const offsetX = rangeSlider(
+      'Left / right',
+      'face-offset-x',
+      { value: s.faceAnchor.offsetX, min: -1, max: 1, step: 0.05, format: signed },
+      (v) => a.update({ faceAnchor: { offsetX: v } }),
+    );
+    const offsetY = rangeSlider(
+      'Up / down',
+      'face-offset-y',
+      { value: s.faceAnchor.offsetY, min: -1, max: 1, step: 0.05, format: signed },
+      (v) => a.update({ faceAnchor: { offsetY: v } }),
+    );
+    const faceTuning = h(
+      'div',
+      { class: 'face-anchor', id: 'face-anchor-options' },
+      faceSize.el,
+      faceOpacity.el,
+      offsetX.el,
+      offsetY.el,
+      h(
+        'button',
+        {
+          type: 'button',
+          class: 'btn-small',
+          id: 'face-reset',
+          onclick: () => a.update({ faceAnchor: { size: 1, offsetX: 0, offsetY: 0, opacity: 1 } }),
+        },
+        'Reset position',
+      ),
+    );
+    this.syncers.push((x) => {
+      follow.set(x.faceAnchor.follow);
+      faceSize.set(x.faceAnchor.size);
+      faceOpacity.set(x.faceAnchor.opacity);
+      offsetX.set(x.faceAnchor.offsetX);
+      offsetY.set(x.faceAnchor.offsetY);
+      faceTuning.hidden = !x.faceAnchor.follow;
+    });
+
     this.syncers.push((x) => {
       character.set(x.character);
       swatches
@@ -108,19 +166,27 @@ export class ModePanel implements Component {
       (v) => a.update({ accessibility: { highContrast: v } }),
       'Thick outlines on a flat background.',
     );
+    const lipReading = toggle(
+      'Lip-reading zoom (Auto)',
+      'lip-reading',
+      s.accessibility.lipReading,
+      (v) => a.update({ accessibility: { lipReading: v } }),
+      'For people who read lips: while Auto shows you talking to the meeting, your face is shown at 100% (above Your max) and zoomed in, and the character steps aside to a corner. Off by default.',
+    );
     this.syncers.push((x) => {
       reduced.set(x.accessibility.reducedMotion);
       contrast.set(x.accessibility.highContrast);
+      lipReading.set(x.accessibility.lipReading);
     });
 
     const group = (title: string, id: string, ...children: HTMLElement[]) =>
       h('div', { class: 'group', id }, h('h3', {}, title), ...children);
     this.groups = {
-      character: group('Character', 'group-character', character.el, swatches),
+      character: group('Character', 'group-character', character.el, swatches, follow.el, faceTuning),
       blend: group('Blend', 'group-blend', blend.el, presets, layout.el),
       auto: group('Auto levels', 'group-auto', max.el, listening.el, shield.el),
       camera: group('Camera mode', 'group-camera', badge.el),
-      a11y: group('Accessibility', 'group-a11y', reduced.el, contrast.el),
+      a11y: group('Accessibility', 'group-a11y', reduced.el, contrast.el, lipReading.el),
     };
     this.el = h('div', { class: 'mode-panel' }, ...Object.values(this.groups));
     this.sync(s);

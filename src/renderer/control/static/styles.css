@@ -2314,3 +2314,18 @@ input[type='file']::file-selector-button:hover {
   grid-column: 2;
   flex-direction: row;
 }
+.face-anchor {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0 var(--s4);
+  padding: var(--s3);
+  margin-top: var(--s2);
+  border-radius: var(--r-md);
+  background: var(--surface-2);
+}
+.face-anchor .btn-small {
+  justify-self: start;
+}
+#group-character .field.toggle {
+  margin-top: var(--s3);
+}

@@ -17,6 +17,7 @@ export const Lantern: Character = {
   id: 'lantern',
   name: 'Paper lantern',
   handProp: 'tassel',
+  body: { w: 0.46, h: 0.65, dx: 0, dy: -0.096 },
   draw({ ctx, cx, cy, size: H, t, pose, style, ink }: DrawArgs) {
     const motion = style.reducedMotion ? 0.5 : 1;
     const away = pose.presence === 'away';

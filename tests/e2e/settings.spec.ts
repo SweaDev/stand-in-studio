@@ -43,6 +43,7 @@ test('settings panel changes the stage and persists only settings', async () => 
         'blend',
         'camera',
         'character',
+        'faceAnchor',
         'intentTuning',
         'mode',
         'presets',

@@ -313,6 +313,35 @@ describe('StudioEngine (modes and overrides)', () => {
     expect(last(s).characterOpacity).toBe(0);
   });
 
+  it('lip-reading (opt-in): talking in the meeting shows you at 100% above your max, zoomed to your face', () => {
+    const { clock, engine } = setup('auto');
+    engine.applySettings(
+      updateSettings(DEFAULT_SETTINGS, {
+        mode: 'auto',
+        auto: { max: 0.7 },
+        accessibility: { lipReading: true },
+      }),
+    );
+    let s = run(engine, clock, 2000);
+    expect(last(s).zoom).toBe(0);
+    expect(last(s).face).not.toBeNull();
+    s = run(engine, clock, 6000, { talking: true, pitch: 0.4 });
+    expect(engine.debug?.policy.action).toBe('reveal');
+    expect(last(s).targetOpacity).toBe(1);
+    expect(last(s).feedOpacity).toBeGreaterThan(0.95);
+    expect(last(s).zoom).toBe(1);
+    // Stops talking: back to the listening level, zoom eases out.
+    s = run(engine, clock, 6000, { talking: false });
+    expect(last(s).zoom).toBe(0);
+    expect(last(s).targetOpacity).toBeLessThanOrEqual(0.7);
+    // Off by default: the max holds.
+    const off = setup('auto');
+    off.engine.applySettings(updateSettings(DEFAULT_SETTINGS, { mode: 'auto', auto: { max: 0.7 } }));
+    s = run(off.engine, off.clock, 6000, { talking: true });
+    expect(last(s).targetOpacity).toBeLessThanOrEqual(0.7);
+    expect(last(s).zoom).toBe(0);
+  });
+
   it('camera off (privacy shutter) shows only the character, even in Camera mode, without touching Hide me', () => {
     const { clock, engine } = setup('camera');
     let s = run(engine, clock, 1000);

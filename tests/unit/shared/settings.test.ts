@@ -32,7 +32,7 @@ describe('sanitizeSettings', () => {
     expect(s.auto).toMatchObject({ max: 0.8, listening: 0.8, comfortShield: true, saveTuning: false });
     expect(s.auto.intents.map((i) => i.id)).toEqual(defaultIntents().map((i) => i.id));
     expect(s.camera).toEqual({ badge: true, deviceId: 'abc', profile: '640x360' });
-    expect(s.accessibility).toEqual({ reducedMotion: true, highContrast: true });
+    expect(s.accessibility).toEqual({ reducedMotion: true, highContrast: true, lipReading: false });
     expect('apiKey' in s).toBe(false);
   });
 
@@ -164,5 +164,21 @@ describe('intent settings', () => {
     const bad = sanitizeSettings({ ui: { overrides: 'yes', bogus: true }, onboarding: 3 });
     expect(bad.ui).toEqual(DEFAULT_SETTINGS.ui);
     expect(bad.onboarding).toEqual({ tourOffered: false });
+  });
+
+  it('the face anchor defaults to following, and its ranges are clamped; lip-reading is off by default', () => {
+    expect(DEFAULT_SETTINGS.faceAnchor).toEqual({
+      follow: true,
+      size: 1,
+      offsetX: 0,
+      offsetY: 0,
+      opacity: 1,
+    });
+    expect(DEFAULT_SETTINGS.accessibility.lipReading).toBe(false);
+    const s = sanitizeSettings({
+      faceAnchor: { follow: false, size: 9, offsetX: -3, offsetY: 0.25, opacity: 2 },
+    });
+    expect(s.faceAnchor).toEqual({ follow: false, size: 1, offsetX: -1, offsetY: 0.25, opacity: 1 });
+    expect(sanitizeSettings({ faceAnchor: { size: 0.1 } }).faceAnchor.size).toBe(0.25);
   });
 });

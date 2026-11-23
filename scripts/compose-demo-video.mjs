@@ -4,8 +4,11 @@
 // subtitles (plus an SRT) and the music from make-music.mjs.
 //
 //   node scripts/compose-demo-video.mjs --raw <dir> --clip <video> --music <wav> --out <dir>
+//                                       [--raw-live <dir>]
 //
-// Shot times below match the scripted session in record-demo-video.mjs (timeline.json marks).
+// Shot times are relative to the scene marks in timeline.json (see record-demo-video.mjs).
+// The live-analysis shots (live: true) use absolute times in --raw-live, an earlier take
+// that included the live scene (default: --raw).
 import { chromium } from '@playwright/test';
 import { execFileSync } from 'node:child_process';
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
@@ -23,6 +26,12 @@ mkdirSync(WORK, { recursive: true });
 const timeline = JSON.parse(readFileSync(join(RAW, 'timeline.json'), 'utf8'));
 const CTRL = join(RAW, 'raw-control.mkv');
 const STAGE = join(RAW, 'raw-stage.mkv');
+const LIVE_CTRL = join(resolve(opts['raw-live'] ?? RAW), 'raw-control.mkv');
+const markAt = (name) => {
+  const m = timeline.marks.find((x) => x.name === name);
+  if (!m) throw new Error(`no mark ${name} in timeline.json`);
+  return m.t;
+};
 const CLIP = resolve(opts.clip);
 const ff = (args) =>
   execFileSync('ffmpeg', ['-hide_banner', '-loglevel', 'error', '-y', ...args], { stdio: 'inherit' });
@@ -43,29 +52,55 @@ const ACCENT = '#f2a65a';
 const SHOTS = [
   { id: 'title', type: 'card', card: 'title', dur: 6.5, fade: 0 },
   { id: 'problem', type: 'problem', dur: 11, fade: 0.6 },
-  { id: 'start', type: 'ctrl', start: 1.2, dur: 14, fade: 0.6 },
-  { id: 'status', type: 'ctrl', start: 18.3, dur: 5.5, crop: { x: 960, y: MENU, w: 960, h: 523 }, fade: 0.6 },
-  { id: 'workspace', type: 'ctrl', start: 23.8, dur: 11.5, fade: 0.35 },
-  { id: 'auto', type: 'sbs', start: 41.0, dur: 46, fade: 0.6 },
-  { id: 'controls', type: 'ctrl', start: 88.3, dur: 16.7, pip: true, fade: 0.6 },
-  { id: 'characters', type: 'stage', start: 110.3, dur: 16.5, fade: 0.6 },
-  { id: 'interface', type: 'ctrl', start: 132, dur: 8, speed: 2, fade: 0.6 },
-  { id: 'builder', type: 'ctrl', start: 155, dur: 8, speed: 2.5, fade: 0.35 },
-  { id: 'live', type: 'ctrl', start: 187, dur: 6, fade: 0.6 },
-  { id: 'consent', type: 'ctrl', start: 196, dur: 5, crop: { x: 390, y: 240, w: 1120, h: 610 }, fade: 0.35 },
-  { id: 'saving', type: 'ctrl', start: 209, dur: 5, crop: { x: 360, y: 520, w: 960, h: 523 }, fade: 0.35 },
+  { id: 'start', type: 'ctrl', mark: 'start', at: 0.15, dur: 14, fade: 0.6 },
+  {
+    id: 'status',
+    type: 'ctrl',
+    mark: 'workspace',
+    at: 0.3,
+    dur: 5.5,
+    crop: { x: 960, y: MENU, w: 960, h: 523 },
+    fade: 0.6,
+  },
+  { id: 'workspace', type: 'ctrl', mark: 'workspace', at: 5.8, dur: 11.5, fade: 0.35 },
+  { id: 'auto', type: 'sbs', mark: 'auto', at: 0.05, dur: 46, fade: 0.6 },
+  { id: 'controls', type: 'ctrl', mark: 'controls', at: 0.35, dur: 16.7, pip: true, fade: 0.6 },
+  { id: 'characters', type: 'stage', mark: 'characters', at: 0.4, dur: 16.5, fade: 0.6 },
+  { id: 'interface', type: 'ctrl', mark: 'intents', at: 0.45, dur: 8, speed: 2, fade: 0.6 },
+  { id: 'builder', type: 'ctrl', mark: 'intents', at: 23.45, dur: 8, speed: 2.5, fade: 0.35 },
+  { id: 'live', type: 'ctrl', live: true, start: 187, dur: 6, fade: 0.6 },
+  {
+    id: 'consent',
+    type: 'ctrl',
+    live: true,
+    start: 196,
+    dur: 5,
+    crop: { x: 390, y: 240, w: 1120, h: 610 },
+    fade: 0.35,
+  },
+  {
+    id: 'saving',
+    type: 'ctrl',
+    live: true,
+    start: 209,
+    dur: 5,
+    crop: { x: 360, y: 520, w: 960, h: 523 },
+    fade: 0.35,
+  },
   {
     id: 'presageOff',
     type: 'ctrl',
+    live: true,
     start: 222,
     dur: 5,
     crop: { x: 1040, y: 560, w: 880, h: 480 },
     fade: 0.35,
   },
-  { id: 'send', type: 'ctrl', start: 238.5, dur: 6, fade: 0.6 },
-  { id: 'help', type: 'ctrl', start: 249.5, dur: 9.6, speed: 1.25, fade: 0.35 },
+  { id: 'send', type: 'ctrl', mark: 'send', at: 0, dur: 6, fade: 0.6 },
+  { id: 'help', type: 'ctrl', mark: 'send', at: 11, dur: 9.6, speed: 1.25, fade: 0.35 },
   { id: 'closing', type: 'card', card: 'closing', dur: 8, fade: 0.6 },
 ];
+for (const s of SHOTS) if (s.mark) s.start = +(markAt(s.mark) + s.at).toFixed(2);
 
 // Subtitles per shot: [from, to, text] in seconds from the shot's start.
 const SUBS = {
@@ -208,7 +243,11 @@ function renderShot(s, i) {
     graph = `${framed(1, P2, 2)};[0][a1]overlay=${P2.x}:${P2.y}[b];[b][3]overlay=0:0[v]`;
   } else if (s.type === 'ctrl') {
     const c = s.crop ?? { x: 0, y: MENU, w: 1920, h: 1046 };
-    inputs = [...img('bg-frame.png'), ...clipAt(CTRL, s.start, s.dur, speed), ...img('mask-frame.png')];
+    inputs = [
+      ...img('bg-frame.png'),
+      ...clipAt(s.live ? LIVE_CTRL : CTRL, s.start, s.dur, speed),
+      ...img('mask-frame.png'),
+    ];
     graph = `${framed(1, F, 2, `${pts}crop=${c.w}:${c.h}:${c.x}:${c.y},`)};[0][a1]overlay=${F.x}:${F.y}[b]`;
     if (s.pip) {
       inputs.push(

@@ -3,6 +3,8 @@ import { updateSettings } from '../../shared/settings';
 import { bridge } from './bridge';
 import { ControlApp } from './ControlApp';
 import { CameraManager } from './camera/CameraManager';
+import { measureBody } from '../../render/characterBody';
+import { getCharacter } from '../../render/characters/registry';
 
 /** Control-window entry point. */
 async function main(): Promise<void> {
@@ -33,6 +35,11 @@ async function main(): Promise<void> {
           app.engine.applySettings(updateSettings(app.engine.currentSettings, { character: id })),
         setMode: (m: Mode) => app.engine.setMode(m),
         CameraManager,
+        /** Measures a character's face-covering body (fractions of its box size). */
+        characterBody: (id: CharacterId) => {
+          const c = getCharacter(id);
+          return c ? { measured: measureBody(c), declared: c.body } : null;
+        },
         /** Renders the current stage into a tile (default 320×180) and returns a PNG data URL. */
         tile: (w = 320, h = 180) => {
           const src = app.host.surface;
